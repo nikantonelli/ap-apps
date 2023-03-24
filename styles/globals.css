@@ -1,0 +1,40 @@
+text {
+	font-family: Arial, Helvetica, sans-serif;
+	background-color: brown;
+	color: blue;
+	fill:cadetblue;
+}
+
+.local--link {
+	fill: none;
+	stroke: #111;
+	stroke-opacity: 0.4;
+	stroke-width: 1.5px;
+  }
+  .remote--link {
+	fill: none;
+	stroke: #ddd;
+	stroke-opacity: 0.4;
+	stroke-width: 1.5px;
+  }
+  .invisible--link {
+	fill: none;
+	stroke: #ddd;
+	stroke-opacity: 0.0;
+	stroke-width: 1.5px;
+  }
+
+  .rootSurface {
+	width: 1600px;
+	height: 1024px;
+  }
+
+  .chipNspider {
+	vertical-align: middle;
+  }
+
+  .textBox {
+	color: aqua;
+	fill: none;
+	stroke: darkgreen;
+  }
