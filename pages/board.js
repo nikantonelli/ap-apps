@@ -1,6 +1,6 @@
 import { Card, CardHeader, Grid } from "@mui/material";
 import { Component } from "react";
-import BoardService from "../services/Board"
+import BoardService from "../services/BoardService"
 import AgilePlace from "../utils/AgilePlace";
 
 import { useState } from 'react'

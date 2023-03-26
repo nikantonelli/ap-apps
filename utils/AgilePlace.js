@@ -48,7 +48,6 @@ class AgilePlace {
 			}
 			console.log(error.config);
 		  });
-			
 		return returnedD;
 	}
 }

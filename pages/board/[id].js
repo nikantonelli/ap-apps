@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, Chip, Grid } from "@mui/material";
 import { useEffect, useRef } from "react";
-import BoardService from "../../services/Board"
+import BoardService from "../../services/BoardService"
+import CardService from "../../services/CardService"
 import AgilePlace from "../../utils/AgilePlace";
 import * as d3 from 'd3';
 
@@ -20,7 +21,6 @@ const Board = ({ board, cards }) => {
 		var srf = document.getElementById("surface_" + board.id);
 		svg.attr('viewBox', '-80 -20 ' + (srf.clientWidth + 100) + ' ' + (srf.clientHeight + 100))
 		svg.attr('class', 'rootSurface')
-		console.log(svgRef.current)
 		var nodeTree = d3.stratify()
 			.id(function (d) {
 				return d.id || 'root';
@@ -40,7 +40,6 @@ const Board = ({ board, cards }) => {
 			);
 
 		var mtr = tree(nodeTree);
-		console.log(mtr)
 		var children = mtr.children;
 
 		var nodes = svg.selectAll(".node")
@@ -64,7 +63,7 @@ const Board = ({ board, cards }) => {
 			.attr("x", function (d) { return d.y })
 			.attr("y", function (d) { return d.x });
 
-		paths(svg, children);
+		if (children) paths(svg, children);
 	})
 
 	function paths(svg, children) {
@@ -100,6 +99,23 @@ const Board = ({ board, cards }) => {
 	</Grid>
 }
 
+async function getChildren(card) {
+	var cs = new CardService();
+	var result = await cs.getChildren(card.id);
+	var chld = []
+	if (result) {
+		var cards = result.cards;
+		console.log(card.id, "children:" + cards.length)
+
+		for (var i = 0; i < cards.length; i++) {
+			var children = await getChildren(cards[i])
+			chld = chld.concat(children)
+		}
+		chld = chld.concat(cards);
+	}
+	return chld;
+}
+
 export async function getServerSideProps({ params }) {
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = new AgilePlace(process.env.AGILEPLACE, process.env.AGILEUSER, process.env.AGILEPASS, process.env.AGILEKEY)
@@ -107,6 +123,15 @@ export async function getServerSideProps({ params }) {
 	var bs = new BoardService();
 	var board = await bs.get(params.id)
 	var result = await bs.getCards(params.id)
-	return { props: { board: board, cards: result.cards } }
+	var cards = result.cards;
+	var chld = []
+	for (var i = 0; i < cards.length; i++) {
+		var children = await getChildren(cards[i])
+		chld = chld.concat(children)
+		console.log("cards: ", children.length)
+	}
+	cards = cards.concat(chld);
+	
+	return { props: { board: board, cards: cards } }
 }
 export default Board

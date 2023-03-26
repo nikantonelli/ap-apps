@@ -28,8 +28,7 @@ class BoardService {
 			method: "GET",
 			url: "/board/" + id + "/card",
 		}
-		var x = this.getData(params)
-		return x
+		return this.getData(params)
 	}
 
 	async getData(params) {
