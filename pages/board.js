@@ -5,29 +5,29 @@ import AgilePlace from "../utils/AgilePlace";
 
 import { useState } from 'react'
 
-export default function Board({brds}) {
+export default function Board({ brds }) {
 
 	const [boards, setBoards] = useState(brds);
 
-	function cardClicked (evt) {
-		document.open("/board/" + evt.currentTarget.id,"", "noopener=true")
+	function cardClicked(evt) {
+		document.open("/board/" + evt.currentTarget.id, "", "noopener=true")
 	}
 
-		return <Grid container>
-			{boards.map((brd, key) => {
-				return <Grid key={key} item>
-					<Card
-						id={brd.id}
-						sx={{ minWidth: 300 }}
-						variant="outlined"
-						onClick={cardClicked}
-					>
-						<CardHeader title={brd.title} />
-					</Card>
-				</Grid>
-			})}
-		</Grid>
-	
+	return <Grid container>
+		{boards.map((brd, key) => {
+			return <Grid key={key} item>
+				<Card
+					id={brd.id}
+					sx={{ minWidth: 300 }}
+					variant="outlined"
+					onClick={cardClicked}
+				>
+					<CardHeader title={brd.title} />
+				</Card>
+			</Grid>
+		})}
+	</Grid>
+
 }
 
 export async function getServerSideProps() {
@@ -35,6 +35,10 @@ export async function getServerSideProps() {
 		globalThis.dataProvider = new AgilePlace(process.env.AGILEPLACE, process.env.AGILEUSER, process.env.AGILEPASS, process.env.AGILEKEY)
 	}
 	var bs = new BoardService();
-	var result = await bs.find()
-	return {props: {brds : result.boards}}
+	var result = await bs.find();
+	if (result) {
+		return { props: { brds: result.boards } }
+	} else {
+		return { props: { brds: [] } }
+	}
 }

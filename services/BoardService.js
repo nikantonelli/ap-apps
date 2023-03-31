@@ -35,7 +35,10 @@ class BoardService {
 
 		if (globalThis.dataProvider) {
 			var response = await globalThis.dataProvider.xfr(params);
-			if (response) return response.data;
+			if (response) {
+				//Deal with paging
+				return response.data;
+			}
 		}
 		return null;
 	}

@@ -13,7 +13,7 @@ class AgilePlace {
 		params.baseURL = "https://" + this.url + "/io"
 		params.data = params.payload;
 
-		var headers = {"Accept" : "application/json"};
+		var headers = { "Accept": "application/json" };
 		if (params.type) {
 			headers["Content-type"] = params.type;
 		} else {
@@ -30,25 +30,45 @@ class AgilePlace {
 		params.headers = headers;
 		this.axios = axios.create();
 		this.axios.defaults.headers.common['Accept'] = "application/json"
-		var returnedD = await this.axios(params).catch(function (error) {
-			if (error.response) {
-			  // The request was made and the server responded with a status code
-			  // that falls out of the range of 2xx
-			  console.log(error.response.data);
-			  console.log(error.response.status);
-			  console.log(error.response.headers);
-			} else if (error.request) {
-			  // The request was made but no response was received
-			  // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-			  // http.ClientRequest in node.js
-			  console.log(error.request);
-			} else {
-			  // Something happened in setting up the request that triggered an Error
-			  console.log('Error', error.message);
+		var returned;
+		try {
+			returned = await this.axios(params)
+		} catch (error) {
+			return this.errHandler(error, params);
+		};
+		return returned;
+	}
+
+	errHandler = async (error, params) => {
+		if (error.response) {
+			// The request was made and the server responded with a status code
+			// that falls out of the range of 2xx
+			switch (error.response.status) {
+				case 429: {
+					console.log("Hit 429 backoff request. ");
+					var retryAfter = new Date(error.response.headers.AxiosHeaders['retry-after']).getTime()
+					var serverTime = new Date(error.response.headers.AxiosHeaders['date']).getTime()
+					var tDiff = retryAfter - serverTime;
+					console.log("Hit 429 backoff request. Waiting for: " + tDiff / 1000 + " secs")
+					return await new Promise(r => setTimeout(r, tDiff))
+						.then(async function (r) { return await this.axios(params) }, function (r) { return null })
+				}
+				default: {
+					console.log(error.response.data);
+					console.log(error.response.status);
+					console.log(error.response.headers);
+				}
 			}
-			console.log(error.config);
-		  });
-		return returnedD;
+
+		} else if (error.request) {
+			// The request was made but no response was received
+			// `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+			// http.ClientRequest in node.js
+			console.log('## Dead: ', error.request);
+		} else {
+			// Something happened in setting up the request that triggered an Error
+			console.log('## Error', error.message);
+		}
 	}
 }
 
