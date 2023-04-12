@@ -1,5 +1,4 @@
 import { Html, Head, Main, NextScript } from 'next/document'
-import AgilePlace from '@/utils/AgilePlace'
 
 export default function Document() {
   return (

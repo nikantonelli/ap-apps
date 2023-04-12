@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { sleep } from "./helpers";
 
 class AgilePlace {
 	constructor(url, username, password, key) {
@@ -10,8 +10,8 @@ class AgilePlace {
 	}
 
 	async xfr(params) {
-		params.baseURL = "https://" + this.url + "/io"
-		params.data = params.payload;
+
+		params.baseUrl = "https://" + this.url + "/io"
 
 		var headers = { "Accept": "application/json" };
 		if (params.type) {
@@ -27,50 +27,70 @@ class AgilePlace {
 			var token = this.username + ":" + this.password;
 			headers["Authorization"] = "Basic " + Base64.encode(token);
 		}
-		params.headers = headers;
-		this.axios = axios.create();
-		this.axios.defaults.headers.common['Accept'] = "application/json"
-		var returned;
-		try {
-			returned = await this.axios(params)
-		} catch (error) {
-			return this.errHandler(error, params);
-		};
-		return returned;
-	}
 
-	errHandler = async (error, params) => {
-		if (error.response) {
-			// The request was made and the server responded with a status code
-			// that falls out of the range of 2xx
-			switch (error.response.status) {
-				case 429: {
-					console.log("Hit 429 backoff request. ");
-					var retryAfter = new Date(error.response.headers.AxiosHeaders['retry-after']).getTime()
-					var serverTime = new Date(error.response.headers.AxiosHeaders['date']).getTime()
-					var tDiff = retryAfter - serverTime;
-					console.log("Hit 429 backoff request. Waiting for: " + tDiff / 1000 + " secs")
-					return await new Promise(r => setTimeout(r, tDiff))
-						.then(async function (r) { return await this.axios(params) }, function (r) { return null })
+		var req = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
+		const res = await fetch(req).then(
+			async (response) => {
+				if (!response.ok) {
+					var statusCode = response.status;
+					switch (statusCode) {
+						case 400:
+						case 401:
+						case 403:
+						case 404:
+						case 405:
+						case 409: {
+							console.log(`${response.statusText} for URL: ${response.url}`)
+							break;
+						}
+						case 422: {
+							console.log(`${response.statusText}: ${response.text()}`)
+						}
+						case 429: {
+							var serverTime = new Date(response.headers.get("date"))
+							var waitTime = new Date(response.headers.get("retry-after"))
+							var timeDelay = waitTime.getTime() - serverTime.getTime();
+							console.log(`Hit transaction limit. Delaying for: ${timeDelay / 1000} secs`)
+							await sleep(timeDelay);
+						}
+
+						//Fall-thru
+
+						case 408: // Request timeout - try your luck with another one....
+						case 500: // Server fault
+						case 502: // Bad Gateway
+						case 503: // Service unavailable
+						case 504: // Gateway timeout
+							{
+								console.log(`${response.statusText} for URL: ${response.url}`)
+								/** 
+								 * Try once more, if not then fail out with a null return
+								 */
+								var req2 = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
+								var res2 = await fetch(req2).then(
+									(resp2) => {
+										if (resp2.ok) {
+											return resp2;
+										}
+										console.log(`Failed on retry of access to ${response.url}`)
+										return null;
+									}
+								)
+								return res2;
+							}
+					}
+					return null;
 				}
-				default: {
-					console.log(error.response.data);
-					console.log(error.response.status);
-					console.log(error.response.headers);
-				}
+
+				return response
 			}
-
-		} else if (error.request) {
-			// The request was made but no response was received
-			// `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-			// http.ClientRequest in node.js
-			console.log('## Dead: ', error.request);
-		} else {
-			// Something happened in setting up the request that triggered an Error
-			console.log('## Error', error.message);
-		}
+		)
+		var data = null;
+		if (res)
+			data = await res.json()
+		return data;
 	}
-}
 
+}
 
 export default AgilePlace;

@@ -1,8 +1,6 @@
 text {
 	font-family: Arial, Helvetica, sans-serif;
-	background-color: brown;
-	color: blue;
-	fill:cadetblue;
+	fill:blue;
 }
 
 .local--link {

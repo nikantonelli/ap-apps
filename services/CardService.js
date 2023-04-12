@@ -7,36 +7,48 @@ class CardService {
 		this.cache = null;
 	}
 
-	find(options) {
+	async find(options) {
 		var params = {
 			url: "/card/",
-			method: "GET"
+			mode: "GET"
 		}
-		return this.getData(params);
+		var response = await this.getData(params);
+		if (response) return response.cards;
+		else return [];
 	}
 
-	get(id, options) {
+	async get(id, options) {
 		var params = {
 			url: "/card/" + id,
-			method: "GET"
+			mode: "GET"
 		}
-		return this.getData(params);
+		return await this.getData(params);
 	}
 
-	getChildren(id, options) {
+	async getChildren(id, options) {
 		var params = {
-			method: "GET",
+			mode: "GET",
 			url: "/card/" + id + "/connection/children?cardStatus=notStarted,started,finished",
 		}
-		var x = this.getData(params)
-		return x
+		var response = await this.getData(params);
+		if (response) return response.cards;
+		else return [];
+	}
+
+	async getActiveChildren(id, options) {
+		var params = {
+			mode: "GET",
+			url: "/card/" + id + "/connection/children?cardStatus=notStarted,started",
+		}
+		var response = await this.getData(params);
+		if (response) return response.cards;
+		else return [];
 	}
 
 	async getData(params) {
 
 		if (globalThis.dataProvider) {
-			var response = await globalThis.dataProvider.xfr(params);
-			if (response) return response.data;
+			return await globalThis.dataProvider.xfr(params);
 		}
 		return null;
 	}

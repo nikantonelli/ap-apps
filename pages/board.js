@@ -18,7 +18,7 @@ export default function Board({ brds }) {
 			return <Grid key={key} item>
 				<Card
 					id={brd.id}
-					sx={{ minWidth: 300 }}
+					sx={{ width: 300 }}
 					variant="outlined"
 					onClick={cardClicked}
 				>
@@ -37,7 +37,7 @@ export async function getServerSideProps() {
 	var bs = new BoardService();
 	var result = await bs.find();
 	if (result) {
-		return { props: { brds: result.boards } }
+		return { props: { brds: result } }
 	} else {
 		return { props: { brds: [] } }
 	}
