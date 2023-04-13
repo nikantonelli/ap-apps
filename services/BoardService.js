@@ -35,9 +35,9 @@ class BoardService {
 	async getCards(id, options) {
 		var params = {
 			mode: "GET",
-			url: "/board/" + id + "/card",
+			url: "/board/cards/" + id
 		}
-		var response = await this.getData(params)
+		var response = await this.getData(params).then((result) => result.json())
 		if (response) {
 			//Deal with paging here
 			return response.cards;

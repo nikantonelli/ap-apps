@@ -1,8 +1,8 @@
-import { Card, CardHeader, Grid, Stack, TextField } from "@mui/material";
+import { Button, Card, CardActionArea, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
 import BoardService from "../services/BoardService"
-import AgilePlace from "../utils/AgilePlace";
 
 import { useState } from 'react'
+import { Cancel, Clear, OpenInBrowser, OpenInNew } from "@mui/icons-material";
 
 export default function Board({ host }) {
 
@@ -16,6 +16,10 @@ export default function Board({ host }) {
 
 	function cardClicked(evt) {
 		document.open("/board/" + evt.currentTarget.id, "", "noopener=true")
+	}
+	
+	function cardClicked2(evt) {
+		document.open("/board/" + evt.currentTarget.id, "_blank")
 	}
 
 	function filterChange(e) {
@@ -34,7 +38,7 @@ export default function Board({ host }) {
 
 	async function getList(fltr) {
 		if (fltr && (fltr.length == 0)) fltr = null;
-		var result = await bs.find({search: fltr});
+		var result = await bs.find({ search: fltr });
 		return result;
 	}
 
@@ -55,19 +59,56 @@ export default function Board({ host }) {
 			})
 	}
 
+	function clearFilter() {
+		var fltrField = document.getElementById("filter-field")
+		fltrField.value = "";
+		setFilterText("")
+		setPending(false);
+	}
+
 	return <Stack>
-		<TextField id="filter-basic" label="Filter" variant="standard" onChange={filterChange} />
+		<TextField
+			id="filter-field"
+			label="Filter"
+			helperText="Case insensitive search on title and header"
+			variant="standard"
+			onChange={filterChange}
+			InputProps={{
+				startAdornment: (
+					<InputAdornment position="start">
+						{filterText.length != 0 ?
+							<IconButton onClick={clearFilter}>
+								<Cancel />
+							</IconButton>
+							: null}
+					</InputAdornment>
+				),
+			}}
+		/>
 		{(boards && boards.length) ?
 			<Grid container>
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							id={brd.id}
-							sx={{ width: 300 }}
-							variant="outlined"
-							onClick={cardClicked}
+							sx={{ minWidth: 300 }}
+							className="card"
+							variant="standard"
+							raised
 						>
-							<CardHeader title={brd.title} />
+							<CardHeader 
+								title={brd.title} 
+								style={{ textAlign: 'center' }}
+								subheader={brd.description}/>
+							<CardActionArea>
+								<Button
+									onClick={cardClicked}
+									id={brd.id}
+									size="small"
+								>
+									Tree
+								</Button>
+								
+							</CardActionArea>
 						</Card>
 					</Grid>
 				})}

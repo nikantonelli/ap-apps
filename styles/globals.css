@@ -36,3 +36,10 @@ text {
 	fill: none;
 	stroke: darkgreen;
   }
+
+  .card {
+	color: white;
+	background-color: darkgrey;
+	margin: 2px;
+	padding: 3px;
+  }

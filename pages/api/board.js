@@ -1,6 +1,15 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
+/**
+ * Translate from our API to the AgilePlace one
+ * Incoming:
+ * 		http://nacl.leankit.com/api/board
+ * or 	http://nacl.leankit.com/api/board?fld=title&q=MyCard
+ * 
+ * where 	fld = fieldname to search on
+ * 			q = text string to look for
+ * 
+ */
 
-import AgilePlace from "@/utils/AgilePlace";
+import { DataProvider } from "@/utils/DataProvider";
 
 export default async function handler(req, res) {
 	const queryField = req.query['fld'];
@@ -20,7 +29,7 @@ export default async function handler(req, res) {
 	}
 
 	if (globalThis.dataProvider == null) {
-		globalThis.dataProvider = new AgilePlace(process.env.AGILEPLACE, process.env.AGILEUSER, process.env.AGILEPASS, process.env.AGILEKEY)
+		globalThis.dataProvider = DataProvider.get()
 	}
 
 	var brds = []
@@ -33,8 +42,7 @@ export default async function handler(req, res) {
 		brds = await globalThis.dataProvider.xfr(params)
 	} else {
 		/**
-		 * Fetch all and filter ourselves
-		 * TODO: 
+		 * TODO: Fetch all and filter ourselves
 		 */
 	}
 	res.status(200).json({ boards: brds.boards })
