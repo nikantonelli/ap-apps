@@ -3,19 +3,23 @@ class BoardService {
 	 * 
 	 * @param {object to access AgilePlace} apiAccess 
 	 */
-	constructor(apiAccess) {
+	constructor(host) {
+		this.baseUrl =  "http://" + host + "/api";
 		this.cache = null;
 	}
 
 	async find(options) {
 		var params = {
-			url: "/board/",
+			url: "/board",
 			mode: "GET"
+		}
+		if (options && options.search) {
+			params.url += "?q=" + encodeURIComponent(options.search)
 		}
 		var response = await this.getData(params)
 		if (response) {
 			//Deal with paging here
-			return response.boards;
+			return response;
 		}
 		else return [];
 	}
@@ -43,12 +47,10 @@ class BoardService {
 
 	async getData(params) {
 
-		if (globalThis.dataProvider) {
-			var response = await globalThis.dataProvider.xfr(params);
+			var req = new Request(this.baseUrl + params.url, {  method: params.mode });
+			var response = await fetch(req);
 			//Deal with paging here
 			return response;
-		}
-		return null;
 	}
 }
 export default BoardService;

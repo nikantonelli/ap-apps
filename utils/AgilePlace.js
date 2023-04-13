@@ -84,7 +84,7 @@ class AgilePlace {
 
 				return response
 			}
-		)
+		).catch((error)=>{console.log(error)})
 		var data = null;
 		if (res)
 			data = await res.json()
