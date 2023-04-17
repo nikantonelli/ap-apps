@@ -52,9 +52,21 @@ class AgilePlace {
 							var timeDelay = waitTime.getTime() - serverTime.getTime();
 							console.log(`Hit transaction limit. Delaying for: ${timeDelay / 1000} secs`)
 							await sleep(timeDelay);
+							/** 
+								 * Try once more, if not then fail out with a null return
+								 */
+							var req2 = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
+							var res2 = await fetch(req2).then(
+								(resp2) => {
+									if (resp2.ok) {
+										return resp2;
+									}
+									console.log(`Failed on retry of access to ${response.url}`)
+									return null;
+								}
+							)
+							return res2;
 						}
-
-						//Fall-thru
 
 						case 408: // Request timeout - try your luck with another one....
 						case 500: // Server fault

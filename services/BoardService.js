@@ -1,8 +1,5 @@
 class BoardService {
-	/**
-	 * 
-	 * @param {object to access AgilePlace} apiAccess 
-	 */
+	
 	constructor(host) {
 		this.baseUrl =  "http://" + host + "/api";
 		this.cache = null;

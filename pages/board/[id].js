@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, Chip, Grid, Menu, MenuItem, Popover } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { Chip, Menu, MenuItem, Stack } from "@mui/material";
+import React, { useEffect, useRef, useState } from "react";
 import BoardService from "../../services/BoardService"
 import CardService from "../../services/CardService"
 import * as d3 from 'd3';
@@ -11,15 +11,15 @@ const Board = ({ board, root, host }) => {
 
 	const svgRef = useRef();
 
-	const [tileType, setTileType] = useState("analysis");
+	const [tileType, setTileType] = useState("tree");
 	const [anchorEl, setAnchorEl] = useState(null);
 
 	useEffect(() => {
 
 		const svg = d3.select(svgRef.current);
 		if (svgRef && svgRef.current) svgRef.current.replaceChildren()
-		var srf = document.getElementById("surface_" + board.id);
-console.log(tileType)
+
+
 		switch (tileType) {
 			case 'tree': {
 				var data = d3.hierarchy(root)
@@ -36,40 +36,51 @@ console.log(tileType)
 				};
 
 				var colWidth = 400;
-				var rowHeight = 30;
-
-				colWidth = (colWidth < (srf.clientWidth / data.height)) ? (srf.clientWidth / data.height) : colWidth
+				var rowHeight = 50;
 
 				childCount(0, data);
-				var newHeight = d3.max(levelWidth) * rowHeight;
-				newHeight = (newHeight < 400) ? 400 : newHeight;
-				svg.attr('viewBox', colWidth + ' ' + 0 + ' ' + 2048 + ' ' + newHeight)
+				var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+				var rootEl = document.getElementById("surface_" + board.id)
+
+				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+				colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? (viewBoxSize[0] / (data.height)) : colWidth
+
+
+				svg.attr('width', viewBoxSize[0])
+				svg.attr("height", viewBoxSize[1])
+				console.log(viewBoxSize, colWidth)
+				svg.attr('viewBox', colWidth + ' 0 ' + viewBoxSize[0] + ' ' + viewBoxSize[1])
+				svg.attr('preserveAspectRatio', 'none');
 				svg.attr('class', 'rootSurface')
 				var tree = d3.tree()
-					.size([newHeight, colWidth * data.height])
+					.size([viewBoxSize[1], viewBoxSize[0] + colWidth])
 					.separation(function (a, b) {
 						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
 					}
 					);
 
 				var mtr = tree(data);
-				var children = mtr.children;
 
 				var nodes = svg.selectAll(".node")
 					.data(mtr.descendants().slice(1))
 					.enter()
-					.append("g").attr("id", function (d) { return "g_" + d.data.id });
+
+				nodes.each(function (d) {
+					d.colWidth = colWidth;
+					d.colMargin = 50;
+					d.rowHeight = rowHeight;
+				})
 
 				nodes.append("clipPath")
-					.attr("id", function (d) { return "clip_" + d.parent.data.id + "_" + d.data.id })
-					.append("rect")
-					.attr("id", function (d) { return "rect_" + d.parent.data.id + "_" + d.data.id })
-					.attr("y", function (d) { return d.x - 15 })
+					.attr("id", function (d) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + d.depth })
+					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
+					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
 					.attr("x", function (d) { return d.y })
-					.attr("width", colWidth - 50)
+					.attr("width", function (d) { return d.colWidth - d.colMargin })
 					.attr("height", 30)
 
-				nodes.append("g").append("text").attr("clip-path", function (d) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + ")" })
+				nodes.append("text")
+					.attr("clip-path", function (d) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + d.depth + ")" })
 					.text(function (d) { return d.data.title; })
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
@@ -80,40 +91,55 @@ console.log(tileType)
 					.attr("x", function (d) { return d.y })
 					.attr("y", function (d) { return d.x });
 
-				if (children) paths(svg, children);
+				paths(svg, nodes)
 
 			}
 		}
 
 	})
 
-	function paths(svg, children) {
-		children.forEach(child => {
-			if (child.children) {
-				paths(svg, child.children)
-				svg.selectAll(".link")
-					.data(child.children)
-					.enter().append("path")
-					.attr("class", function (d) { return (d.depth === 0) ? "invisible--link" : "local--link"; })
-					.attr("d", function (d) {
-						var rEl = document.getElementById("rect_" + d.parent.data.id + "_" + d.data.id)
-						var rWidth = rEl.getClientRects()[0].width
-						var tEl = document.getElementById("text_" + d.parent.data.id)
-						var tWidth = tEl.getClientRects()[0].width
-						var width = tWidth < rWidth ? tWidth : rWidth
-						var startPointH = d.y - 5;
-						var startPointV = d.x - 5;
-						var endPointH = d.parent.y + width + 90;
-						var endPointV = d.parent.x - 5;
+	function paths(svg, nodes) {
+		nodes.each(child => {
+			console.log(child)
+			var links = svg.selectAll(".link")
+				.data(child)
+				.enter()
+			links.append("line")
+				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
+				.attr("class", function (d) { return d.children ? "local--link" : "invisible--link" })
+				.attr("x1", function (d) {
+					return d.y
+				})
+				.attr("y1", function (d) {
+					return d.x + 2
+				})
+				.attr("x2", function (d) {
+					return d.y + (d.colWidth - d.colMargin) 
+				})
+				.attr("y2", function (d) {
+					return d.x + 2
+				})
+			if (child.parent.data.id == "root") return;
 
-						var string = "M" + startPointH + "," + startPointV +
+			links.append("path")
+				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
+				.attr("class", function (d) { return "local--link"; })
+				.attr("d", function (d) {
+					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+					var width = tEl.getClientRects()[0].width
+					var startPointH = d.parent.y + width;
+					var startPointV = d.parent.x + 2;
+					var endPointH = d.y;
+					var endPointV = d.x + 2;
 
-							"C" + (startPointH - ((startPointH - endPointH) / 5)) + "," + startPointV + " " +
-							(endPointH + ((startPointH - endPointH) / 5)) + "," + endPointV + " " +
-							endPointH + "," + endPointV;
-						return string
-					});
-			}
+					var string = "M" + startPointH + "," + startPointV +
+
+						"C" + (startPointH + (d.colMargin / 2)) + "," + (startPointV) + " " +
+						(endPointH - (d.colMargin / 2)) + "," + endPointV + " " +
+						endPointH + "," + endPointV;
+					return string
+				});
+
 		})
 	}
 
@@ -129,22 +155,28 @@ console.log(tileType)
 
 	const open = Boolean(anchorEl);
 
-	if (board) return <Grid container direction='row'>
-		<Chip label={board.title} onClick={enableMenu}/>
-		<Menu
-			open={open}
-			anchorEl={anchorEl}
-			onClose={closeMenu}
-			anchorOrigin={{
-				vertical: 'top',
-				horizontal: 'right',
-			  }}
-		>
-			<MenuItem value='tree' onClick={closeMenu}>Tree</MenuItem>
-			<MenuItem value='analysis' onClick={closeMenu}>Analysis</MenuItem>
-		</Menu>
-		<svg id={"surface_" + board.id} ref={svgRef} />
-	</Grid>
+	if (board) return (
+		<Stack>
+			<Chip label={board.title} onClick={enableMenu} />
+			<Menu
+				open={open}
+				anchorEl={anchorEl}
+				onClose={closeMenu}
+				anchorOrigin={{
+					vertical: 'top',
+					horizontal: 'right',
+				}}
+			>
+				<MenuItem value='tree' onClick={closeMenu}>Tree</MenuItem>
+				<MenuItem value='analysis' onClick={closeMenu}>Analysis</MenuItem>
+			</Menu>
+
+			<div id={"surface_" + board.id} >
+				<svg ref={svgRef} />
+			</div>
+
+		</Stack>
+	)
 	else return null;
 }
 

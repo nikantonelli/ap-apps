@@ -90,7 +90,7 @@ export default function Board({ host }) {
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							sx={{ minWidth: 300 }}
+							sx={{ minWidth: 300, maxWidth: 600 }}
 							className="card"
 							variant="standard"
 							raised
@@ -98,14 +98,14 @@ export default function Board({ host }) {
 							<CardHeader 
 								title={brd.title} 
 								style={{ textAlign: 'center' }}
-								subheader={brd.description}/>
+								/>
 							<CardActionArea>
 								<Button
 									onClick={cardClicked}
 									id={brd.id}
 									size="small"
 								>
-									Tree
+									Open
 								</Button>
 								
 							</CardActionArea>

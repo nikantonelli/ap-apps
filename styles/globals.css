@@ -5,8 +5,7 @@ text {
 
 .local--link {
 	fill: none;
-	stroke: #111;
-	stroke-opacity: 0.4;
+	stroke: darkgrey;
 	stroke-width: 1.5px;
   }
   .remote--link {
@@ -23,8 +22,7 @@ text {
   }
 
   .rootSurface {
-	width: 1600px;
-	height: 1024px;
+	
   }
 
   .chipNspider {
