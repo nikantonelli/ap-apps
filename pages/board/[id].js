@@ -1,108 +1,176 @@
-import { Chip, Menu, MenuItem, Stack } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
-import BoardService from "../../services/BoardService"
-import CardService from "../../services/CardService"
-import * as d3 from 'd3';
-import * as _ from 'lodash';
 import { DataProvider } from "@/utils/DataProvider";
+import MenuIcon from '@mui/icons-material/Menu';
+import { Chip, Drawer, Grid, IconButton, Menu, MenuItem, Select, Stack } from "@mui/material";
+import * as d3 from 'd3';
+import jsPDF from "jspdf";
+import { forEach, values } from "lodash";
+import { useEffect, useRef, useState } from "react";
+import BoardService from "../../services/BoardService";
+
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 
 
-const Board = ({ board, root, host }) => {
+const Board = ({ board, active, host }) => {
 
 	const svgRef = useRef();
 
 	const [tileType, setTileType] = useState("tree");
 	const [anchorEl, setAnchorEl] = useState(null);
 
+	const [cardData, setCardData] = useState({
+		id: 'root',
+		children: null,
+		savedChildren: null
+	})
+
+	const [allData, setAllData] = useState(null)
+
+	var [accessCount, setAccessCount] = useState(0)
+	const [drawerOpen, setDrawerOpen] = useState(false)
+
+	async function getStuff(host, params) {
+		try {
+			var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
+			var response = await fetch(req, { next: { revalidate: 30 } })
+			var result = await response.json()
+			var cards = result.cards
+			return childrenOf(host, cards)
+		} catch (error) {
+			console.log("Caught error: ", error)
+		}
+		return null;
+	}
+
+	async function childrenOf(host, cards) {
+		forEach(cards, async (card) => {
+			var res2 = await getChildren(host, card);
+			var children = await res2.json()
+			setAccessCount(accessCount += 1)
+			card.children = children.cards
+			forEach(card.children, async (card) => {
+				var res2 = await getChildren(host, card);
+				var children = await res2.json()
+				setAccessCount(accessCount += 1)
+				card.children = children.cards
+			})
+		})
+		return cards;
+	}
+	async function getChildren(host, card) {
+		var params = {
+			mode: "GET",
+			url: "/card/" + card.id + "/connection/children?cardStatus=notStarted,started,finished",
+		}
+		var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
+		return await fetch(req, { next: { revalidate: 30 } })
+	}
+
 	useEffect(() => {
 
-		const svg = d3.select(svgRef.current);
-		if (svgRef && svgRef.current) svgRef.current.replaceChildren()
+		if (cardData.children == null) {
+			var params = {
+				parent: board.id,
+				mode: "GET",
+				url: "/board/cards/" + board.id
+			}
+			var result = getStuff(host, params).then((cards) => {
+				var root = {
+					id: 'root',
+					children: cards
+				}
+				//Keep a backup for the selector list
+				var clonedData = JSON.parse(JSON.stringify(root))
+				setAllData(clonedData)
+				setCardData(root)
+			})
 
 
-		switch (tileType) {
-			case 'tree': {
-				var data = d3.hierarchy(root)
-
-				var levelWidth = [1];
-				var childCount = function (level, n) {
-					if (n.children && n.children.length > 0) {
-						if (levelWidth.length <= level + 1) levelWidth.push(0);
-						levelWidth[level + 1] += n.children.length;
-						n.children.forEach(function (d) {
-							childCount(level + 1, d);
-						});
-					}
-				};
-
-				var colWidth = 400;
-				var rowHeight = 50;
-
-				childCount(0, data);
-				var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-				var rootEl = document.getElementById("surface_" + board.id)
-
-				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? (viewBoxSize[0] / (data.height)) : colWidth
+		} else {
+			const svg = d3.select(svgRef.current);
+			if (svgRef && svgRef.current) svgRef.current.replaceChildren()
 
 
-				svg.attr('width', viewBoxSize[0])
-				svg.attr("height", viewBoxSize[1])
-				console.log(viewBoxSize, colWidth)
-				svg.attr('viewBox', colWidth + ' 0 ' + viewBoxSize[0] + ' ' + viewBoxSize[1])
-				svg.attr('preserveAspectRatio', 'none');
-				svg.attr('class', 'rootSurface')
-				var tree = d3.tree()
-					.size([viewBoxSize[1], viewBoxSize[0] + colWidth])
-					.separation(function (a, b) {
-						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
-					}
-					);
+			switch (tileType) {
+				case 'tree': {
+					var data = d3.hierarchy(cardData)
 
-				var mtr = tree(data);
+					var levelWidth = [1];
+					var childCount = function (level, n) {
+						if (n.children && n.children.length > 0) {
+							if (levelWidth.length <= level + 1) levelWidth.push(0);
+							levelWidth[level + 1] += n.children.length;
+							n.children.forEach(function (d) {
+								childCount(level + 1, d);
+							});
+						}
+					};
 
-				var nodes = svg.selectAll(".node")
-					.data(mtr.descendants().slice(1))
-					.enter()
+					var colWidth = 400;
+					var rowHeight = 50;
 
-				nodes.each(function (d) {
-					d.colWidth = colWidth;
-					d.colMargin = 50;
-					d.rowHeight = rowHeight;
-				})
+					childCount(0, data);
+					var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+					var rootEl = document.getElementById("surface_" + board.id)
 
-				nodes.append("clipPath")
-					.attr("id", function (d) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + d.depth })
-					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
-					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
-					.attr("x", function (d) { return d.y })
-					.attr("width", function (d) { return d.colWidth - d.colMargin })
-					.attr("height", 30)
+					var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+					colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? (viewBoxSize[0] / (data.height)) : colWidth
 
-				nodes.append("text")
-					.attr("clip-path", function (d) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + d.depth + ")" })
-					.text(function (d) { return d.data.title; })
-					.attr('class', "idText")
-					.attr("height", rowHeight - 10)
-					.attr("id", function (d) {
-						return "text_" + d.data.id
+
+					svg.attr('width', viewBoxSize[0])
+					svg.attr("height", viewBoxSize[1])
+					svg.attr('viewBox', colWidth + ' 0 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
+					svg.attr('preserveAspectRatio', 'none');
+					svg.attr('class', 'rootSurface')
+					var tree = d3.tree()
+						.size([viewBoxSize[1], viewBoxSize[0]])
+						.separation(function (a, b) {
+							return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
+						}
+						);
+
+					var mtr = tree(data);
+
+					var nodes = svg.selectAll(".node")
+						.data(mtr.descendants().slice(1))
+						.enter()
+
+					nodes.each(function (d) {
+						d.colWidth = colWidth;
+						d.colMargin = 50;
+						d.rowHeight = rowHeight;
 					})
-					.style("text-anchor", "start")
-					.attr("x", function (d) { return d.y })
-					.attr("y", function (d) { return d.x });
 
-				paths(svg, nodes)
+					nodes.append("clipPath")
+						.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
+						.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
+						.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
+						.attr("x", function (d) { return d.y })
+						.attr("width", function (d) { return d.colWidth - d.colMargin })
+						.attr("height", 30)
 
+					nodes.append("text")
+						.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
+						.text(function (d) { return d.data.title; })
+						.attr('class', "idText")
+						.attr("height", rowHeight - 10)
+						.attr("id", function (d) {
+							return "text_" + d.data.id
+						})
+						.style("text-anchor", "start")
+						.attr("x", function (d) { return d.y })
+						.attr("y", function (d) { return d.x });
+
+					paths(svg, nodes)
+
+				}
 			}
 		}
-
 	})
 
 	function paths(svg, nodes) {
-		nodes.each(child => {
-			console.log(child)
+		nodes.each(node => {
 			var links = svg.selectAll(".link")
-				.data(child)
+				.data(node)
 				.enter()
 			links.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
@@ -114,12 +182,12 @@ const Board = ({ board, root, host }) => {
 					return d.x + 2
 				})
 				.attr("x2", function (d) {
-					return d.y + (d.colWidth - d.colMargin) 
+					return d.y + (d.colWidth - d.colMargin)
 				})
 				.attr("y2", function (d) {
 					return d.x + 2
 				})
-			if (child.parent.data.id == "root") return;
+			if (node.parent.data.id == "root") return;
 
 			links.append("path")
 				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
@@ -133,9 +201,8 @@ const Board = ({ board, root, host }) => {
 					var endPointV = d.x + 2;
 
 					var string = "M" + startPointH + "," + startPointV +
-
-						"C" + (startPointH + (d.colMargin / 2)) + "," + (startPointV) + " " +
-						(endPointH - (d.colMargin / 2)) + "," + endPointV + " " +
+						"C" + (d.parent.y + d.colWidth + (d.colMargin)) + "," + (startPointV) + " " +
+						(endPointH - (d.colMargin)) + "," + endPointV + " " +
 						endPointH + "," + endPointV;
 					return string
 				});
@@ -147,17 +214,124 @@ const Board = ({ board, root, host }) => {
 		setAnchorEl(e.currentTarget)
 	}
 
-	function closeMenu(e) {
-		console.log(e.target)
-		setTileType(e.target.getAttribute('value'))
+	async function closeMenu(e) {
+		var command = e.target.getAttribute('value');
+
+		switch (command) {
+			case 'tree':
+			case 'analysis': {
+				setTileType(e.target.getAttribute('value'))
+				break;
+			}
+
+			case 'savePDF': {
+				var doc = new jsPDF(
+					{
+						orientation: "l",
+						unit: 'px',
+						format: "a4",
+						hotfixes: ["px_scaling"]
+					}
+				);
+				var svg = document.getElementById("svg_" + board.id);
+				var svgAsXml = new XMLSerializer().serializeToString(svg)
+				await doc.addSvgAsImage(svgAsXml, 0, 0, svg.getBoundingClientRect().width, svg.getBoundingClientRect().height)
+				doc.save(board.id + ".pdf")
+			}
+		}
+
 		setAnchorEl(null)
+	}
+
+	const openDrawer = () => {
+		setDrawerOpen(true)
+	}
+
+	const closeDrawer = () => {
+		setDrawerOpen(false)
+	}
+
+	const [itemNames, setItemNames] = useState([])
+
+	const handleChangeMultiple = (evt) => {
+		const { options } = evt.target;
+		const valueList = [];
+		var root = cardData;
+		for (let i = 0, l = options.length; i < l; i += 1) {
+			if (options[i].selected) {
+				valueList.push({ value: options[i].value });
+			}
+		}
+		var allChildren = root.children
+		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = allChildren.concat(root.savedChildren)
+		if (valueList && valueList.length) {
+
+			root.children = _.filter(allChildren, function (child) {
+				var result = (_.filter(valueList, function (value) {
+					var eqv = value.value === child.id;
+					return eqv
+				}))
+				return (result.length > 0)
+			})
+			root.savedChildren = _.filter(allChildren, function (child) {
+				var result = (_.filter(valueList, function (value) {
+					var eqv = value.value !== child.id;
+					return eqv
+				}))
+				return (result.length > 0)
+			})
+		} else {
+			root.children = allChildren
+			root.savedChildren = null;
+		}
+		setCardData(root)
+		setItemNames(valueList);
+	}
+
+	const topLevelList = () => {
+		//Top level list is the children of root
+		
+		var cardList = null;
+		if (allData) cardList = allData.children
+		return (cardList && cardList.length) ? (
+			<Select
+				multiple
+				native
+				value={itemNames.map((item) => item.value)}
+				// @ts-ignore Typings are not considering `native`
+				onChange={handleChangeMultiple}
+				label="Native"
+				inputProps={{
+					id: 'select-multiple-native',
+				}}
+			>
+				{cardList.map((card) => (
+					<option key={card.id} value={card.id}>
+						{card.title}
+					</option>
+				))}
+			</Select>
+		) : null
+
 	}
 
 	const open = Boolean(anchorEl);
 
+	const drawerWidth = 400;
+
+
+
 	if (board) return (
 		<Stack>
-			<Chip label={board.title} onClick={enableMenu} />
+			<Grid container direction={'row'}>
+
+				<IconButton onClick={openDrawer}>
+					<MenuIcon />
+				</IconButton>
+
+				<Chip label={board.title + " {" + accessCount + "}"} onClick={enableMenu} />
+			</Grid>
+
 			<Menu
 				open={open}
 				anchorEl={anchorEl}
@@ -172,68 +346,44 @@ const Board = ({ board, root, host }) => {
 			</Menu>
 
 			<div id={"surface_" + board.id} >
-				<svg ref={svgRef} />
+				<svg id={"svg_" + board.id} ref={svgRef} />
 			</div>
 
+			<Drawer
+				variant='persistent'
+				open={drawerOpen}
+				anchor='left'
+				sx={{
+					width: drawerWidth,
+					flexShrink: 0,
+					[`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+				}}
+			>
+
+				<ChevronLeftIcon onClick={closeDrawer} fontSize='large' />
+
+				{topLevelList()}
+			</Drawer>
 		</Stack>
 	)
 	else return null;
 }
 
-async function getChildren(card) {
-	var cs = new CardService();
-	var result = await cs.getChildren(card.id);
-	var children = [];
-	if (result) {
-		children = result;
-		if (children) {
-			for (var i = 0; i < children.length; i++) {
-				children[i].children = await getChildren(children[i])
-				children[i].parentId = card.id
-			}
-		}
-	}
-	return children;
-}
 
-export async function getServerSideProps({ req, params }) {
+
+export async function getServerSideProps({ req, params, query }) {
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = DataProvider.get()
 	}
 	var bs = new BoardService(req.headers.host);
 	var board = await bs.get(params.id).then((result) => result.json())
 	if (board) {
-		var cards = await bs.getCards(params.id)
-		var root = {
-			id: 'root',
-			children: []
+		var active = false;
+		if (query.active == true) {
+			active = true;
 		}
-		//Make a tree of the cards
-
-		if (cards && cards.length) {
-			//Drop mirrors as we will get these later
-			var rootCards = _.filter(cards, function (crd) { return crd.isMirroredCard == false });
-			for (var i = 0; i < cards.length; i++) {
-				//Fix the fact that the AP API is rubbish.
-				cards[i].parentId = "root"
-				cards[i].board = {
-					id: board.id
-				}
-				//The child card could already be on this board, so check and remove from root
-				try {
-					cards[i].children = await getChildren(cards[i])
-					for (var j = 0; j < cards[i].children.length; j++) {
-						rootCards = _.filter(rootCards, function (crd) { return crd.id != cards[i].children[j].id })
-					}
-				} catch (e) {
-					console.log("Caught Error: ", e)
-				}
-
-			}
-			root.children = rootCards
-		}
-		return { props: { board: board, root: root, host: req.headers.host } }
+		return { props: { board: board, active: active, host: req.headers.host } }
 	}
-	return { props: { board: null, root: null, host: req.headers.host } }
+	return { props: { board: null, active: null, host: req.headers.host } }
 }
 export default Board

@@ -27,12 +27,12 @@ class AgilePlace {
 			var token = this.username + ":" + this.password;
 			headers["Authorization"] = "Basic " + Base64.encode(token);
 		}
-
+		
 		var req = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
-		const res = await fetch(req).then(
+		const res = await fetch(req, {next: {revalidate: 30}}).then(
 			async (response) => {
 				if (!response.ok) {
-					var statusCode = response.status;
+										var statusCode = response.status;
 					switch (statusCode) {
 						case 400:
 						case 401:
@@ -45,12 +45,13 @@ class AgilePlace {
 						}
 						case 422: {
 							console.log(`${response.statusText}: ${response.text()}`)
+							break;
 						}
 						case 429: {
 							var serverTime = new Date(response.headers.get("date"))
 							var waitTime = new Date(response.headers.get("retry-after"))
 							var timeDelay = waitTime.getTime() - serverTime.getTime();
-							console.log(`Hit transaction limit. Delaying for: ${timeDelay / 1000} secs`)
+							console.log(`Hit transaction limit. Delaying for ${timeDelay / 1000} secs until ${waitTime}`)
 							await sleep(timeDelay);
 							/** 
 								 * Try once more, if not then fail out with a null return
@@ -93,13 +94,14 @@ class AgilePlace {
 					}
 					return null;
 				}
-
+				
 				return response
 			}
 		).catch((error)=>{console.log(error)})
 		var data = null;
-		if (res)
+		if (res){
 			data = await res.json()
+		}
 		return data;
 	}
 

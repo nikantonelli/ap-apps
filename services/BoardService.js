@@ -1,7 +1,7 @@
 class BoardService {
-	
+
 	constructor(host) {
-		this.baseUrl =  "http://" + host + "/api";
+		this.baseUrl = "http://" + host + "/api";
 		this.cache = null;
 	}
 
@@ -43,11 +43,11 @@ class BoardService {
 	}
 
 	async getData(params) {
-
-			var req = new Request(this.baseUrl + params.url, {  method: params.mode });
-			var response = await fetch(req);
-			//Deal with paging here
-			return response;
+		console.log("bs: ",this.baseUrl + params.url, { method: params.mode })
+		var req = new Request(this.baseUrl + params.url, { method: params.mode });
+		var response = await fetch(req, {next: {revalidate: 30}});
+		//Deal with paging here
+		return response;
 	}
 }
 export default BoardService;
