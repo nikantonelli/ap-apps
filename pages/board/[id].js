@@ -1,173 +1,255 @@
 import { DataProvider } from "@/utils/DataProvider";
-import MenuIcon from '@mui/icons-material/Menu';
-import { Chip, Drawer, Grid, IconButton, Menu, MenuItem, Select, Stack } from "@mui/material";
+import { Autocomplete, Chip, Drawer, Grid, IconButton, Menu, MenuItem, Stack, TextField } from "@mui/material";
 import * as d3 from 'd3';
 import jsPDF from "jspdf";
-import { forEach, values } from "lodash";
-import { useEffect, useRef, useState } from "react";
+import { forEach } from "lodash";
 import BoardService from "../../services/BoardService";
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import { EditNote } from "@mui/icons-material";
+import React from "react";
 
 
-const Board = ({ board, active, host }) => {
+export class Board extends React.Component {
+	constructor(props) {
+		super(props)
+		this.state = {
+			tileType: 'tree',
+			anchorEl: null,
+			cardData:
+			{
+				id: 'root',
+				children: null,
+				savedChildren: null
+			},
+			allData: null,
+			drawerOpen: false,
+			menuOpen: false,
+			board: this.props.board,
+			fetchActive: true,
+			active: props.active
+		}
+		this.drawerWidth = 400;
+	}
 
-	const svgRef = useRef();
-
-	const [tileType, setTileType] = useState("tree");
-	const [anchorEl, setAnchorEl] = useState(null);
-
-	const [cardData, setCardData] = useState({
+	root = {
 		id: 'root',
-		children: null,
-		savedChildren: null
-	})
-
-	const [allData, setAllData] = useState(null)
-
-	var [accessCount, setAccessCount] = useState(0)
-	const [drawerOpen, setDrawerOpen] = useState(false)
-
-	async function getStuff(host, params) {
+		children: []
+	}
+	getTopLevel = async (host, params) => {
+		
 		try {
 			var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
 			var response = await fetch(req, { next: { revalidate: 30 } })
 			var result = await response.json()
 			var cards = result.cards
-			return childrenOf(host, cards)
+			this.root.children = cards
+			if (this.state.active) {
+				var activeCards = this.state.active.split(',')
+				cards = _.filter(cards, function (child) {
+					var result = (_.filter(activeCards, function (value) {
+						var eqv = value === child.id;
+						return eqv
+					}))
+					return (result.length > 0)
+				})
+			}
+			this.childrenOf(host, cards)
 		} catch (error) {
 			console.log("Caught error: ", error)
 		}
 		return null;
 	}
 
-	async function childrenOf(host, cards) {
-		forEach(cards, async (card) => {
-			var res2 = await getChildren(host, card);
-			var children = await res2.json()
-			setAccessCount(accessCount += 1)
-			card.children = children.cards
-			forEach(card.children, async (card) => {
-				var res2 = await getChildren(host, card);
-				var children = await res2.json()
-				setAccessCount(accessCount += 1)
+	childrenOf = (host, cards) => {
+		console.log("asking for children of: ", _.map(cards, (card) => card.id))
+		if (cards.length == 0) this.setState({cardData: this.root})
+		forEach(cards, (card) => {
+			this.getChildren(host, card).then(async (result) => {
+				var children = await result.json()
+				console.log(`got:  ${_.map(children.cards, (card) => card.id)} for: ${card.id}`)
 				card.children = children.cards
+				this.childrenOf(host, card.children)
 			})
 		})
-		return cards;
 	}
-	async function getChildren(host, card) {
+
+	getChildren = (host, card) => {
 		var params = {
 			mode: "GET",
 			url: "/card/" + card.id + "/connection/children?cardStatus=notStarted,started,finished",
 		}
 		var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
-		return await fetch(req, { next: { revalidate: 30 } })
+		var res = fetch(req, { next: { revalidate: 30 } })
+		return res
 	}
 
-	useEffect(() => {
+	update = () => {
+		var svgEl = document.getElementById("svg_" + this.state.board.id)
+		var svg = d3.select(svgEl);
+		svgEl.replaceChildren()
+		switch (this.state.tileType) {
+			case 'tree': {
+				var data = d3.hierarchy(this.state.cardData)
 
-		if (cardData.children == null) {
-			var params = {
-				parent: board.id,
-				mode: "GET",
-				url: "/board/cards/" + board.id
-			}
-			var result = getStuff(host, params).then((cards) => {
-				var root = {
-					id: 'root',
-					children: cards
-				}
-				//Keep a backup for the selector list
-				var clonedData = JSON.parse(JSON.stringify(root))
-				setAllData(clonedData)
-				setCardData(root)
-			})
+				var levelWidth = [1];
+				var childCount = function (level, n) {
+					if (n.children && n.children.length > 0) {
+						if (levelWidth.length <= level + 1) levelWidth.push(0);
+						levelWidth[level + 1] += n.children.length;
+						n.children.forEach(function (d) {
+							childCount(level + 1, d);
+						});
+					}
+				};
 
+				var colWidth = 400;
+				var rowHeight = 50;
 
-		} else {
-			const svg = d3.select(svgRef.current);
-			if (svgRef && svgRef.current) svgRef.current.replaceChildren()
+				childCount(0, data);
+				var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-
-			switch (tileType) {
-				case 'tree': {
-					var data = d3.hierarchy(cardData)
-
-					var levelWidth = [1];
-					var childCount = function (level, n) {
-						if (n.children && n.children.length > 0) {
-							if (levelWidth.length <= level + 1) levelWidth.push(0);
-							levelWidth[level + 1] += n.children.length;
-							n.children.forEach(function (d) {
-								childCount(level + 1, d);
-							});
-						}
-					};
-
-					var colWidth = 400;
-					var rowHeight = 50;
-
-					childCount(0, data);
-					var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-					var rootEl = document.getElementById("surface_" + board.id)
-
-					var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-					colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? (viewBoxSize[0] / (data.height)) : colWidth
+				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+				colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? (viewBoxSize[0] / (data.height)) : colWidth
 
 
-					svg.attr('width', viewBoxSize[0])
-					svg.attr("height", viewBoxSize[1])
-					svg.attr('viewBox', colWidth + ' 0 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
-					svg.attr('preserveAspectRatio', 'none');
-					svg.attr('class', 'rootSurface')
-					var tree = d3.tree()
-						.size([viewBoxSize[1], viewBoxSize[0]])
-						.separation(function (a, b) {
-							return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
-						}
-						);
+				svg.attr('width', viewBoxSize[0])
+				svg.attr("height", viewBoxSize[1])
+				svg.attr('viewBox', colWidth + ' 0 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
+				svg.attr('preserveAspectRatio', 'none');
+				svg.attr('class', 'rootSurface')
+				var tree = d3.tree()
+					.size([viewBoxSize[1], viewBoxSize[0]])
+					.separation(function (a, b) {
+						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
+					}
+					);
 
-					var mtr = tree(data);
+				var mtr = tree(data);
 
-					var nodes = svg.selectAll(".node")
-						.data(mtr.descendants().slice(1))
-						.enter()
+				var nodes = svg.selectAll(".node")
+					.data(mtr.descendants().slice(1))
+					.enter()
 
-					nodes.each(function (d) {
-						d.colWidth = colWidth;
-						d.colMargin = 50;
-						d.rowHeight = rowHeight;
+				nodes.each(function (d) {
+					d.colWidth = colWidth;
+					d.colMargin = 50;
+					d.rowHeight = rowHeight;
+				})
+
+				nodes.append("clipPath")
+					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
+					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
+					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
+					.attr("x", function (d) { return d.y })
+					.attr("width", function (d) { return d.colWidth - d.colMargin })
+					.attr("height", 30)
+
+				var nodeGroups = nodes.append('g')
+
+				nodeGroups.append("text")
+					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
+					.text(function (d) { return d.data.title; })
+					.attr('class', "idText")
+					.attr("height", rowHeight - 10)
+					.attr("id", function (d) {
+						return "text_" + d.data.id
 					})
+					.style("text-anchor", "start")
+					.attr("x", function (d) { return d.y })
+					.attr("y", function (d) { return d.x })
+					.on('click', this.nodeClicked)
+					.style('cursor', 'pointer')
+					.on('mouseover', this.showCard)
+					.on('mouseover', this.hideCard)
 
-					nodes.append("clipPath")
-						.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
-						.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
-						.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
-						.attr("x", function (d) { return d.y })
-						.attr("width", function (d) { return d.colWidth - d.colMargin })
-						.attr("height", 30)
+				nodeGroups.append('g').html("<div>hello</div>")
 
-					nodes.append("text")
-						.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
-						.text(function (d) { return d.data.title; })
-						.attr('class', "idText")
-						.attr("height", rowHeight - 10)
-						.attr("id", function (d) {
-							return "text_" + d.data.id
-						})
-						.style("text-anchor", "start")
-						.attr("x", function (d) { return d.y })
-						.attr("y", function (d) { return d.x });
-
-					paths(svg, nodes)
-
-				}
+				this.paths(svg, nodes)
 			}
 		}
-	})
+	}
 
-	function paths(svg, nodes) {
+	componentDidUpdate() {
+		this.update()
+	}
+
+	render() {
+		if (!this.state.fetchActive) return (
+			<Stack>
+				<Grid container direction={'row'}>
+					<EditNote fontSize='large' onClick={this.openDrawer} />
+					<Chip label={this.state.board.title} onClick={this.enableMenu} />
+				</Grid>
+
+				<Menu
+					open={Boolean(this.state.anchorEl)}
+					anchorEl={this.state.anchorEl}
+					onClose={this.closeMenu}
+					anchorOrigin={{
+						vertical: 'top',
+						horizontal: 'right',
+					}}
+				>
+					<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
+					<MenuItem value='analysis' onClick={this.closeMenu}>Analysis</MenuItem>
+				</Menu>
+
+				<div id={"surface_" + this.state.board.id} >
+					<svg id={"svg_" + this.state.board.id} />
+				</div>
+
+				<Drawer
+					variant='persistent'
+					open={Boolean(this.state.drawerOpen)}
+					anchor='left'
+					sx={{
+						width: this.state.drawerWidth,
+						flexShrink: 0,
+						[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
+					}}
+				>
+
+					<ChevronLeftIcon onClick={this.closeDrawer} fontSize='large' />
+
+					{this.topLevelList()}
+				</Drawer>
+			</Stack>
+		)
+		else return <div>loading</div>;
+	}
+
+	componentDidMount = () => {
+		if (this.state.fetchActive) {
+			this.setState({ fetchActive: false })
+			var params = {
+				parent: this.state.board.id,
+				mode: "GET",
+				url: "/board/cards/" + this.state.board.id
+			}
+			this.getTopLevel(this.props.host, params).then(() => {
+				var clonedData = JSON.parse(JSON.stringify(this.root))
+				this.setState({ allData: clonedData })
+				this.setState({ cardData: this.root })
+
+				console.log("exit getTopLevel")
+			})
+		}
+	}
+
+	showCard = () => {
+
+	}
+	hideCard = () => {
+
+	}
+
+	nodeClicked = (ev, d) => {
+		document.open("/card/" + d.data.id, "", "noopener=true")
+	}
+
+	paths = (svg, nodes) => {
 		nodes.each(node => {
 			var links = svg.selectAll(".link")
 				.data(node)
@@ -210,17 +292,17 @@ const Board = ({ board, active, host }) => {
 		})
 	}
 
-	function enableMenu(e) {
-		setAnchorEl(e.currentTarget)
+	enableMenu = (e) => {
+		this.setState({ anchorEl: e.currentTarget })
 	}
 
-	async function closeMenu(e) {
+	closeMenu = async (e) => {
 		var command = e.target.getAttribute('value');
 
 		switch (command) {
 			case 'tree':
 			case 'analysis': {
-				setTileType(e.target.getAttribute('value'))
+				this.setState({tileType:e.target.getAttribute('value')})
 				break;
 			}
 
@@ -233,142 +315,81 @@ const Board = ({ board, active, host }) => {
 						hotfixes: ["px_scaling"]
 					}
 				);
-				var svg = document.getElementById("svg_" + board.id);
+				var svg = document.getElementById("svg_" + this.state.board.id);
 				var svgAsXml = new XMLSerializer().serializeToString(svg)
 				await doc.addSvgAsImage(svgAsXml, 0, 0, svg.getBoundingClientRect().width, svg.getBoundingClientRect().height)
-				doc.save(board.id + ".pdf")
+				doc.save(this.state.board.id + ".pdf")
 			}
 		}
 
-		setAnchorEl(null)
+		this.setState({anchorEl:null})
 	}
 
-	const openDrawer = () => {
-		setDrawerOpen(true)
+	openDrawer = () => {
+		this.setState({ drawerOpen: true })
 	}
 
-	const closeDrawer = () => {
-		setDrawerOpen(false)
+	closeDrawer = () => {
+		this.setState({ drawerOpen: false })
 	}
 
-	const [itemNames, setItemNames] = useState([])
-
-	const handleChangeMultiple = (evt) => {
-		const { options } = evt.target;
-		const valueList = [];
-		var root = cardData;
-		for (let i = 0, l = options.length; i < l; i += 1) {
-			if (options[i].selected) {
-				valueList.push({ value: options[i].value });
-			}
-		}
+	handleChangeMultiple = (evt, valueList) => {
+		var root = { ...allData };
 		var allChildren = root.children
 		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = allChildren.concat(root.savedChildren)
-		if (valueList && valueList.length) {
-
+		if (valueList.length > 0) {
 			root.children = _.filter(allChildren, function (child) {
 				var result = (_.filter(valueList, function (value) {
-					var eqv = value.value === child.id;
+					var eqv = value.id === child.id;
 					return eqv
 				}))
 				return (result.length > 0)
 			})
-			root.savedChildren = _.filter(allChildren, function (child) {
-				var result = (_.filter(valueList, function (value) {
-					var eqv = value.value !== child.id;
-					return eqv
-				}))
+			root.savedChildren = _.reject(allChildren, function (child) {
+				var result = (
+					_.filter(valueList, function (value) {
+						var eqv = value.id === child.id;
+						return eqv
+					})
+				)
 				return (result.length > 0)
 			})
 		} else {
 			root.children = allChildren
 			root.savedChildren = null;
 		}
-		setCardData(root)
-		setItemNames(valueList);
+		this.setState({ cardData: root })
 	}
 
-	const topLevelList = () => {
+	topLevelList = () => {
 		//Top level list is the children of root
-		
+
 		var cardList = null;
-		if (allData) cardList = allData.children
+		if (this.state.allData) cardList = this.state.allData.children
 		return (cardList && cardList.length) ? (
-			<Select
+			<Autocomplete
+				freeSolo
 				multiple
-				native
-				value={itemNames.map((item) => item.value)}
-				// @ts-ignore Typings are not considering `native`
-				onChange={handleChangeMultiple}
-				label="Native"
-				inputProps={{
-					id: 'select-multiple-native',
-				}}
-			>
-				{cardList.map((card) => (
-					<option key={card.id} value={card.id}>
-						{card.title}
-					</option>
-				))}
-			</Select>
+				id="root-child-selector"
+				disableClearable
+				onChange={this.handleChangeMultiple}
+				options={cardList}
+				getOptionLabel={(option) => option.title}
+				renderInput={(params) => (
+					<TextField
+						{...params}
+						label="Click here to search cards"
+						InputProps={{
+							...params.InputProps,
+							type: 'search',
+						}}
+					/>
+				)}
+			/>
+
 		) : null
-
 	}
-
-	const open = Boolean(anchorEl);
-
-	const drawerWidth = 400;
-
-
-
-	if (board) return (
-		<Stack>
-			<Grid container direction={'row'}>
-
-				<IconButton onClick={openDrawer}>
-					<MenuIcon />
-				</IconButton>
-
-				<Chip label={board.title + " {" + accessCount + "}"} onClick={enableMenu} />
-			</Grid>
-
-			<Menu
-				open={open}
-				anchorEl={anchorEl}
-				onClose={closeMenu}
-				anchorOrigin={{
-					vertical: 'top',
-					horizontal: 'right',
-				}}
-			>
-				<MenuItem value='tree' onClick={closeMenu}>Tree</MenuItem>
-				<MenuItem value='analysis' onClick={closeMenu}>Analysis</MenuItem>
-			</Menu>
-
-			<div id={"surface_" + board.id} >
-				<svg id={"svg_" + board.id} ref={svgRef} />
-			</div>
-
-			<Drawer
-				variant='persistent'
-				open={drawerOpen}
-				anchor='left'
-				sx={{
-					width: drawerWidth,
-					flexShrink: 0,
-					[`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
-				}}
-			>
-
-				<ChevronLeftIcon onClick={closeDrawer} fontSize='large' />
-
-				{topLevelList()}
-			</Drawer>
-		</Stack>
-	)
-	else return null;
 }
-
 
 
 export async function getServerSideProps({ req, params, query }) {
@@ -378,9 +399,9 @@ export async function getServerSideProps({ req, params, query }) {
 	var bs = new BoardService(req.headers.host);
 	var board = await bs.get(params.id).then((result) => result.json())
 	if (board) {
-		var active = false;
-		if (query.active == true) {
-			active = true;
+		var active = null;
+		if (query.active) {
+			active = query.active;
 		}
 		return { props: { board: board, active: active, host: req.headers.host } }
 	}

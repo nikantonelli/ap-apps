@@ -41,3 +41,10 @@ text {
 	margin: 2px;
 	padding: 3px;
   }
+
+  .card-render {
+	fill: white;
+	width:24px;
+	height: 24px;
+	flex-shrink:0;
+  }

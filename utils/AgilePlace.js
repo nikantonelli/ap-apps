@@ -6,7 +6,7 @@ class AgilePlace {
 		this.username = username;
 		this.password = password;
 		this.key = key;
-
+		this.count = 0;
 	}
 
 	async xfr(params) {
@@ -28,6 +28,7 @@ class AgilePlace {
 			headers["Authorization"] = "Basic " + Base64.encode(token);
 		}
 		
+		console.log("ap: ",this.count += 1, params.baseUrl + params.url,)
 		var req = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
 		const res = await fetch(req, {next: {revalidate: 30}}).then(
 			async (response) => {
