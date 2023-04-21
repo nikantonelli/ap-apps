@@ -62,12 +62,10 @@ export class Board extends React.Component {
 	}
 
 	childrenOf = (host, cards) => {
-		console.log("asking for children of: ", _.map(cards, (card) => card.id))
 		if (cards.length == 0) this.setState({cardData: this.root})
 		forEach(cards, (card) => {
 			this.getChildren(host, card).then(async (result) => {
 				var children = await result.json()
-				console.log(`got:  ${_.map(children.cards, (card) => card.id)} for: ${card.id}`)
 				card.children = children.cards
 				this.childrenOf(host, card.children)
 			})
@@ -232,8 +230,6 @@ export class Board extends React.Component {
 				var clonedData = JSON.parse(JSON.stringify(this.root))
 				this.setState({ allData: clonedData })
 				this.setState({ cardData: this.root })
-
-				console.log("exit getTopLevel")
 			})
 		}
 	}
