@@ -27,15 +27,16 @@ export class Board extends React.Component {
 			menuOpen: false,
 			board: this.props.board,
 			fetchActive: true,
-			active: props.active
+			active: props.active,
+			drawerWidth: 400
 		}
-		this.drawerWidth = 400;
 	}
 
 	root = {
 		id: 'root',
 		children: []
 	}
+	
 	getTopLevel = async (host, params) => {
 		
 		try {
@@ -109,7 +110,7 @@ export class Board extends React.Component {
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? (viewBoxSize[0] / (data.height)) : colWidth
+				colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? colWidth : (viewBoxSize[0] / (data.height)) 
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -132,7 +133,7 @@ export class Board extends React.Component {
 
 				nodes.each(function (d) {
 					d.colWidth = colWidth;
-					d.colMargin = 50;
+					d.colMargin = colWidth/8;
 					d.rowHeight = rowHeight;
 				})
 
@@ -162,11 +163,61 @@ export class Board extends React.Component {
 					.on('mouseover', this.showCard)
 					.on('mouseover', this.hideCard)
 
-				nodeGroups.append('g').html("<div>hello</div>")
+				nodeGroups.append('g')
+					.attr("x", (d) => d.x)
+					.attr("y", (d) => d.y)
+					.html("<div style={width:80;height:80}>hello</text>")
 
 				this.paths(svg, nodes)
 			}
 		}
+	}
+	
+	paths = (svg, nodes) => {
+		nodes.each(node => {
+			var links = svg.selectAll(".link")
+				.data(node)
+				.enter()
+			links.append("line")
+				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
+				.attr("class", function(d) {return ((d.parent.data.id == 'root') && !d.children)? "invisible--link": "local--link"})
+				.attr("x1", function (d) {
+					return d.y
+				})
+				.attr("y1", function (d) {
+					return d.x + 2
+				})
+				.attr("x2", function (d) {
+					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id )
+					var tEl = document.getElementById("text_" + d.data.id )
+
+					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+					return d.y + (d.children? (d.colWidth - d.colMargin) : width)
+				})
+				.attr("y2", function (d) {
+					return d.x + 2
+				})
+			if (node.parent.data.id == "root") return;
+
+			links.append("path")
+				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
+				.attr("class", function (d) { return "local--link"; })
+				.attr("d", function (d) {
+					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+					var width = tEl.getClientRects()[0].width
+					var startPointH = d.parent.y + width;
+					var startPointV = d.parent.x + 2;
+					var endPointH = d.y;
+					var endPointV = d.x + 2;
+
+					var string = "M" + startPointH + "," + startPointV +
+						"C" + (d.parent.y + d.colWidth - (d.colMargin/2)) + "," + (startPointV) + " " +
+						(endPointH - (d.colMargin/2)) + "," + endPointV + " " +
+						endPointH + "," + endPointV;
+					return string
+				});
+
+		})
 	}
 
 	componentDidUpdate() {
@@ -245,48 +296,6 @@ export class Board extends React.Component {
 		document.open("/card/" + d.data.id, "", "noopener=true")
 	}
 
-	paths = (svg, nodes) => {
-		nodes.each(node => {
-			var links = svg.selectAll(".link")
-				.data(node)
-				.enter()
-			links.append("line")
-				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("class", function (d) { return d.children ? "local--link" : "invisible--link" })
-				.attr("x1", function (d) {
-					return d.y
-				})
-				.attr("y1", function (d) {
-					return d.x + 2
-				})
-				.attr("x2", function (d) {
-					return d.y + (d.colWidth - d.colMargin)
-				})
-				.attr("y2", function (d) {
-					return d.x + 2
-				})
-			if (node.parent.data.id == "root") return;
-
-			links.append("path")
-				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
-				.attr("class", function (d) { return "local--link"; })
-				.attr("d", function (d) {
-					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-					var width = tEl.getClientRects()[0].width
-					var startPointH = d.parent.y + width;
-					var startPointV = d.parent.x + 2;
-					var endPointH = d.y;
-					var endPointV = d.x + 2;
-
-					var string = "M" + startPointH + "," + startPointV +
-						"C" + (d.parent.y + d.colWidth + (d.colMargin)) + "," + (startPointV) + " " +
-						(endPointH - (d.colMargin)) + "," + endPointV + " " +
-						endPointH + "," + endPointV;
-					return string
-				});
-
-		})
-	}
 
 	enableMenu = (e) => {
 		this.setState({ anchorEl: e.currentTarget })
@@ -330,7 +339,7 @@ export class Board extends React.Component {
 	}
 
 	handleChangeMultiple = (evt, valueList) => {
-		var root = { ...allData };
+		var root = { ...this.state.cardData };
 		var allChildren = root.children
 		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = allChildren.concat(root.savedChildren)
 		if (valueList.length > 0) {
@@ -371,6 +380,13 @@ export class Board extends React.Component {
 				onChange={this.handleChangeMultiple}
 				options={cardList}
 				getOptionLabel={(option) => option.title}
+				renderOption={(props, option) => {
+					return (
+					  <li {...props} key={option.id}>
+						{option.title}
+					  </li>
+					);
+				  }}
 				renderInput={(params) => (
 					<TextField
 						{...params}
