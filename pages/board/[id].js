@@ -1,12 +1,11 @@
 import { DataProvider } from "@/utils/DataProvider";
-import { Autocomplete, Chip, Drawer, Grid, IconButton, Menu, MenuItem, Stack, TextField } from "@mui/material";
+import { Autocomplete, Chip, Drawer, Grid, IconButton, Menu, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import * as d3 from 'd3';
-import jsPDF from "jspdf";
 import { forEach } from "lodash";
 import BoardService from "../../services/BoardService";
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { EditNote } from "@mui/icons-material";
+import { EditNote, Label } from "@mui/icons-material";
 import React from "react";
 
 
@@ -30,7 +29,8 @@ export class Board extends React.Component {
 			active: props.active,
 			drawerWidth: 400,
 			depth: this.props.depth || 0,
-			pending: 0
+			pending: 0,
+			total: 0
 		}
 	}
 
@@ -67,7 +67,7 @@ export class Board extends React.Component {
 	childrenOf = (host, cards, depth) => {
 		if (cards.length == 0) this.setState({ cardData: this.root })
 		forEach(cards, (card) => {
-			this.setState((prev) => { return { pending: prev.pending + 1 } })
+			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
 			this.getChildren(host, card).then(async (result) => {
 				this.setState((prev) => { return { pending: prev.pending - 1 } })
 				var children = await result.json()
@@ -234,8 +234,17 @@ export class Board extends React.Component {
 		if (!this.state.fetchActive) return (
 			<Stack>
 				<Grid container direction={'row'}>
-					<EditNote fontSize='large' onClick={this.openDrawer} />
-					<Chip label={this.state.board.title} onClick={this.enableMenu} className={this.state.pending > 0 ? "pulse" : ""} />
+					<Grid item>
+						<EditNote fontSize='large' onClick={this.openDrawer} />
+					</Grid>
+					<Grid item>
+						<Chip label={this.state.board.title} onClick={this.enableMenu} />
+					</Grid>
+					<Grid item className="last-column">
+						{this.state.pending ?
+							<Chip label={"Queued: " + this.state.pending}/>
+							: <Chip label={"Total loaded: " + this.state.total}></Chip>}
+					</Grid>
 				</Grid>
 
 				<Menu
@@ -315,7 +324,7 @@ export class Board extends React.Component {
 				return { cardData: prev.cardData }
 			})
 		} else {
-			document.open("/card/" + d.data.id, "", "noopener=true")
+			document.open("/item/" + d.data.id, "", "noopener=true")
 		}
 	}
 
@@ -338,18 +347,19 @@ export class Board extends React.Component {
 			}
 
 			case 'savePDF': {
-				var doc = new jsPDF(
-					{
-						orientation: "l",
-						unit: 'px',
-						format: "a4",
-						hotfixes: ["px_scaling"]
-					}
-				);
-				var svg = document.getElementById("svg_" + this.state.board.id);
-				var svgAsXml = new XMLSerializer().serializeToString(svg)
-				await doc.addSvgAsImage(svgAsXml, 0, 0, svg.getBoundingClientRect().width, svg.getBoundingClientRect().height)
-				doc.save(this.state.board.id + ".pdf")
+				// 	var doc = new jsPDF(
+				// 		{
+				// 			orientation: "l",
+				// 			unit: 'px',
+				// 			format: "a4",
+				// 			hotfixes: ["px_scaling"]
+				// 		}
+				// 	);
+				// 	var svg = document.getElementById("svg_" + this.state.board.id);
+				// 	var svgAsXml = new XMLSerializer().serializeToString(svg)
+				// 	await doc.addSvgAsImage(svgAsXml, 0, 0, svg.getBoundingClientRect().width, svg.getBoundingClientRect().height)
+				// 	doc.save(this.state.board.id + ".pdf")
+				break;
 			}
 		}
 
