@@ -38,9 +38,9 @@ export class Board extends React.Component {
 		id: 'root',
 		children: []
 	}
-	
+
 	getTopLevel = async (host, params) => {
-		
+
 		try {
 			var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
 			var response = await fetch(req, { next: { revalidate: 30 } })
@@ -57,7 +57,7 @@ export class Board extends React.Component {
 					return (result.length > 0)
 				})
 			}
-			if (this.state.depth>0)	this.childrenOf(host, cards, 1)
+			if (this.state.depth > 0) this.childrenOf(host, cards, 1)
 		} catch (error) {
 			console.log("Caught error: ", error)
 		}
@@ -65,16 +65,16 @@ export class Board extends React.Component {
 	}
 
 	childrenOf = (host, cards, depth) => {
-		if (cards.length == 0) this.setState({cardData: this.root})
+		if (cards.length == 0) this.setState({ cardData: this.root })
 		forEach(cards, (card) => {
-			this.setState((prev) => { return {pending: prev.pending + 1}})
+			this.setState((prev) => { return { pending: prev.pending + 1 } })
 			this.getChildren(host, card).then(async (result) => {
-				this.setState((prev) => { return {pending: prev.pending - 1}})
+				this.setState((prev) => { return { pending: prev.pending - 1 } })
 				var children = await result.json()
 				card.children = children.cards
 				var ld = depth;
-				if (ld < this.state.depth)	this.childrenOf(host, card.children, ld+1)
-				else this.setState({cardData: this.root})
+				if (ld < this.state.depth) this.childrenOf(host, card.children, ld + 1)
+				else this.setState({ cardData: this.root })
 			}, this)
 		})
 	}
@@ -116,7 +116,7 @@ export class Board extends React.Component {
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				colWidth = (colWidth < (viewBoxSize[0] / (data.height))) ? colWidth : (viewBoxSize[0] / (data.height)) 
+				colWidth = (colWidth < (viewBoxSize[0] / (data.height))) ? colWidth : (viewBoxSize[0] / (data.height))
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -139,7 +139,7 @@ export class Board extends React.Component {
 
 				nodes.each(function (d) {
 					d.colWidth = colWidth;
-					d.colMargin = colWidth/8;
+					d.colMargin = colWidth / 8;
 					d.rowHeight = rowHeight;
 				})
 
@@ -155,7 +155,7 @@ export class Board extends React.Component {
 
 				nodeGroups.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
-					.text(function (d) { return d.data.title; })
+					.text(function (d) { return d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""); })
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
 					.attr("id", function (d) {
@@ -178,7 +178,7 @@ export class Board extends React.Component {
 			}
 		}
 	}
-	
+
 	paths = (svg, nodes) => {
 		nodes.each(node => {
 			var links = svg.selectAll(".link")
@@ -186,7 +186,7 @@ export class Board extends React.Component {
 				.enter()
 			links.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("class", function(d) {return ((d.parent.data.id == 'root') && !d.children)? "invisible--link": "local--link"})
+				.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 				.attr("x1", function (d) {
 					return d.y
 				})
@@ -194,11 +194,11 @@ export class Board extends React.Component {
 					return d.x + 2
 				})
 				.attr("x2", function (d) {
-					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id )
-					var tEl = document.getElementById("text_" + d.data.id )
+					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+					var tEl = document.getElementById("text_" + d.data.id)
 
 					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-					return d.y + (d.children? (d.colWidth - d.colMargin) : width)
+					return d.y + (d.children ? (d.colWidth - d.colMargin) : width)
 				})
 				.attr("y2", function (d) {
 					return d.x + 2
@@ -217,8 +217,8 @@ export class Board extends React.Component {
 					var endPointV = d.x + 2;
 
 					var string = "M" + startPointH + "," + startPointV +
-						"C" + (d.parent.y + d.colWidth - (d.colMargin/2)) + "," + (startPointV) + " " +
-						(endPointH - (d.colMargin/2)) + "," + endPointV + " " +
+						"C" + (d.parent.y + d.colWidth - (d.colMargin / 2)) + "," + (startPointV) + " " +
+						(endPointH - (d.colMargin / 2)) + "," + endPointV + " " +
 						endPointH + "," + endPointV;
 					return string
 				});
@@ -235,7 +235,7 @@ export class Board extends React.Component {
 			<Stack>
 				<Grid container direction={'row'}>
 					<EditNote fontSize='large' onClick={this.openDrawer} />
-					<Chip label={this.state.board.title} onClick={this.enableMenu} className={this.state.pending>0? "pulse":""}/>
+					<Chip label={this.state.board.title} onClick={this.enableMenu} className={this.state.pending > 0 ? "pulse" : ""} />
 				</Grid>
 
 				<Menu
@@ -249,6 +249,7 @@ export class Board extends React.Component {
 				>
 					<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
 					<MenuItem value='analysis' onClick={this.closeMenu}>Analysis</MenuItem>
+					<MenuItem value='expand' onClick={this.closeMenu}>Expand All</MenuItem>
 				</Menu>
 
 				<div id={"surface_" + this.state.board.id} >
@@ -299,7 +300,23 @@ export class Board extends React.Component {
 	}
 
 	nodeClicked = (ev, d) => {
-		document.open("/card/" + d.data.id, "", "noopener=true")
+		ev.preventDefault()
+		ev.stopPropagation();
+		if (ev.ctrlKey) {
+			if (d.data.children && d.data.children.length) {
+				d.data.savedChildren = _.union(d.data.children, d.data.savedChildren)
+				d.data.children = [];
+			}
+			else if (d.data.savedChildren && d.data.savedChildren.length) {
+				d.data.children = d.data.savedChildren;
+				d.data.savedChildren = [];
+			}
+			this.setState((prev) => {
+				return { cardData: prev.cardData }
+			})
+		} else {
+			document.open("/card/" + d.data.id, "", "noopener=true")
+		}
 	}
 
 
@@ -311,9 +328,12 @@ export class Board extends React.Component {
 		var command = e.target.getAttribute('value');
 
 		switch (command) {
+			case 'expand': {
+				break;
+			}
 			case 'tree':
 			case 'analysis': {
-				this.setState({tileType:e.target.getAttribute('value')})
+				this.setState({ tileType: e.target.getAttribute('value') })
 				break;
 			}
 
@@ -333,7 +353,7 @@ export class Board extends React.Component {
 			}
 		}
 
-		this.setState({anchorEl:null})
+		this.setState({ anchorEl: null })
 	}
 
 	openDrawer = () => {
@@ -347,13 +367,14 @@ export class Board extends React.Component {
 	handleChangeMultiple = (evt, valueList) => {
 		var root = { ...this.state.cardData };
 		var allChildren = root.children
-		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = allChildren.concat(root.savedChildren)
+		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = _.union(allChildren, root.savedChildren)
 		if (valueList.length > 0) {
 			root.children = _.filter(allChildren, function (child) {
-				var result = (_.filter(valueList, function (value) {
-					var eqv = value.id === child.id;
-					return eqv
-				}))
+				var result = (
+					_.filter(valueList, function (value) {
+						var eqv = value.id === child.id;
+						return eqv
+					}))
 				return (result.length > 0)
 			})
 			root.savedChildren = _.reject(allChildren, function (child) {
@@ -388,11 +409,11 @@ export class Board extends React.Component {
 				getOptionLabel={(option) => option.title}
 				renderOption={(props, option) => {
 					return (
-					  <li {...props} key={option.id}>
-						{option.title}
-					  </li>
+						<li {...props} key={option.id}>
+							{option.title}
+						</li>
 					);
-				  }}
+				}}
 				renderInput={(params) => (
 					<TextField
 						{...params}
@@ -410,9 +431,9 @@ export class Board extends React.Component {
 
 	saveLowerChildren = (cnt, depth, node) => {
 		if (cnt < depth) {
-			forEach(node.children, (child) => this.saveLowerChildren(cnt+1, depth, child))
+			forEach(node.children, (child) => this.saveLowerChildren(cnt + 1, depth, child))
 		} else {
-			node.hiddenChildren = node.savedChildren.concat(node.children)
+			node.hiddenChildren = _.union(node.savedChildren, node.children)
 			node.children = null;
 			node.savedChildren = null;
 		}
