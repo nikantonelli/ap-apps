@@ -1,4 +1,4 @@
-import { Button, Card, CardActionArea, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
+import { Button, Card, CardActionArea, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
 import BoardService from "../services/BoardService"
 
 import { useState } from 'react'
@@ -99,7 +99,7 @@ export default function Board({ host }) {
 								title={brd.title} 
 								style={{ textAlign: 'center' }}
 								/>
-							<CardActionArea>
+							<CardActions>
 								<Button
 									onClick={cardClicked}
 									id={brd.id}
@@ -108,7 +108,7 @@ export default function Board({ host }) {
 									Open
 								</Button>
 								
-							</CardActionArea>
+							</CardActions>
 						</Card>
 					</Grid>
 				})}

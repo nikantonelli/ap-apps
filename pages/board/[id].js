@@ -28,7 +28,9 @@ export class Board extends React.Component {
 			board: this.props.board,
 			fetchActive: true,
 			active: props.active,
-			drawerWidth: 400
+			drawerWidth: 400,
+			depth: this.props.depth || 0,
+			pending: 0
 		}
 	}
 
@@ -55,21 +57,25 @@ export class Board extends React.Component {
 					return (result.length > 0)
 				})
 			}
-			this.childrenOf(host, cards)
+			if (this.state.depth>0)	this.childrenOf(host, cards, 1)
 		} catch (error) {
 			console.log("Caught error: ", error)
 		}
 		return null;
 	}
 
-	childrenOf = (host, cards) => {
+	childrenOf = (host, cards, depth) => {
 		if (cards.length == 0) this.setState({cardData: this.root})
 		forEach(cards, (card) => {
+			this.setState((prev) => { return {pending: prev.pending + 1}})
 			this.getChildren(host, card).then(async (result) => {
+				this.setState((prev) => { return {pending: prev.pending - 1}})
 				var children = await result.json()
 				card.children = children.cards
-				this.childrenOf(host, card.children)
-			})
+				var ld = depth;
+				if (ld < this.state.depth)	this.childrenOf(host, card.children, ld+1)
+				else this.setState({cardData: this.root})
+			}, this)
 		})
 	}
 
@@ -110,7 +116,7 @@ export class Board extends React.Component {
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				colWidth = (colWidth > (viewBoxSize[0] / (data.height))) ? colWidth : (viewBoxSize[0] / (data.height)) 
+				colWidth = (colWidth < (viewBoxSize[0] / (data.height))) ? colWidth : (viewBoxSize[0] / (data.height)) 
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -229,7 +235,7 @@ export class Board extends React.Component {
 			<Stack>
 				<Grid container direction={'row'}>
 					<EditNote fontSize='large' onClick={this.openDrawer} />
-					<Chip label={this.state.board.title} onClick={this.enableMenu} />
+					<Chip label={this.state.board.title} onClick={this.enableMenu} className={this.state.pending>0? "pulse":""}/>
 				</Grid>
 
 				<Menu
@@ -401,6 +407,17 @@ export class Board extends React.Component {
 
 		) : null
 	}
+
+	saveLowerChildren = (cnt, depth, node) => {
+		if (cnt < depth) {
+			forEach(node.children, (child) => this.saveLowerChildren(cnt+1, depth, child))
+		} else {
+			node.hiddenChildren = node.savedChildren.concat(node.children)
+			node.children = null;
+			node.savedChildren = null;
+		}
+
+	}
 }
 
 
@@ -415,7 +432,12 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.active) {
 			active = query.active;
 		}
-		return { props: { board: board, active: active, host: req.headers.host } }
+		var depth = null;
+		if (query.depth) {
+			depth = query.depth;
+		}
+		else depth = 3	//Limit the exponential explosion of fetches as you go down the tree
+		return { props: { board: board, active: active, depth: depth, host: req.headers.host } }
 	}
 	return { props: { board: null, active: null, host: req.headers.host } }
 }
