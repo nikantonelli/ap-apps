@@ -1,0 +1,24 @@
+
+export const getCardChildren = async (host, card) => {
+	var params = {
+		host: host,
+		mode: "GET",
+		url: "/card/" + card.id + "/connection/children?cardStatus=notStarted,started,finished",
+	}
+	return await doRequest(params);
+}
+
+export const getListOfCards = async (host, cardList) => {
+	var params = {
+		host: host,
+		mode: 'GET',
+		url: "/card?cards=" + cardList.toString()
+	}
+	return await doRequest(params);
+}
+
+export const doRequest = async (params) => {
+	var req = new Request("http://" + params.host + "/api" + params.url, { method: params.mode });
+	var res = await fetch(req, { next: { revalidate: 30 } })
+	return res
+}

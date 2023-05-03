@@ -2,11 +2,12 @@ import { DataProvider } from "@/utils/DataProvider";
 import { Autocomplete, Chip, Drawer, Grid, IconButton, Menu, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import * as d3 from 'd3';
 import { forEach } from "lodash";
-import BoardService from "../../services/BoardService";
+import BoardService from "../../../services/BoardService";
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { EditNote, Label } from "@mui/icons-material";
 import React from "react";
+import { doRequest, getCardChildren } from "@/utils/Sdk";
 
 
 export class Board extends React.Component {
@@ -39,11 +40,10 @@ export class Board extends React.Component {
 		children: []
 	}
 
-	getTopLevel = async (host, params) => {
+	getTopLevel = async (params) => {
 
 		try {
-			var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
-			var response = await fetch(req, { next: { revalidate: 30 } })
+			var response = await doRequest(params)
 			var result = await response.json()
 			var cards = result.cards
 			this.root.children = cards
@@ -57,7 +57,7 @@ export class Board extends React.Component {
 					return (result.length > 0)
 				})
 			}
-			if (this.state.depth > 0) this.childrenOf(host, cards, 1)
+			if (this.state.depth > 0) this.childrenOf(params.host, cards, 1)
 		} catch (error) {
 			console.log("Caught error: ", error)
 		}
@@ -68,7 +68,7 @@ export class Board extends React.Component {
 		if (cards.length == 0) this.setState({ cardData: this.root })
 		forEach(cards, (card) => {
 			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
-			this.getChildren(host, card).then(async (result) => {
+			getCardChildren(host, card).then(async (result) => {
 				this.setState((prev) => { return { pending: prev.pending - 1 } })
 				var children = await result.json()
 				card.children = children.cards
@@ -79,15 +79,6 @@ export class Board extends React.Component {
 		})
 	}
 
-	getChildren = (host, card) => {
-		var params = {
-			mode: "GET",
-			url: "/card/" + card.id + "/connection/children?cardStatus=notStarted,started,finished",
-		}
-		var req = new Request("http://" + host + "/api" + params.url, { method: params.mode });
-		var res = fetch(req, { next: { revalidate: 30 } })
-		return res
-	}
 
 	update = () => {
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
@@ -116,7 +107,7 @@ export class Board extends React.Component {
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				colWidth = (colWidth < (viewBoxSize[0] / (data.height))) ? colWidth : (viewBoxSize[0] / (data.height))
+				colWidth = (viewBoxSize[0] / (data.height))
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -138,8 +129,8 @@ export class Board extends React.Component {
 					.enter()
 
 				nodes.each(function (d) {
-					d.colWidth = colWidth;
-					d.colMargin = colWidth / 8;
+					d.colMargin = 50;
+					d.colWidth = colWidth - (d.colMargin * 2);
 					d.rowHeight = rowHeight;
 				})
 
@@ -212,13 +203,14 @@ export class Board extends React.Component {
 					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
 					var width = tEl.getClientRects()[0].width
 					var startPointH = d.parent.y + width;
+					var startApex = ((d.y - d.colMargin) - (d.parent.y + width)) / 2
 					var startPointV = d.parent.x + 2;
 					var endPointH = d.y;
 					var endPointV = d.x + 2;
 
 					var string = "M" + startPointH + "," + startPointV +
-						"C" + (d.parent.y + d.colWidth - (d.colMargin / 2)) + "," + (startPointV) + " " +
-						(endPointH - (d.colMargin / 2)) + "," + endPointV + " " +
+						"C" + (startPointH + (startApex + d.colMargin)) + "," + (startPointV) + " " +
+						(endPointH - (startApex + d.colMargin)) + "," + endPointV + " " +
 						endPointH + "," + endPointV;
 					return string
 				});
@@ -242,7 +234,7 @@ export class Board extends React.Component {
 					</Grid>
 					<Grid item className="last-column">
 						{this.state.pending ?
-							<Chip label={"Queued: " + this.state.pending}/>
+							<Chip label={"Queued: " + this.state.pending} />
 							: <Chip label={"Total loaded: " + this.state.total}></Chip>}
 					</Grid>
 				</Grid>
@@ -288,12 +280,13 @@ export class Board extends React.Component {
 	componentDidMount = () => {
 		if (this.state.fetchActive) {
 			this.setState({ fetchActive: false })
-			var params = {
-				parent: this.state.board.id,
-				mode: "GET",
-				url: "/board/cards/" + this.state.board.id
-			}
-			this.getTopLevel(this.props.host, params).then(() => {
+			this.getTopLevel(
+				{
+					host: this.props.host,
+					mode: "GET",
+					url: "/board/cards/" + this.state.board.id
+				}
+			).then(() => {
 				var clonedData = JSON.parse(JSON.stringify(this.root))
 				this.setState({ allData: clonedData })
 				this.setState({ cardData: this.root })
@@ -324,7 +317,7 @@ export class Board extends React.Component {
 				return { cardData: prev.cardData }
 			})
 		} else {
-			document.open("/item/" + d.data.id, "", "noopener=true")
+			document.open("/nui/card/" + d.data.id, "", "noopener=true")
 		}
 	}
 

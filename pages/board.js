@@ -15,11 +15,11 @@ export default function Board({ host }) {
 	var bs = null;
 
 	function cardClicked(evt) {
-		document.open("/board/" + evt.currentTarget.id, "", "noopener=true")
+		document.open("/nui/board/" + evt.currentTarget.id, "", "noopener=true")
 	}
 	
 	function cardClicked2(evt) {
-		document.open("/board/" + evt.currentTarget.id, "_blank")
+		document.open("/nui/board/" + evt.currentTarget.id, "_blank")
 	}
 
 	function filterChange(e) {

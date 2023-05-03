@@ -1,4 +1,4 @@
-import { sleep } from "./helpers";
+import { sleep } from "./Helpers";
 
 class AgilePlace {
 	constructor(url, username, password, key) {

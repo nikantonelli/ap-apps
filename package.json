@@ -11,14 +11,21 @@
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
+    "@lexical/headless": "^0.10.0",
+    "@lexical/html": "^0.10.0",
+    "@lexical/react": "^0.10.0",
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.11.14",
     "d3": "^7.8.2",
+    "domparser": "^0.1.1",
     "eslint": "8.36.0",
     "eslint-config-next": "13.2.4",
+    "jsdom": "^22.0.0",
+    "lexical": "^0.10.0",
     "lodash": "^4.17.21",
     "next": "13.2.4",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "xmlparser": "^0.1.0"
   }
 }
