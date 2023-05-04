@@ -71,6 +71,7 @@ text {
     width: 100%;
 }
 
+.description-container
 .last-column {
 	float: right;
 }
@@ -175,6 +176,7 @@ body {
 	text-align: right;
   }
   
+  .description-editor-container,
   .editor-container {
 	width: 80%;
 	border-radius: 2px;
@@ -187,13 +189,14 @@ body {
 	border-top-left-radius: 10px;
 	border-top-right-radius: 10px;
   }
-  
+  .description-editor-inner,
   .editor-inner {
 	border: 1px solid rgba(0, 0, 0, 0.2);
 	border-radius: 5px;
 	position: relative;
   }
   
+  .description-editor-input,
   .editor-input {
 	min-height: 150px;
 	resize: none;
@@ -206,11 +209,13 @@ body {
 	caret-color: #444;
   }
 
+  .description-editor-toolbar,
   .editor-toolbar {
 	background-color: #777;
 	background: #777;
   }
 
+  .description-editor-placeholder,
   .editor-placeholder {
 	color: #999;
 	overflow: hidden;
@@ -224,26 +229,32 @@ body {
 	pointer-events: none;
   }
   
+  .description-editor-text-bold,
   .editor-text-bold {
 	font-weight: bold;
   }
   
+  .description-editor-text-italic,
   .editor-text-italic {
 	font-style: italic;
   }
   
+  .description-editor-text-underline,
   .editor-text-underline {
 	text-decoration: underline;
   }
   
+  .description-editor-text-strikethrough,
   .editor-text-strikethrough {
 	text-decoration: line-through;
   }
   
+  .description-editor-text-underlineStrikethrough,
   .editor-text-underlineStrikethrough {
 	text-decoration: underline line-through;
   }
   
+  .description-editor-text-code,
   .editor-text-code {
 	background-color: rgb(240, 242, 245);
 	padding: 1px 0.25rem;
@@ -251,6 +262,7 @@ body {
 	font-size: 94%;
   }
   
+  .description-editor-link,
   .editor-link {
 	color: rgb(33, 111, 219);
 	text-decoration: none;
@@ -272,6 +284,7 @@ body {
 	line-height: 14px;
   }
   
+  .description-editor-code,
   .editor-code {
 	background-color: rgb(240, 242, 245);
 	font-family: Menlo, Consolas, Monaco, monospace;
@@ -288,6 +301,7 @@ body {
 	position: relative;
   }
   
+  .description-editor-code::before,
   .editor-code:before {
 	content: attr(data-gutter);
 	position: absolute;
@@ -301,6 +315,7 @@ body {
 	text-align: right;
 	min-width: 25px;
   }
+  .description-editor-code::after,
   .editor-code:after {
 	content: attr(data-highlight-language);
 	top: 0;
@@ -312,48 +327,59 @@ body {
 	color: rgba(0, 0, 0, 0.5);
   }
   
+  .description-editor-tokenComment,
   .editor-tokenComment {
 	color: slategray;
   }
   
+  .description-editor-tokenPunctuation,
   .editor-tokenPunctuation {
 	color: #999;
   }
   
+  .description-editor-tokenProperty,
   .editor-tokenProperty {
 	color: #905;
   }
   
+  .description-editor-tokenSelector,
   .editor-tokenSelector {
 	color: #690;
   }
   
+  .description-editor-tokenOperator,
   .editor-tokenOperator {
 	color: #9a6e3a;
   }
   
+  .description-editor-tokenAttr,
   .editor-tokenAttr {
 	color: #07a;
   }
   
+  .description-editor-tokenVariable,
   .editor-tokenVariable {
 	color: #e90;
   }
   
+  .description-editor-tokenFunction,
   .editor-tokenFunction {
 	color: #dd4a68;
   }
   
+  .description-editor-paragraph,
   .editor-paragraph {
 	margin: 0;
 	margin-bottom: 8px;
 	position: relative;
   }
   
+  .description-editor-paragraph:last-child,
   .editor-paragraph:last-child {
 	margin-bottom: 0;
   }
   
+  .description-editor-heading-h1,
   .editor-heading-h1 {
 	font-size: 24px;
 	color: rgb(5, 5, 5);
@@ -363,6 +389,7 @@ body {
 	padding: 0;
   }
   
+  .description-editor-heading-h2,
   .editor-heading-h2 {
 	font-size: 15px;
 	color: rgb(101, 103, 107);
@@ -373,6 +400,7 @@ body {
 	text-transform: uppercase;
   }
   
+  .description-editor-quote,
   .editor-quote {
 	margin: 0;
 	margin-left: 20px;
@@ -384,22 +412,26 @@ body {
 	padding-left: 16px;
   }
   
+  .description-editor-list-ol,
   .editor-list-ol {
 	padding: 0;
 	margin: 0;
 	margin-left: 16px;
   }
   
+  .description-editor-list-ul,
   .editor-list-ul {
 	padding: 0;
 	margin: 0;
 	margin-left: 16px;
   }
   
+  .description-editor-listitem,
   .editor-listitem {
 	margin: 8px 32px 8px 32px;
   }
   
+  .description-editor-nested-listitem,
   .editor-nested-listitem {
 	list-style-type: none;
   }
@@ -920,3 +952,54 @@ body {
 .image-control-wrapper--resizing {
   touch-action: none;
 }
+
+.Placeholder__root {
+	font-size: 15px;
+	color: #999;
+	overflow: hidden;
+	position: absolute;
+	text-overflow: ellipsis;
+	top: 8px;
+	left: 28px;
+	right: 28px;
+	user-select: none;
+	white-space: nowrap;
+	display: inline-block;
+	pointer-events: none;
+  }
+
+  .ImageNode__contentEditable {
+	min-height: 20px;
+	border: 0px;
+	resize: none;
+	cursor: text;
+	caret-color: rgb(5, 5, 5);
+	display: block;
+	position: relative;
+	tab-size: 1;
+	outline: 0px;
+	padding: 10px;
+	user-select: text;
+	font-size: 12px;
+	width: calc(100% - 20px);
+	white-space: pre-wrap;
+	word-break: break-word;
+  }
+  
+  .ImageNode__placeholder {
+	font-size: 12px;
+	color: #888;
+	overflow: hidden;
+	position: absolute;
+	text-overflow: ellipsis;
+	top: 10px;
+	left: 10px;
+	user-select: none;
+	white-space: nowrap;
+	display: inline-block;
+	pointer-events: none;
+  }
+  
+  .image-control-wrapper--resizing {
+	touch-action: none;
+  }
