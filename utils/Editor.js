@@ -3,10 +3,11 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable"
 import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary"
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin"
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
-
+import {ClearEditorPlugin} from '@lexical/react/LexicalClearEditorPlugin';
 import { CodeHighlightNode, CodeNode } from "@lexical/code"
 import { AutoLinkNode, LinkNode } from "@lexical/link"
 import { ListItemNode, ListNode } from "@lexical/list"
+import { ParagraphNode } from "lexical"
 import { TRANSFORMERS } from "@lexical/markdown"
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin"
 import { ListPlugin } from "@lexical/react/LexicalListPlugin"
@@ -18,10 +19,14 @@ import ToolbarPlugin from "./Editor/Plugins/ToolbarPlugin"
 
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
-import { $getRoot, ParagraphNode } from "lexical"
+import { $getRoot } from "lexical"
+
 import CodeHighlightPlugin from "./Editor/Plugins/CodeHighlightPlugin"
 import AutoLinkPlugin from "./Editor/Plugins/EditorAutoLinkPlugin"
 import ListMaxIndentLevelPlugin from "./Editor/Plugins/ListMaxIndentLevelPlugin"
+
+import {useSharedHistoryContext} from './context/SharedHistoryContext';
+import ImagesPlugin from './Editor/Plugins/ImagesPlugin';
 
 function onError(e) {
 	console.log(e)
@@ -29,34 +34,43 @@ function onError(e) {
 
 const UpdateText = ({ onChange, initialValue }) => {
 
-	const [data, setData] = useState("");
 	const [state, setState] = useState(false)
 
 	const [editor] = useLexicalComposerContext();
 	useEffect(() => {
 		if (!state) {
-			setState(true);
 			editor.update(() => {
-				const parser = new DOMParser()
-				const dom = parser.parseFromString(initialValue, 'text/html')
-				const nodes = $generateNodesFromDOM(editor, dom)
-				const root = $getRoot()
-				nodes.forEach((node) => root.append(node))
+				if (Boolean(initialValue)) {
+					const parser = new DOMParser()
+					const dom = parser.parseFromString(initialValue, 'text/html')
+					const nodes = $generateNodesFromDOM(editor, dom)
+					const root = $getRoot()
+					root.clear();
+					nodes.forEach((node) => root.append(node))
+				}
 
 			})
-		} else {
-			editor.update(() => {
-				const parser = new DOMParser();
-				if (onChange && editor.isComposing()) {
-					onChange($generateHtmlFromNodes(editor),)
-				}
+			editor.blur();
+			editor.registerUpdateListener(({ editorState }) => {
+				editorState.read(() => {
+					if (onChange) {
+						onChange($generateHtmlFromNodes(editor, null))
+					}
+				})
 			})
+
+			setState(true);
 		}
+
+
 	})
 }
-export const Editor = ({ onChange, onBlur, className, value }) => {
+export const Editor = ({ onChange, className, value }) => {
 
-		const initialConfig = {
+	const {historyState} = useSharedHistoryContext();
+	const [initial, setInitial] = useState(true);
+
+	const initialConfig = {
 		namespace: className + '-Editor',
 		onError: onError,
 		nodes: [
@@ -74,6 +88,11 @@ export const Editor = ({ onChange, onBlur, className, value }) => {
 			LinkNode
 		]
 	};
+	var init = false;
+	if (initial) {
+		init = true;
+		setInitial(false)
+	}
 
 	return (
 		<LexicalComposer initialConfig={initialConfig}>
@@ -84,14 +103,16 @@ export const Editor = ({ onChange, onBlur, className, value }) => {
 						contentEditable={<ContentEditable className={className + "-input"} value={value} />}
 						ErrorBoundary={LexicalErrorBoundary}
 					/>
-					<HistoryPlugin />
+					<ClearEditorPlugin />
+					<HistoryPlugin externalHistoryState={historyState} />
 					<CodeHighlightPlugin />
 					<ListPlugin />
 					<LinkPlugin />
+					<ImagesPlugin />
 					<AutoLinkPlugin />
 					<ListMaxIndentLevelPlugin maxDepth={7} />
 					<MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-					<UpdateText onChange={onChange} initialValue={value} />
+					<UpdateText onChange={onChange} initialValue={init ? null : value} />
 				</div>
 			</div>
 		</LexicalComposer>

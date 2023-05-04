@@ -3,8 +3,16 @@ text {
 	fill:white;
 }
 
-.title-margin {
-	margin: 0px;
+.title-paper {
+	width: 80%;
+	margin-bottom: 5px;
+}
+
+.title-field {
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+	margin-left: 5px;
 }
 .local--link {
 	fill: none;
@@ -56,7 +64,6 @@ text {
 .card-description-field {
     width: 80%;
 	min-width: 600px;
-;
 }
 
 

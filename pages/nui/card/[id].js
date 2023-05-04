@@ -1,12 +1,10 @@
 import CardService from "@/services/CardService";
 import { DataProvider } from "@/utils/DataProvider";
-import { CancelPresentation, Delete, DeleteForever, ExpandMore, Label, Logout, SaveAltOutlined } from "@mui/icons-material";
-import { Accordion, AccordionDetails, AccordionSummary, Card, CardActionArea, CardActions, CardContent, CardHeader, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
-import { $getRoot, $getSelection } from 'lexical';
+import { CancelPresentation, Delete, DeleteForever, ExpandMore, Logout, SaveAltOutlined } from "@mui/icons-material";
+import { Accordion, AccordionDetails, AccordionSummary, Card, CardActionArea, CardActions, CardContent, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
 import { Editor } from "@/utils/Editor";
-import { createEditor } from 'lexical';
 import { getCardChildren, getListOfCards } from "@/utils/Sdk";
 
 export default class Item extends React.Component {
@@ -19,7 +17,6 @@ export default class Item extends React.Component {
 			connectionsSection: false,
 			peopleSection: false
 		}
-		this.editor = createEditor();
 	}
 
 	handleBlock = () => {
@@ -52,17 +49,14 @@ export default class Item extends React.Component {
 		this.isChanged = true;
 	}
 
-	descriptionChanged = (e, dirty) => {
-		this.isChanged = true;
-		this.savedData = this.state.data;
-		if (dirty) {
-			this.setState((prevState) => {
-				var data = prevState.data;
-				data.description = JSON.stringify(e)
-				return { data: data }
-			})
+	descriptionChanged = (editorValue) => {
+		if (!this.dscrEditorLoaded){
+			this.dscrEditorLoaded = true;
+		} else {
+			var data =  this.state.data
+			data.description = editorValue
+			this.setChanged(data)
 		}
-
 	}
 
 	titleChanged = (e) => {
@@ -99,29 +93,30 @@ export default class Item extends React.Component {
 
 	componentDidMount = () => {
 		var data = this.state.data;
+		var me = this;
 		getCardChildren(this.props.host, data).then((children) => {
-			this.setState({ children: children })
-			getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then((parents) => {
-				this.setState({ parents: parents })
-			})
-
+			me.setState({ children: children })
+			if (children && children.length) {
+				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then((parents) => {
+					me.setState({ parents: parents })
+				})
+			}
 		})
 	}
 
 	componentDidUpdate = () => {
-		const contentEditableElement = document.getElementById('description-editor')
-		this.editor.setRootElement(contentEditableElement);
+		
 	}
 
 	render() {
 		var sectionHeaderType = "h5"
-		var sectionHeaderType = "h6"
-		var me = this;
+		var fieldHeaderType = "h6"
+		
 		if (this.props.card != null) {
 			return (
 				<Card variant='outlined' iid={this.state.data.id}>
 
-					<CardActionArea>
+				
 						<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'center' }} >
 							<Tooltip title="Save Changes">
 								<IconButton
@@ -132,7 +127,8 @@ export default class Item extends React.Component {
 								>
 									<SaveAltOutlined />
 								</IconButton>
-							</Tooltip> <Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
+							</Tooltip>
+							<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
 								<IconButton
 									sx={{ backgroundColor: '#fff', fontSize: '28px' }}
 									aria-label='save if needed, and close'
@@ -142,7 +138,6 @@ export default class Item extends React.Component {
 									<Logout />
 								</IconButton>
 							</Tooltip>
-
 							<Tooltip title="Cancel Changes">
 								<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='cancel changes' onClick={this.cancelChanges}>
 									<CancelPresentation />
@@ -161,18 +156,17 @@ export default class Item extends React.Component {
 								</IconButton>
 							</Tooltip>
 						</CardActions>
-					</CardActionArea>
 
 
 					<CardContent sx={{ backgroundColor: this.state.data.type.cardColor }}>
 						<Accordion expanded={this.state.detailsSection} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="details-content" id="detailsSection" expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state.detailsSection ? "Details" : this.state.data.title}</Typography>
+								<Typography variant={sectionHeaderType}>{this.state.detailsSection ? "Details for: " + this.state.data.id : this.state.data.title}</Typography>
 							</AccordionSummary>
 							<Grid container >
 								<Grid item margin={'10px'} className='card-description-field' >
 									<Stack>
-										<Paper className='title-margin' elevation={0} ><Typography>Title</Typography></Paper>
+										<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Title</Typography></Paper>
 										<TextField
 
 											variant="outlined"
@@ -185,9 +179,8 @@ export default class Item extends React.Component {
 								</Grid>
 								<Grid item margin={'10px'} className='card-description-field'>
 									<Stack>
-										<Paper elevation={0} ><Typography>Description</Typography></Paper>
+										<Paper elevation={0}  className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Description</Typography></Paper>
 										<Editor
-											onBlur={this.updateDescription}
 											onChange={this.descriptionChanged}
 											value={this.state.data.description || ""}
 											className='editor'
