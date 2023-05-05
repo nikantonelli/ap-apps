@@ -4,9 +4,9 @@ import { CancelPresentation, Delete, DeleteForever, ExpandMore, Logout, SaveAltO
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActionArea, CardActions, CardContent, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
-import { Editor } from "@/utils/Editor";
-import { getCardChildren, getListOfCards } from "@/utils/Sdk";
-import { ConnectionTable } from "@/utils/ConnectionTable";
+import { Editor } from "@/utils/Editor/Editor";
+import { getCardChildren, getListOfCards, getBoard } from "@/utils/Sdk";
+import { ConnectionTable } from "@/Components/ConnectionTable";
 
 export default class Item extends React.Component {
 	constructor(props) {
@@ -19,7 +19,8 @@ export default class Item extends React.Component {
 			peopleSection: false,
 			changed: false,
 			children: [],
-			parents: []
+			parents: [],
+			context: null
 		}
 		this.savedData = props.card;
 	}
@@ -102,6 +103,8 @@ export default class Item extends React.Component {
 
 	componentDidMount = () => {
 		var data = this.state.data;
+
+		//Get the connection info
 		getCardChildren(this.props.host, data).then(async (children) => {
 			var childArray = await children.json()
 			this.setState({ children: childArray.cards })
@@ -111,6 +114,12 @@ export default class Item extends React.Component {
 					this.setState({ parents: parentArray.cards })
 				})
 			}
+		})
+
+		//Get the context info
+		getBoard(this.props.host, this.state.data.board.id).then (async (info) => {
+			var board = await info.json()
+			this.setState( { context: board})
 		})
 	}
 

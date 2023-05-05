@@ -6,12 +6,7 @@ export class ConnectionTable extends React.Component {
 
     CHILD_RELATIONSHIP = "Child";
     PARENT_RELATIONSHIP = "Parent";
-    constructor(props) {
-        super(props);
-        console.log(props)
-
-    }
-
+  
     openBoard = (evt) => {
         document.open("/nui/board/" + evt.currentTarget.id, "", "noopener=true")
     }

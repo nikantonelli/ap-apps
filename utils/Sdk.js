@@ -17,6 +17,15 @@ export const getListOfCards = async (host, cardList) => {
 	return await doRequest(params);
 }
 
+export const getBoard = async (host, brdId) => {
+	var params = {
+		host: host,
+		mode: 'GET',
+		url: "/board/" + brdId
+	}
+	return await doRequest(params);
+}
+
 export const doRequest = async (params) => {
 	var req = new Request("http://" + params.host + "/api" + params.url, { method: params.mode });
 	var res = await fetch(req, { next: { revalidate: 30 } })

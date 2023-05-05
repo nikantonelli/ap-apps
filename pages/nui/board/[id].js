@@ -5,7 +5,7 @@ import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { EditNote, Label } from "@mui/icons-material";
+import { EditNote, Filter, Filter1Outlined, FilterAlt, HighlightOff, Label } from "@mui/icons-material";
 import React from "react";
 import { doRequest, getCardChildren } from "@/utils/Sdk";
 
@@ -47,7 +47,7 @@ export class Board extends React.Component {
 			var result = await response.json()
 			var cards = result.cards
 			this.root.children = cards
-			if (this.state.active) {
+			if (this.state.active && !this.reloadInProgress) {
 				var activeCards = this.state.active.split(',')
 				cards = _.filter(cards, function (child) {
 					var result = (_.filter(activeCards, function (value) {
@@ -226,9 +226,9 @@ export class Board extends React.Component {
 	render() {
 		if (!this.state.fetchActive) return (
 			<Stack>
-				<Grid container direction={'row'}>
+				<Grid alignItems={'center'} alignContent={'center'} container direction={'row'}>
 					<Grid item>
-						<EditNote fontSize='large' onClick={this.openDrawer} />
+						<FilterAlt fontSize="large" onClick={this.openDrawer} />
 					</Grid>
 					<Grid item>
 						<Chip label={this.state.board.title} onClick={this.enableMenu} />
@@ -252,6 +252,10 @@ export class Board extends React.Component {
 					<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
 					<MenuItem value='analysis' onClick={this.closeMenu}>Analysis</MenuItem>
 					<MenuItem value='expand' onClick={this.closeMenu}>Expand All</MenuItem>
+					{(this.state.active && this.state.active.length) ?
+						<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
+						: null
+					}
 				</Menu>
 
 				<div style={{ margin: '5px' }} id={"surface_" + this.state.board.id} >
@@ -268,30 +272,38 @@ export class Board extends React.Component {
 						[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
 					}}
 				>
-
-					<ChevronLeftIcon onClick={this.closeDrawer} fontSize='large' />
-
-					{this.topLevelList()}
+					<Grid container direction="column">
+						<Grid item>
+							<HighlightOff onClick={this.closeDrawer} />
+						</Grid>
+						<Grid item>
+							{this.topLevelList()}
+						</Grid>
+					</Grid>
 				</Drawer>
 			</Stack>
 		)
 		else return <div>loading</div>;
 	}
 
+	load = () => {
+		this.getTopLevel(
+			{
+				host: this.props.host,
+				mode: "GET",
+				url: "/board/cards/" + this.state.board.id
+			}
+		).then(() => {
+			var clonedData = JSON.parse(JSON.stringify(this.root))
+			this.setState({ allData: clonedData })
+			this.setState({ cardData: this.root })
+		})
+	}
+
 	componentDidMount = () => {
 		if (this.state.fetchActive) {
 			this.setState({ fetchActive: false })
-			this.getTopLevel(
-				{
-					host: this.props.host,
-					mode: "GET",
-					url: "/board/cards/" + this.state.board.id
-				}
-			).then(() => {
-				var clonedData = JSON.parse(JSON.stringify(this.root))
-				this.setState({ allData: clonedData })
-				this.setState({ cardData: this.root })
-			})
+			this.load();
 		}
 	}
 
@@ -346,6 +358,11 @@ export class Board extends React.Component {
 			case 'tree':
 			case 'analysis': {
 				this.setState({ tileType: e.target.getAttribute('value') })
+				break;
+			}
+			case 'reloadAll': {
+				this.reloadInProgress = true;
+				this.load();
 				break;
 			}
 
@@ -415,6 +432,7 @@ export class Board extends React.Component {
 			<Autocomplete
 				freeSolo
 				multiple
+				clearOnEscape
 				id="root-child-selector"
 				disableClearable
 				onChange={this.handleChangeMultiple}

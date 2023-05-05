@@ -13,21 +13,21 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin"
 import { ListPlugin } from "@lexical/react/LexicalListPlugin"
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin"
 import { HeadingNode, QuoteNode } from "@lexical/rich-text"
-import {ImageNode } from './Editor/Nodes/ImageNode'
+import {ImageNode } from './Nodes/ImageNode'
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table"
 import { useEffect, useState } from "react"
-import ToolbarPlugin from "./Editor/Plugins/ToolbarPlugin"
+import ToolbarPlugin from "./Plugins/ToolbarPlugin"
 
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from "@lexical/html"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { $getRoot } from "lexical"
 
-import CodeHighlightPlugin from "./Editor/Plugins/CodeHighlightPlugin"
-import AutoLinkPlugin from "./Editor/Plugins/EditorAutoLinkPlugin"
-import ListMaxIndentLevelPlugin from "./Editor/Plugins/ListMaxIndentLevelPlugin"
+import CodeHighlightPlugin from "./Plugins/CodeHighlightPlugin"
+import AutoLinkPlugin from "./Plugins/EditorAutoLinkPlugin"
+import ListMaxIndentLevelPlugin from "./Plugins/ListMaxIndentLevelPlugin"
 
-import {useSharedHistoryContext} from './Editor/Context/SharedHistoryContext';
-import ImagesPlugin from './Editor/Plugins/ImagesPlugin';
+import {useSharedHistoryContext} from './Context/SharedHistoryContext';
+import ImagesPlugin from './Plugins/ImagesPlugin';
 
 function onError(e) {
 	console.log(e)
