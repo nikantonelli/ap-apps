@@ -532,6 +532,10 @@ body {
 	vertical-align: middle;
   }
   
+  .clickable {
+	cursor: pointer;
+  }
+  
   .toolbar button.toolbar-item:disabled {
 	cursor: not-allowed;
   }

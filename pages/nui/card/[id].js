@@ -6,6 +6,7 @@ import React from "react";
 
 import { Editor } from "@/utils/Editor";
 import { getCardChildren, getListOfCards } from "@/utils/Sdk";
+import { ConnectionTable } from "@/utils/ConnectionTable";
 
 export default class Item extends React.Component {
 	constructor(props) {
@@ -16,7 +17,9 @@ export default class Item extends React.Component {
 			detailsSection: true,
 			connectionsSection: false,
 			peopleSection: false,
-			changed: false
+			changed: false,
+			children: [],
+			parents: []
 		}
 		this.savedData = props.card;
 	}
@@ -49,6 +52,13 @@ export default class Item extends React.Component {
 
 	}
 
+	/**
+	 * 
+	 * @param {*} editorValue 
+	 * 
+	 * Description Editor is a lexical richtexteditor
+	 * that needs special attention.
+	 */
 	descriptionChanged = (editorValue) => {
 		if (!this.dscrEditorLoaded) {
 			this.dscrEditorLoaded = true;
@@ -77,10 +87,6 @@ export default class Item extends React.Component {
 		window.removeEventListener('beforeunload', this.checkBeforeLeave);
 	}
 
-	refresh = () => {
-
-	}
-
 	cancelChanges = (e) => {
 		this.isChanged = false;
 		this.setState({ data: this.savedData })
@@ -96,25 +102,21 @@ export default class Item extends React.Component {
 
 	componentDidMount = () => {
 		var data = this.state.data;
-		var me = this;
-		getCardChildren(this.props.host, data).then((children) => {
-			me.setState({ children: children })
-			if (children && children.length) {
-				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then((parents) => {
-					me.setState({ parents: parents })
+		getCardChildren(this.props.host, data).then(async (children) => {
+			var childArray = await children.json()
+			this.setState({ children: childArray.cards })
+			if (data.parentCards && data.parentCards.length) {
+				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then(async (parents) => {
+					var parentArray = await parents.json()
+					this.setState({ parents: parentArray.cards })
 				})
 			}
 		})
 	}
 
-	componentDidUpdate = () => {
-
-	}
-
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
-
 		if (this.props.card != null) {
 			return (
 				<Card variant='outlined' iid={this.state.data.id}>
@@ -193,9 +195,13 @@ export default class Item extends React.Component {
 						<Accordion expanded={this.state.connectionsSection} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="connections-content" id="connectionsSection" expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Connections</Typography>
+								
 							</AccordionSummary>
 							<AccordionDetails>
-
+							<ConnectionTable 
+									parents= {this.state.parents}
+									descendants= {this.state.children}
+								/>
 							</AccordionDetails>
 						</Accordion>
 						<Accordion expanded={this.state.peopleSection} onChange={this.handleAccordionChange}>

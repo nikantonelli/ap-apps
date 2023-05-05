@@ -99,20 +99,21 @@ export class Board extends React.Component {
 					}
 				};
 
-				var colWidth = 400;
-				var rowHeight = 50;
+				var rowHeight = 30;
 
 				childCount(0, data);
 				var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				colWidth = (viewBoxSize[0] / (data.height))
+				var colWidth = (viewBoxSize[0] / (data.height || 1))
 
 
 				svg.attr('width', viewBoxSize[0])
 				svg.attr("height", viewBoxSize[1])
 				svg.attr('viewBox', colWidth + ' 0 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
+				rootEl.setAttribute('width', viewBoxSize[0]);
+				rootEl.setAttribute('height', viewBoxSize[1]);
 				svg.attr('preserveAspectRatio', 'none');
 				svg.attr('class', 'rootSurface')
 				var tree = d3.tree()
@@ -129,8 +130,8 @@ export class Board extends React.Component {
 					.enter()
 
 				nodes.each(function (d) {
-					d.colMargin = 50;
-					d.colWidth = colWidth - (d.colMargin * 2);
+					d.colMargin = 80;
+					d.colWidth = colWidth - d.colMargin;
 					d.rowHeight = rowHeight;
 				})
 
@@ -139,7 +140,7 @@ export class Board extends React.Component {
 					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
 					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
 					.attr("x", function (d) { return d.y })
-					.attr("width", function (d) { return d.colWidth - d.colMargin })
+					.attr("width", function (d) { return d.colWidth })
 					.attr("height", 30)
 
 				var nodeGroups = nodes.append('g')
@@ -189,7 +190,7 @@ export class Board extends React.Component {
 					var tEl = document.getElementById("text_" + d.data.id)
 
 					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-					return d.y + (d.children ? (d.colWidth - d.colMargin) : width)
+					return d.y + (d.children ? (d.colWidth) : width)
 				})
 				.attr("y2", function (d) {
 					return d.x + 2
@@ -203,14 +204,14 @@ export class Board extends React.Component {
 					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
 					var width = tEl.getClientRects()[0].width
 					var startPointH = d.parent.y + width;
-					var startApex = ((d.y - d.colMargin) - (d.parent.y + width)) / 2
+					var startApex = (d.y - (d.parent.y + width)) / 2
 					var startPointV = d.parent.x + 2;
 					var endPointH = d.y;
 					var endPointV = d.x + 2;
 
 					var string = "M" + startPointH + "," + startPointV +
-						"C" + (startPointH + (startApex + d.colMargin)) + "," + (startPointV) + " " +
-						(endPointH - (startApex + d.colMargin)) + "," + endPointV + " " +
+						"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
+						(endPointH - (startApex)) + "," + endPointV + " " +
 						endPointH + "," + endPointV;
 					return string
 				});
@@ -253,7 +254,7 @@ export class Board extends React.Component {
 					<MenuItem value='expand' onClick={this.closeMenu}>Expand All</MenuItem>
 				</Menu>
 
-				<div id={"surface_" + this.state.board.id} >
+				<div style={{ margin: '5px' }} id={"surface_" + this.state.board.id} >
 					<svg id={"svg_" + this.state.board.id} />
 				</div>
 
@@ -321,6 +322,13 @@ export class Board extends React.Component {
 		}
 	}
 
+	resetChildren = (node) => {
+		node.children = _.union(node.children || [], node.savedChildren || [])
+		node.savedChildren = [];
+		node.children.forEach((child) => {
+			this.resetChildren(child)
+		})
+	}
 
 	enableMenu = (e) => {
 		this.setState({ anchorEl: e.currentTarget })
@@ -331,6 +339,8 @@ export class Board extends React.Component {
 
 		switch (command) {
 			case 'expand': {
+				var data = this.state.cardData && this.state.cardData.children
+				if (data) data.forEach((item) => { this.resetChildren(item) })
 				break;
 			}
 			case 'tree':
