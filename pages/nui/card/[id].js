@@ -1,12 +1,14 @@
 import CardService from "@/services/CardService";
 import { DataProvider } from "@/utils/DataProvider";
-import { CancelPresentation, Delete, DeleteForever, ExpandMore, Logout, SaveAltOutlined } from "@mui/icons-material";
+import { CancelPresentation, ConnectingAirports, Delete, DeleteForever, ExpandMore, List, Logout, People, SaveAltOutlined } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActionArea, CardActions, CardContent, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
-import { Editor } from "@/utils/Editor/Editor";
+import { Editor } from "@/Components/Editor/Editor";
 import { getCardChildren, getListOfCards, getBoard } from "@/utils/Sdk";
 import { ConnectionTable } from "@/Components/ConnectionTable";
+import { AssignedUserTable } from "@/Components/AssignedUserTable";
+import { CardUserTable } from "@/Components/CardUserTable";
 
 export default class Item extends React.Component {
 	constructor(props) {
@@ -117,10 +119,21 @@ export default class Item extends React.Component {
 		})
 
 		//Get the context info
-		getBoard(this.props.host, this.state.data.board.id).then (async (info) => {
+		getBoard(this.props.host, this.state.data.board.id).then(async (info) => {
 			var board = await info.json()
-			this.setState( { context: board})
+			this.setState({ context: board })
 		})
+	}
+
+	changeSection = (evt) => {
+		var ed = {}
+		ed["detailsSection"] = false;
+		ed["peopleSection"] = false;
+		ed["connectionsSection"] = false;
+		ed[evt.currentTarget.id] = true;
+		this.setState(ed)
+		evt.currentTarget.scrollIntoView({block:'end', inline: 'nearest'})
+
 	}
 
 	render() {
@@ -129,6 +142,25 @@ export default class Item extends React.Component {
 		if (this.props.card != null) {
 			return (
 				<Card variant='outlined' iid={this.state.data.id}>
+					<Grid style={{ backgroundColor: this.state.data.type.cardColor, alignItems: 'center', justifyContent: 'center'}} container direction="row">
+						<Grid item xs={2}>
+						<Tooltip title="Details Panel">
+							<IconButton id="detailsSection" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
+								<List />
+							</IconButton>
+						</Tooltip>
+						<Tooltip title="Connections Panel">
+							<IconButton id="connectionsSection" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
+								<ConnectingAirports />
+							</IconButton>
+						</Tooltip>
+						<Tooltip title="People Panel">
+							<IconButton id="peopleSection" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
+								<People />
+							</IconButton>
+						</Tooltip>
+						</Grid>
+						<Grid item xs={10}>
 					<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'center' }} >
 						<Tooltip title="Save Changes">
 							<IconButton
@@ -168,6 +200,8 @@ export default class Item extends React.Component {
 							</IconButton>
 						</Tooltip>
 					</CardActions>
+					</Grid>
+					</Grid>
 					<CardContent sx={{ backgroundColor: this.state.data.type.cardColor }}>
 						<Accordion expanded={this.state.detailsSection} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="details-content" id="detailsSection" expandIcon={<ExpandMore />}>
@@ -204,12 +238,12 @@ export default class Item extends React.Component {
 						<Accordion expanded={this.state.connectionsSection} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="connections-content" id="connectionsSection" expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Connections</Typography>
-								
+
 							</AccordionSummary>
 							<AccordionDetails>
-							<ConnectionTable 
-									parents= {this.state.parents}
-									descendants= {this.state.children}
+								<ConnectionTable
+									parents={this.state.parents}
+									descendants={this.state.children}
 								/>
 							</AccordionDetails>
 						</Accordion>
@@ -218,7 +252,10 @@ export default class Item extends React.Component {
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
-								Text
+								<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Assigned Users</Typography></Paper>
+								<AssignedUserTable card={this.state.data} />
+								<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Involved Users</Typography></Paper>
+								<CardUserTable card={this.state.data}/>
 							</AccordionDetails>
 						</Accordion>
 					</CardContent>

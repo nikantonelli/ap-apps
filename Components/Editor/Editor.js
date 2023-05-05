@@ -39,12 +39,15 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 
 	const [editor] = useLexicalComposerContext();
 
-	const externalEventHandler = (e) => {
-		debugger;
-		editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-	}
+
 
 	useEffect(() => {
+
+		const externalEventHandler = (e) => {
+			debugger;
+			editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+		}
+
 		if (!state) {
 			window.addEventListener('clear-editor-'+className, externalEventHandler)
 			
@@ -74,7 +77,7 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 		}
 
 
-	},[state, editor, initialValue, onChange])
+	},[state, editor, initialValue, onChange, className])
 }
 export const Editor = ({ onChange, className, value }) => {
 

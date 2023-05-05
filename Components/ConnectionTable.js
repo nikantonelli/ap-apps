@@ -24,8 +24,8 @@ export class ConnectionTable extends React.Component {
         })
 
         return (
-            <TableContainer component={Paper}>
-                <Table sx={{ minWidth: 500 }} size="small" aria-label="card connection table">
+            <TableContainer sx={{maxHeight:200}} component={Paper}>
+                <Table stickyHeader sx={{ minWidth: 500 }} size="small" aria-label="card connection table">
                     <TableHead>
                         <TableRow>
                             <TableCell>Title</TableCell>
@@ -49,7 +49,7 @@ export class ConnectionTable extends React.Component {
                                     <TableCell>{row.type}</TableCell>
 
                                 </TableRow>
-                                : <TableRow />
+                                : <TableRow key={idx}/>
                         ))}
                     </TableBody>
                 </Table>
