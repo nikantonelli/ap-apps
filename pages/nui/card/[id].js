@@ -1,6 +1,6 @@
 import CardService from "@/services/CardService";
 import { DataProvider } from "@/utils/DataProvider";
-import { CancelPresentation, ConnectingAirports, Delete, DeleteForever, ExpandMore, List, Logout, People, SaveAltOutlined } from "@mui/icons-material";
+import { CancelPresentation, ConnectingAirports, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActionArea, CardActions, CardContent, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
@@ -11,19 +11,27 @@ import { AssignedUserTable } from "@/Components/AssignedUserTable";
 import { CardUserTable } from "@/Components/CardUserTable";
 
 export default class Item extends React.Component {
+
+	static CONNECTIONS_PANEL_NAME = "connectionsSection";
+	static PEOPLE_PANEL_NAME = "peopleSection";
+	static DETAILS_PANEL_NAME = "detailsSection";
+	static SCHEDULE_PANEL_NAME = "scheduleSection"
+
 	constructor(props) {
 		super(props);
 		this.state = {
 			data: props.card,
 			description: props.card || props.card.description,
-			detailsSection: true,
-			connectionsSection: false,
-			peopleSection: false,
 			changed: false,
-			children: [],
+			descendants: [],
 			parents: [],
 			context: null
 		}
+		this.state[Item.CONNECTIONS_PANEL_NAME] = false;
+		this.state[Item.PEOPLE_PANEL_NAME] = false;
+		this.state[Item.DETAILS_PANEL_NAME] = false;
+		this.state[Item.SCHEDULE_PANEL_NAME] = false;
+		
 		this.savedData = props.card;
 	}
 
@@ -109,7 +117,7 @@ export default class Item extends React.Component {
 		//Get the connection info
 		getCardChildren(this.props.host, data).then(async (children) => {
 			var childArray = await children.json()
-			this.setState({ children: childArray.cards })
+			this.setState({ descendants: childArray.cards })
 			if (data.parentCards && data.parentCards.length) {
 				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then(async (parents) => {
 					var parentArray = await parents.json()
@@ -127,12 +135,12 @@ export default class Item extends React.Component {
 
 	changeSection = (evt) => {
 		var ed = {}
-		ed["detailsSection"] = false;
-		ed["peopleSection"] = false;
-		ed["connectionsSection"] = false;
-		ed[evt.currentTarget.id] = true;
+		ed[Item.DETAILS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[Item.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[Item.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		if ((evt.currentTarget.id !== "openAll") && (evt.currentTarget.id !== "closeAll")) ed[evt.currentTarget.id] = true;
 		this.setState(ed)
-		evt.currentTarget.scrollIntoView({block:'end', inline: 'nearest'})
+		evt.currentTarget.scrollIntoView({ block: 'end', inline: 'nearest' })
 
 	}
 
@@ -142,85 +150,106 @@ export default class Item extends React.Component {
 		if (this.props.card != null) {
 			return (
 				<Card variant='outlined' iid={this.state.data.id}>
-					<Grid style={{ backgroundColor: this.state.data.type.cardColor, alignItems: 'center', justifyContent: 'center'}} container direction="row">
+					<Grid style={{ backgroundColor: this.state.data.type.cardColor }} container direction="row">
 						<Grid item xs={2}>
-						<Tooltip title="Details Panel">
-							<IconButton id="detailsSection" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
-								<List />
-							</IconButton>
-						</Tooltip>
-						<Tooltip title="Connections Panel">
-							<IconButton id="connectionsSection" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
-								<ConnectingAirports />
-							</IconButton>
-						</Tooltip>
-						<Tooltip title="People Panel">
-							<IconButton id="peopleSection" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
-								<People />
-							</IconButton>
-						</Tooltip>
+						<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'center' }} >
+						<Tooltip title="Open All">
+								<IconButton id="openAll" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='open panels' onClick={this.changeSection}>
+									<KeyboardDoubleArrowDown />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Details">
+								<IconButton id={Item.DETAILS_PANEL_NAME} sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
+									<List />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Connections">
+								<IconButton id={Item.CONNECTIONS_PANEL_NAME} sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
+									<ConnectingAirports />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="People">
+								<IconButton id={Item.PEOPLE_PANEL_NAME} sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='details panel' onClick={this.changeSection}>
+									<People />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Close All">
+								<IconButton id="closeAll" sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='close panels' onClick={this.changeSection}>
+									<KeyboardDoubleArrowUp />
+								</IconButton>
+							</Tooltip>
+							
+							</CardActions>
 						</Grid>
 						<Grid item xs={10}>
-					<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'center' }} >
-						<Tooltip title="Save Changes">
-							<IconButton
-								sx={{ backgroundColor: '#fff', fontSize: '28px' }}
-								aria-label='save card'
-								onClick={this.checkUpdates}
-								color={this.isChanged ? 'error' : 'default'}
-							>
-								<SaveAltOutlined />
-							</IconButton>
-						</Tooltip>
-						<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
-							<IconButton
-								sx={{ backgroundColor: '#fff', fontSize: '28px' }}
-								aria-label='save if needed, and close'
-								onClick={this.updateDataClose}
-								color={this.isChanged ? 'error' : 'default'}
-							>
-								<Logout />
-							</IconButton>
-						</Tooltip>
-						<Tooltip title="Cancel Changes">
-							<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='cancel changes' onClick={this.cancelChanges}>
-								<CancelPresentation />
-							</IconButton>
-						</Tooltip>
+							<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'right' }} >
+								<Tooltip title="Save Changes">
+									<IconButton
+										sx={{ backgroundColor: '#fff', fontSize: '28px' }}
+										aria-label='save card'
+										onClick={this.checkUpdates}
+										color={this.isChanged ? 'error' : 'default'}
+									>
+										<SaveAltOutlined />
+									</IconButton>
+								</Tooltip>
+								<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
+									<IconButton
+										sx={{ backgroundColor: '#fff', fontSize: '28px' }}
+										aria-label='save if needed, and close'
+										onClick={this.updateDataClose}
+										color={this.isChanged ? 'error' : 'default'}
+									>
+										<Logout />
+									</IconButton>
+								</Tooltip>
+								<Tooltip title="Cancel Changes">
+									<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label='cancel changes' onClick={this.cancelChanges}>
+										<CancelPresentation />
+									</IconButton>
+								</Tooltip>
 
-						<Tooltip title="Send to Recycle Bin">
-							<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label="send to recycle bin" onClick={this.deleteRecycle}>
-								<Delete />
-							</IconButton>
-						</Tooltip>
+								<Tooltip title="Send to Recycle Bin">
+									<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label="send to recycle bin" onClick={this.deleteRecycle}>
+										<Delete />
+									</IconButton>
+								</Tooltip>
 
-						<Tooltip title="Delete Forever">
-							<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label="delete forever" onClick={this.deleteForever} >
-								<DeleteForever />
-							</IconButton>
-						</Tooltip>
-					</CardActions>
-					</Grid>
+								<Tooltip title="Delete Forever">
+									<IconButton sx={{ backgroundColor: '#fff', fontSize: '28px' }} aria-label="delete forever" onClick={this.deleteForever} >
+										<DeleteForever />
+									</IconButton>
+								</Tooltip>
+							</CardActions>
+						</Grid>
 					</Grid>
 					<CardContent sx={{ backgroundColor: this.state.data.type.cardColor }}>
-						<Accordion expanded={this.state.detailsSection} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="details-content" id="detailsSection" expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state.detailsSection ? "Details for: " + this.state.data.id : this.state.data.title}</Typography>
+						<Accordion expanded={this.state[Item.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="details-content" id={Item.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
+								<Typography variant={sectionHeaderType}>{this.state[Item.DETAILS_PANEL_NAME] ? "Details for: " + this.state.data.id : this.state.data.title}</Typography>
 							</AccordionSummary>
-							<Grid container direction="row" >
-								<Grid item margin={'10px'} className='card-description-field' >
-									<Grid>
-										<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Title</Typography></Paper>
-										<TextField
+							<Grid container direction="column" >
+								<Grid item>
+									<Grid container direction="row">
+										<Grid item margin={'10px'} className='card-description-field' >
+											<Grid>
+												<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Title</Typography></Paper>
+												<TextField
 
-											variant="outlined"
-											className='card-description-field'
-											value={this.state.data.title}
-											onBlur={this.updateTitle}
-											onChange={this.titleChanged}
-										/>
+													variant="outlined"
+													className='card-description-field'
+													value={this.state.data.title}
+													onBlur={this.updateTitle}
+													onChange={this.titleChanged}
+												/>
+											</Grid>
+										</Grid>
+										<Grid item margin={'10px'} className='card-description-field' >
+										<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Status</Typography></Paper>
+										</Grid>
 									</Grid>
 								</Grid>
+
 								<Grid item margin={'10px'} className='card-description-field'>
 									<Grid>
 										<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Description</Typography></Paper>
@@ -235,29 +264,46 @@ export default class Item extends React.Component {
 
 							</Grid>
 						</Accordion>
-						<Accordion expanded={this.state.connectionsSection} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="connections-content" id="connectionsSection" expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[Item.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="schedule-content" id={Item.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
+								<Typography variant={sectionHeaderType}>Schedule</Typography>
+							</AccordionSummary>
+							<AccordionDetails>
+								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography></Paper>
+								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Actual Dates</Typography></Paper>
+								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Time Box</Typography></Paper>
+							</AccordionDetails>
+						</Accordion>
+						<Accordion expanded={this.state[Item.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="connections-content" id={Item.CONNECTIONS_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Connections</Typography>
 
 							</AccordionSummary>
 							<AccordionDetails>
 								<ConnectionTable
-									parents={this.state.parents}
-									descendants={this.state.children}
+									items={this.state.parents}
+									title="Parents"
+									titleType={fieldHeaderType}
+								/>
+								<ConnectionTable
+									title="Descendants"
+									titleType={fieldHeaderType}
+									items={this.state.descendants}
 								/>
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state.peopleSection} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="people-content" id="peopleSection" expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[Item.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="people-content" id={Item.PEOPLE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
-								<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Assigned Users</Typography></Paper>
+								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Assigned Users</Typography></Paper>
 								<AssignedUserTable card={this.state.data} />
-								<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Involved Users</Typography></Paper>
-								<CardUserTable card={this.state.data}/>
+								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Involved Users</Typography></Paper>
+								<CardUserTable card={this.state.data} />
 							</AccordionDetails>
 						</Accordion>
+						
 					</CardContent>
 
 

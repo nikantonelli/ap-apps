@@ -4,8 +4,8 @@ text {
 }
 
 .title-paper {
-	width: 80%;
 	margin-bottom: 5px;
+	background-color: #ddd;
 }
 
 .title-field {
@@ -62,7 +62,6 @@ text {
 
   
 .card-description-field {
-    width: 80%;
 	min-width: 600px;
 }
 
@@ -178,7 +177,6 @@ body {
   
   .description-editor-container,
   .editor-container {
-	width: 80%;
 	border-radius: 2px;
 	min-width: 600px;
 	color: #000;
