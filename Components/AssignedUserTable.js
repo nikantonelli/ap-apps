@@ -5,8 +5,8 @@ import React from "react";
 export class AssignedUserTable extends React.Component {
 
     sendEmail = (evt) => {
-        var row= JSON.parse(evt.currentTarget.getAttribute('value'))
-        document.open("mailto:" + row.emailAddress,"", 'noopener=true')
+        var row = JSON.parse(evt.currentTarget.getAttribute('value'))
+        document.open("mailto:" + row.emailAddress, "", 'noopener=true')
 
     }
     render = () => {
@@ -30,12 +30,14 @@ export class AssignedUserTable extends React.Component {
                                 <TableCell component="th" scope="row">
                                     {row.fullName}
                                 </TableCell>
-                                {Boolean( row.emailAddress) ?
-                                    <TableCell value={JSON.stringify(row)} className="clickable" onClick={this.sendEmail}>{Boolean(row.emailAddress) ? row.emailAddress : null}
-                                    </TableCell> :
+                                {Boolean(row.emailAddress) ?
+                                    <Tooltip title="mailto:" placement="bottom-start">
+                                        <TableCell value={JSON.stringify(row)} className="clickable" onClick={this.sendEmail}>{Boolean(row.emailAddress) ? row.emailAddress : null}
+                                        </TableCell>
+                                    </Tooltip> :
                                     <TableCell />}
                                 <TableCell>
-                                    <img style={{width:"25px", height:"25px"}} src={row.avatar}/>
+                                    {Boolean(row.avator) ? <img style={{ width: "25px", height: "25px" }} src={row.avatar} /> : null}
                                 </TableCell>
 
                             </TableRow>

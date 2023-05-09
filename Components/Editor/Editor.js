@@ -43,13 +43,15 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 
 	useEffect(() => {
 
-		const externalEventHandler = (e) => {
-			debugger;
+		const clearEditorEvent = (e) => {
 			editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
 		}
 
 		if (!state) {
-			window.addEventListener('clear-editor-'+className, externalEventHandler)
+			//Use the class name to distinguish different editors on the page
+			//This does rely on there only being one of each....
+
+			window.addEventListener('clear-editor-'+className, clearEditorEvent)
 			
 				editor.registerCommand(CLEAR_EDITOR_COMMAND, () => {
 					if (Boolean(initialValue)) {
@@ -68,7 +70,7 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 			editor.registerUpdateListener(({ editorState }) => {
 				editorState.read(() => {
 					if (onChange) {
-						onChange($generateHtmlFromNodes(editor, null))
+						onChange($generateHtmlFromNodes(editor))
 					}
 				})
 			})

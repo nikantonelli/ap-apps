@@ -17,7 +17,6 @@ export default class LabelNode extends TextNode {
 	}
 
 	createDOM(config) {
-		debugger;
 		const element = super.createDOM(config)
 		return element;
 	}

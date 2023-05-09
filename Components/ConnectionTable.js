@@ -1,9 +1,8 @@
-import { PlaylistRemove } from "@mui/icons-material";
-import { IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography } from "@mui/material";
+import { Paper, Typography } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 import React from "react";
-import { DataGrid, GridColDef, GridValueGetterParams } from "@mui/x-data-grid";
+import { cloneDeep } from "lodash";
 export class ConnectionTable extends React.Component {
-
     columns = [
         { field: 'title', headerName: 'Title', width: 400 },
         {
@@ -18,6 +17,14 @@ export class ConnectionTable extends React.Component {
         },
 
     ]
+    constructor(props) {
+        super(props)
+        this.state = {
+            idString: Boolean(this.props.title) ? "connection-" + this.props.title.toLowerCase().replace(/[^a-z0-9]/g, "-") : "connection-grid",
+            scaledColumns: this.columns
+        }
+    }
+    
 
     openBoard = (evt) => {
         document.open("/nui/board/" + evt.currentTarget.id, "", "noopener=true")
@@ -26,8 +33,21 @@ export class ConnectionTable extends React.Component {
     openCard = (evt) => {
         document.open("/nui/card/" + evt.id, "", "noopener=true")
     }
-    render = () => {
 
+    onResize = (size) => {
+        var scaledColumns = cloneDeep(this.columns)
+                //Get the scaling of the columns
+            var scaling = 0;
+            this.columns.forEach((column) => {
+                scaling += column.width;
+            })
+            scaledColumns.forEach((column) => {
+                column.width = Math.floor(column.width * size.width / scaling);
+            })
+        this.setState({scaledColumns: scaledColumns})
+    }
+
+    render = () => {
         if (Boolean(this.props.items)) {
             // return (
             //     <>
@@ -61,11 +81,11 @@ export class ConnectionTable extends React.Component {
             //         </TableContainer>
             //     </>
             // )
-            return (<div >
+            return (<div id={this.state.idString} >
                 <Paper square elevation={2} className="title-paper"><Typography variant={this.props.titleType} className="title-field">{this.props.title}</Typography></Paper>
                 <DataGrid
                     rows={this.props.items}
-                    columns={this.columns}
+                    columns={this.state.scaledColumns}
                     initialState={{
                         pagination: {
                             paginationModel: { page: 0, pageSize: 5 },
@@ -75,6 +95,7 @@ export class ConnectionTable extends React.Component {
                     disableRowSelectionOnClick
                     autoHeight
                     onRowClick={this.openCard}
+                    onResize={this.onResize}
                 />
             </div>)
         } else {
