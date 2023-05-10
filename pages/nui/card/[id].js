@@ -183,7 +183,7 @@ export default class Item extends React.Component {
 							<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'left' }} >
 								<Tooltip title="Open All">
 									<IconButton id="openAll" size='large' className="options-button-icon" aria-label='open panels' onClick={this.changeSection}>
-										<KeyboardDoubleArrowDown /> 
+										<KeyboardDoubleArrowDown />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Details">
@@ -208,7 +208,7 @@ export default class Item extends React.Component {
 								</Tooltip>
 								<Tooltip title="Close All">
 									<IconButton id="closeAll" size='large' className="options-button-icon" aria-label='close panels' onClick={this.changeSection}>
-										 <KeyboardDoubleArrowUp />
+										<KeyboardDoubleArrowUp />
 									</IconButton>
 								</Tooltip>
 							</CardActions>
@@ -338,19 +338,25 @@ export default class Item extends React.Component {
 								<Typography variant={sectionHeaderType}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography>
-								</Paper>
-								<APdateRange
-									start={this.state.data.plannedStart}
-									end={this.state.data.plannedFinish}
-								/>
-
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Actual Dates</Typography></Paper>
-								<APdateRange
-									start={this.state.data.actualStart}
-									end={this.state.data.actualFinish}
-								/>
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Time Box</Typography></Paper>
+								<Grid container direction="row">
+									<Grid item className='card-description-field' >
+										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography>
+										</Paper>
+										<APdateRange
+											start={this.state.data.plannedStart}
+											end={this.state.data.plannedFinish}
+										/>
+									</Grid>
+									<Grid item className='card-description-field' >
+										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Actual Dates</Typography></Paper>
+										<APdateRange
+											start={this.state.data.actualStart}
+											end={this.state.data.actualFinish}
+										/>
+									</Grid>
+									<Grid item className='card-description-field' ><Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Time Box</Typography></Paper>
+									</Grid>
+								</Grid>
 							</AccordionDetails>
 						</Accordion>
 						<Accordion expanded={this.state[Item.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>

@@ -16,9 +16,21 @@ export class APdateRange extends React.Component {
 		return (
 			<Grid className="date-range-picker" container sx={{ alignItems: 'center' }} direction="row">
 				<LocalizationProvider dateAdapter={AdapterDayjs}>
-					<DatePicker label="Start" format="LL" defaultValue={dayjs(this.props.start)} />
+					<DatePicker 
+						showDaysOutsideCurrentMonth 
+						label="Start Date" 
+						format="LL" 
+						defaultValue={dayjs(this.props.start)}
+						onSelectionChange={this.props.startChange} 
+					/>
 					<Paper sx={{margin:"20px"}} elevation={0}> until </Paper>
-					<DatePicker label="End" format="LL" defaultValue={this.props.end?dayjs(this.props.end):null} />
+					<DatePicker 
+						showDaysOutsideCurrentMonth 
+						label="End Date" 
+						format="LL" 
+						defaultValue={this.props.end?dayjs(this.props.end):null} 
+						onSelectionChange={this.props.endChange}
+					/>
 				</LocalizationProvider>
 			</Grid>
 		)
