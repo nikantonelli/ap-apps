@@ -81,13 +81,13 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 
 	},[state, editor, initialValue, onChange, className])
 }
-export const Editor = ({ onChange, className, value }) => {
+export const Editor = ({ onChange, type, value }) => {
 
 	const {historyState} = useSharedHistoryContext();
 	const [initial, setInitial] = useState(true);
 
 	const initialConfig = {
-		namespace: className + '-editor',
+		namespace: type + '-editor',
 		onError: onError,
 		nodes: [
 			ParagraphNode,
@@ -113,11 +113,11 @@ export const Editor = ({ onChange, className, value }) => {
 
 	return (
 		<LexicalComposer initialConfig={initialConfig}>
-			<div className={className + "-editor-container"}>
-				<ToolbarPlugin className={className + "-editor-toolbar"} />
-				<div className={className + "-editor-inner"}>
+			<div className={type + "-editor-container"}>
+				<ToolbarPlugin className={type + "-editor-toolbar"} />
+				<div className={type + "-editor-inner"}>
 					<RichTextPlugin
-						contentEditable={<ContentEditable className={className + "-editor-input"} value={value} />}
+						contentEditable={<ContentEditable className={type + "-editor-input"} value={value} />}
 						ErrorBoundary={LexicalErrorBoundary}
 					/>
 					<ClearEditorPlugin />
@@ -129,7 +129,7 @@ export const Editor = ({ onChange, className, value }) => {
 					<AutoLinkPlugin />
 					<ListMaxIndentLevelPlugin maxDepth={7} />
 					<MarkdownShortcutPlugin transformers={TRANSFORMERS} />
-					<UpdateText className={className} onChange={onChange} initialValue={init ? null : value} />
+					<UpdateText className={type} onChange={onChange} initialValue={init ? null : value} />
 				</div>
 			</div>
 		</LexicalComposer>

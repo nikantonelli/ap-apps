@@ -1,14 +1,18 @@
 import CardService from "@/services/CardService";
 import { DataProvider } from "@/utils/DataProvider";
-import { CalendarToday, Cancel, CancelPresentation, CheckCircle, ConnectingAirports, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
-import { Accordion, AccordionDetails, AccordionSummary, Card, CardActionArea, CardActions, CardContent, Chip, Grid, IconButton, Paper, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import { CalendarToday, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
-import { Editor } from "@/Components/Editor/Editor";
-import { getCardChildren, getListOfCards, getBoard } from "@/utils/Sdk";
-import { ConnectionTable } from "@/Components/ConnectionTable";
+import { APBlocked } from "@/Components/AP-Fields/blocked";
+import { APdescription } from "@/Components/AP-Fields/description";
+import { APPriority } from "@/Components/AP-Fields/priority";
+import { APSize } from "@/Components/AP-Fields/size";
 import { AssignedUserTable } from "@/Components/AssignedUserTable";
 import { CardUserTable } from "@/Components/CardUserTable";
+import { ConnectionTable } from "@/Components/ConnectionTable";
+import { getBoard, getCardChildren, getListOfCards } from "@/utils/Sdk";
+import { APdateRange } from "@/Components/AP-Fields/dateRange";
 
 export default class Item extends React.Component {
 
@@ -26,6 +30,7 @@ export default class Item extends React.Component {
 			descendants: [],
 			parents: [],
 			context: null,
+			contextIcons: null,
 			openAll: true,
 			blocked: props.card || props.card.blockedStatus.isBlocked
 		}
@@ -133,33 +138,40 @@ export default class Item extends React.Component {
 			var board = await info.json()
 			this.setState({ context: board })
 		})
+		//Get the context info
+		// getBoardIcons(this.props.host, this.state.data.board.id).then(async (info) => {
+		// 	var icons = await info.json()
+		// 	this.setState({ contextIcons: icons })
+		// })
+
 	}
 
 	changeSection = (evt) => {
 		var ed = {}
-		if ((evt.currentTarget.id === "toggleAll")) {
-			ed[Item.DETAILS_PANEL_NAME] = this.state.openAll;
-			ed[Item.PEOPLE_PANEL_NAME] = this.state.openAll;
-			ed[Item.CONNECTIONS_PANEL_NAME] = this.state.openAll;
-			ed[Item.SCHEDULE_PANEL_NAME] = this.state.openAll;
-			this.setState((prev) => { return { openAll: !prev.openAll, ...ed } })
-		}
-		else {
-			ed[Item.DETAILS_PANEL_NAME] = false;
-			ed[Item.PEOPLE_PANEL_NAME] = false;
-			ed[Item.CONNECTIONS_PANEL_NAME] = false;
-			ed[Item.SCHEDULE_PANEL_NAME] = false;
-			ed[evt.currentTarget.id] = true;
-			this.setState(ed)
-			evt.currentTarget.scrollIntoView({ block: 'end', inline: 'nearest' })
 
+		ed[Item.DETAILS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[Item.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[Item.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[Item.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+
+		if ((evt.currentTarget.id !== "openAll") && (evt.currentTarget.id !== "closeAll")) {
+			ed[evt.currentTarget.id] = true;
 		}
+		this.setState(ed)
+		evt.currentTarget.scrollIntoView({ block: 'end', inline: 'nearest' })
+
+
 	}
 	toggleBlocked = (evt) => {
 
 		this.setState((prev) => { return { blocked: !prev.blocked } })
 	}
 
+	cleanIconPath = (path) => {
+		var pos = path.search("/customicons")
+		var newPath = path.substr(pos);
+		return newPath
+	}
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
@@ -169,9 +181,9 @@ export default class Item extends React.Component {
 					<Grid style={{ backgroundColor: this.state.data.type.cardColor }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: this.state.data.type.cardColor, justifyContent: 'left' }} >
-								<Tooltip title={this.state.openAll ? "Open All" : "Close All"}>
-									<IconButton id="toggleAll" size='large' className="options-button-icon" aria-label='open panels' onClick={this.changeSection}>
-										{this.state.openAll ? <KeyboardDoubleArrowDown /> : <KeyboardDoubleArrowUp />}
+								<Tooltip title="Open All">
+									<IconButton id="openAll" size='large' className="options-button-icon" aria-label='open panels' onClick={this.changeSection}>
+										<KeyboardDoubleArrowDown /> 
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Details">
@@ -192,6 +204,11 @@ export default class Item extends React.Component {
 								<Tooltip title="People">
 									<IconButton id={Item.PEOPLE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<People />
+									</IconButton>
+								</Tooltip>
+								<Tooltip title="Close All">
+									<IconButton id="closeAll" size='large' className="options-button-icon" aria-label='close panels' onClick={this.changeSection}>
+										 <KeyboardDoubleArrowUp />
 									</IconButton>
 								</Tooltip>
 							</CardActions>
@@ -272,50 +289,33 @@ export default class Item extends React.Component {
 											</Typography></Paper>
 											<Grid container direction="row">
 												<Grid xs={2} item>
-													<Grid container sx={{ alignItems: 'center' }} direction="column">
-														<Grid item>
-															<Tooltip title={Boolean(this.state.data.blockedStatus.reason) ? this.state.data.blockedStatus.reason : (this.state.data.blockedStatus.isBlocked ? "Blocked" : "Not Blocked")}>
-																{this.state.data.blockedStatus.isBlocked ?
-																	<Cancel color="error" sx={{ fontSize: "28px" }} className="options-button-icon" aria-label="blocked" onClick={this.toggleBlocked} /> :
-																	<CheckCircle color="success" sx={{ fontSize: "28px" }} className="options-button-icon" aria-label="blocked" onClick={this.toggleBlocked} />
-																}
-															</Tooltip>
-														</Grid>
-														<Grid item>
-															<Paper elevation={0}>{this.state.data.blockedStatus.isBlocked ? "Blocked" : "Not Blocked"}</Paper>
-														</Grid>
-													</Grid>
+													<APBlocked
+														status={this.state.data.blockedStatus}
+														toggleBlocked={this.toggleBlocked}
+													/>
+												</Grid>
+												<Grid xs={2} item>
+													<APSize
+														size={this.state.data.size}
+													/>
+												</Grid>
+												<Grid xs={2} item>
+													<APPriority
+														priority={this.state.data.priority}
+													/>
 												</Grid>
 												<Grid xs={2} item>
 													<Grid container sx={{ alignItems: 'center' }} direction="column">
-														<Grid item>
-															<Chip label={Boolean(this.state.data.size) ? this.state.data.size : " -- "} />
-														</Grid>
-														<Grid item>
-															<Paper elevation={0}>{Boolean(this.state.data.size) ?
-																((this.state.data.size == 1) ? "XS" :
-																	(this.state.data.size == 2) ? "S" :
-																		(this.state.data.size == 3) ? "M" :
-																			(this.state.data.size < 6) ? "L" :
-																				(this.state.data.size < 9) ? "XL" : "XXL")
-																: "Not Sized"}</Paper>
-														</Grid>
-													</Grid>
-												</Grid>
-												<Grid xs={2} item>
-													<Grid container sx={{ alignItems: 'center' }} direction="column">
-														<Grid item>
-															<Chip color={
-																this.state.data.priority === "critical" ? "error" :
-																	(this.state.data.priority === "high") ? "warning" :
-																		(this.state.data.priority === "normal") ? "success" :
-																			"default"
-															}
-																label={Boolean(this.state.data.priority) ? this.state.data.priority : " -- "} />
-														</Grid>
-														<Grid item>
-															<Paper elevation={0}>Priority</Paper>
-														</Grid>
+														{Boolean(this.state.data.customIcon) ? (
+															<>
+																<Grid item sx={{ margin: "0px" }}>
+																	<img style={{ width: "28px", height: "28px" }} src={this.state.data.customIcon.iconPath} />
+																</Grid>
+																<Grid item>
+																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>
+																</Grid>
+															</>
+														) : null}
 													</Grid>
 												</Grid>
 											</Grid>
@@ -324,15 +324,11 @@ export default class Item extends React.Component {
 								</Grid>
 
 								<Grid item className='card-description-field'>
-									<Grid>
-										<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Description</Typography></Paper>
-										<Editor
-											onChange={this.descriptionChanged}
-											value={this.state.data.description || ""}
-											className='description'
-											label="Description"
-										/>
-									</Grid>
+									<APdescription
+										description={this.state.data.description}
+										onChange={this.descriptionChanged}
+										headerType={fieldHeaderType}
+									/>
 								</Grid>
 
 							</Grid>
@@ -342,8 +338,18 @@ export default class Item extends React.Component {
 								<Typography variant={sectionHeaderType}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography></Paper>
+								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography>
+								</Paper>
+								<APdateRange
+									start={this.state.data.plannedStart}
+									end={this.state.data.plannedFinish}
+								/>
+
 								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Actual Dates</Typography></Paper>
+								<APdateRange
+									start={this.state.data.actualStart}
+									end={this.state.data.actualFinish}
+								/>
 								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Time Box</Typography></Paper>
 							</AccordionDetails>
 						</Accordion>

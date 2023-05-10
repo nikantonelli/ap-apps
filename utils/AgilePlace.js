@@ -11,8 +11,11 @@ class AgilePlace {
 
 	async xfr(params) {
 
-		params.baseUrl = "https://" + this.url + "/io"
-
+		if (!Boolean(params.raw)) {
+			params.baseUrl = "https://" + this.url + "/io"
+		} else {
+			params.baseUrl = "https://" + this.url
+		}
 		var headers = { "Accept": "application/json" };
 		if (params.type) {
 			headers["Content-type"] = params.type;
@@ -27,13 +30,13 @@ class AgilePlace {
 			var token = this.username + ":" + this.password;
 			headers["Authorization"] = "Basic " + Base64.encode(token);
 		}
-		
-		console.log("ap: ",this.count += 1, params.baseUrl + params.url,)
+
+		console.log("ap: ", this.count += 1, params.baseUrl + params.url,)
 		var req = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
-		const res = await fetch(req, {next: {revalidate: 30}}).then(
+		const res = await fetch(req, { next: { revalidate: 30 } }).then(
 			async (response) => {
 				if (!response.ok) {
-										var statusCode = response.status;
+					var statusCode = response.status;
 					switch (statusCode) {
 						case 400:
 						case 401:
@@ -95,12 +98,12 @@ class AgilePlace {
 					}
 					return null;
 				}
-				
+
 				return response
 			}
-		).catch((error)=>{console.log(error)})
+		).catch((error) => { console.log(error) })
 		var data = null;
-		if (res){
+		if (res) {
 			data = await res.json()
 		}
 		return data;
