@@ -49,6 +49,10 @@ text {
 	stroke: darkgreen;
 }
 
+.date-range-picker {
+	margin-top: 8px;
+}
+
 .card {
 	color: white;
 	background-color: darkgrey;
