@@ -1,13 +1,14 @@
 import { DataProvider } from "@/utils/DataProvider";
-import { Autocomplete, Chip, Drawer, Grid, IconButton, Menu, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Autocomplete, Chip, Drawer, Fade, Grid, Menu, MenuItem, Popover, Popper, Stack, TextField } from "@mui/material";
 import * as d3 from 'd3';
 import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import { EditNote, Filter, Filter1Outlined, FilterAlt, HighlightOff, Label } from "@mui/icons-material";
-import React from "react";
 import { doRequest, getCardChildren } from "@/utils/Sdk";
+import { FilterAlt, HighlightOff, OpenInBrowser } from "@mui/icons-material";
+import React from "react";
+import { createRoot } from 'react-dom/client';
+import { APhoverCard } from "@/Components/MousePopover";
 
 
 export class Board extends React.Component {
@@ -31,7 +32,8 @@ export class Board extends React.Component {
 			drawerWidth: 400,
 			depth: this.props.depth || 0,
 			pending: 0,
-			total: 0
+			total: 0,
+			topLevelList: []
 		}
 	}
 
@@ -148,6 +150,9 @@ export class Board extends React.Component {
 				nodeGroups.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
 					.text(function (d) { return d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""); })
+					.on('click', this.nodeClicked)
+					.on('mouseover', this.showCard)
+					.on('mouseout', this.hideCard)
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
 					.attr("id", function (d) {
@@ -156,15 +161,7 @@ export class Board extends React.Component {
 					.style("text-anchor", "start")
 					.attr("x", function (d) { return d.y })
 					.attr("y", function (d) { return d.x })
-					.on('click', this.nodeClicked)
 					.style('cursor', 'pointer')
-					.on('mouseover', this.showCard)
-					.on('mouseover', this.hideCard)
-
-				nodeGroups.append('g')
-					.attr("x", (d) => d.x)
-					.attr("y", (d) => d.y)
-					.html("<div style={width:80;height:80}>hello</text>")
 
 				this.paths(svg, nodes)
 			}
@@ -273,9 +270,11 @@ export class Board extends React.Component {
 					}}
 				>
 					<Grid container direction="column">
-						<Grid item>
+						<Grid sx={{ margin: "5px" }} item>
 							<HighlightOff onClick={this.closeDrawer} />
+							<OpenInBrowser onClick={this.openAsActive} />
 						</Grid>
+
 						<Grid item>
 							{this.topLevelList()}
 						</Grid>
@@ -307,11 +306,26 @@ export class Board extends React.Component {
 		}
 	}
 
-	showCard = () => {
-
+	showCard = (e, d) => {
+		// d.popperOpen = true;
+		// if (d.popperEl) {
+		// 	d.popperEl.style.visibility = 'visible';
+		// }
+		// else {
+		// 	d.popperEl = document.createElement('div');
+		// 	e.currentTarget.appendChild(d.popperEl)
+		// 	var item =
+		// 		<APhoverCard
+		// 			targetEl={d.popperEl}
+		// 			data={d.data}
+		// 		/>
+		// 	createRoot(d.popperEl).render(item)
+		// }
+		// console.log(e, d);
 	}
-	hideCard = () => {
 
+	hideCard = (e, d) => {
+		// d.popperEl.style.visibility = 'hidden';
 	}
 
 	nodeClicked = (ev, d) => {
@@ -394,6 +408,21 @@ export class Board extends React.Component {
 		this.setState({ drawerOpen: false })
 	}
 
+	openAsActive = () => {
+		var activeList = this.state.topLevelList;
+		var as = ""
+
+		if (activeList.length) {
+			as += "?active="
+			activeList.forEach((item, idx) => {
+				as += item.id;
+				if (idx < (activeList.length - 1)) {
+					as += ","
+				}
+			})
+		}
+		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
+	}
 	handleChangeMultiple = (evt, valueList) => {
 		var root = { ...this.state.cardData };
 		var allChildren = root.children
@@ -420,7 +449,7 @@ export class Board extends React.Component {
 			root.children = allChildren
 			root.savedChildren = null;
 		}
-		this.setState({ cardData: root })
+		this.setState({ cardData: root, topLevelList: valueList })
 	}
 
 	topLevelList = () => {
