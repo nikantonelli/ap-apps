@@ -37,7 +37,7 @@ export class AssignedUserTable extends React.Component {
                                     </Tooltip> :
                                     <TableCell />}
                                 <TableCell>
-                                    {Boolean(row.avatar) ? <img style={{ width: "25px", height: "25px" }} src={row.avatar} /> : null}
+                                    {Boolean(row.avatar) ? <img style={{ width: "25px", height: "25px" }} alt={"User Avatar"} src={row.avatar} /> : null}
                                 </TableCell>
 
                             </TableRow>

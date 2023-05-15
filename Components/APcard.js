@@ -285,7 +285,7 @@ export class APcard extends React.Component {
 														{Boolean(this.state.data.customIcon) ? (
 															<>
 																<Grid item sx={{ margin: "0px" }}>
-																	<img style={{ width: "28px", height: "28px" }} src={this.state.data.customIcon.iconPath} />
+																	<img style={{ width: "28px", height: "28px" }} alt={this.state.data.customIcon.name} src={this.state.data.customIcon.iconPath} />
 																</Grid>
 																<Grid item>
 																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>

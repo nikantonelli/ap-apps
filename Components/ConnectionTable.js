@@ -48,9 +48,6 @@ export class ConnectionTable extends React.Component {
 	}
 
 	render() {
-
-		console.log("ct: ", this.props)
-
 		if (Boolean(this.props.items)) {
 			return (
 				<>

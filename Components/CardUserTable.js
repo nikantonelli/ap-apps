@@ -40,7 +40,7 @@ export class CardUserTable extends React.Component {
                                 {(Boolean(row.user) && row.user.emailAddress) ?
                                     <TableCell sx={{email:row.user.emailAddress}} className="clickable" onClick={this.sendEmail}>{Boolean(row.user) ? row.user.emailAddress : null}</TableCell> :
                                     <TableCell />}
-                                <TableCell>{Boolean(row.user) ? <img src={row.avatar} /> : null}</TableCell>
+                                <TableCell>{Boolean(row.user) ? <img alt={"User Avatar"} src={row.avatar} /> : null}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

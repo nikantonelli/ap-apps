@@ -5,6 +5,10 @@ class AgilePlace {
 		this.count = 0;
 	}
 
+	getHost() {
+		return "https://" + process.env.AGILEPLACE
+	}
+	
 	async xfr(params) {
 
 		if (!(Boolean(process.env.AGILEPLACE) && (Boolean(process.env.AGILEKEY) || (Boolean(process.env.AGILEUSER) || Boolean(process.env.AGILEPASS))))) return null;

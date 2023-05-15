@@ -21,9 +21,12 @@ class DataProvider  {
 		this.cache.put(id, context);
 	}
 
-	inCache(context) {
-		var id = this.provider.getIdentifierField(context);
+	inCache(id) {
 		return this.cache.get(id);
+	}
+
+	getHost() {
+		return this.provider.getHost();
 	}
 }
 

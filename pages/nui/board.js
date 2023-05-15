@@ -1,5 +1,5 @@
 import { Button, Card, CardActionArea, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
-import BoardService from "../services/BoardService"
+import BoardService from "../../services/BoardService"
 
 import { useState } from 'react'
 import { Cancel, Clear, OpenInBrowser, OpenInNew } from "@mui/icons-material";
