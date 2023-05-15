@@ -107,6 +107,10 @@ class AgilePlace {
 		return data;
 	}
 
+	getIdentifierField(context) {
+		return context.id;
+	}
+
 	async getContextById(id) {
 
 	}
