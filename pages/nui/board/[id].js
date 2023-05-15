@@ -1,4 +1,4 @@
-import { DataProvider } from "@/utils/DataProvider";
+import DataProvider from "@/utils/DataProvider";
 import { Autocomplete, Chip, Drawer, Fade, Grid, Menu, MenuItem, Popover, Popper, Stack, TextField } from "@mui/material";
 import * as d3 from 'd3';
 import { forEach } from "lodash";
@@ -504,7 +504,7 @@ export class Board extends React.Component {
 
 export async function getServerSideProps({ req, params, query }) {
 	if (globalThis.dataProvider == null) {
-		globalThis.dataProvider = DataProvider.get()
+		globalThis.dataProvider = new DataProvider()
 	}
 	var bs = new BoardService(req.headers.host);
 	var board = await bs.get(params.id).then((result) => result.json())

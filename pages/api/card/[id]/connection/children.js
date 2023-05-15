@@ -1,8 +1,8 @@
-import { DataProvider } from "@/utils/DataProvider";
+import DataProvider from "@/utils/DataProvider";
 
 export default async function handler(req, res ) {
 	if (globalThis.dataProvider == null) {
-		globalThis.dataProvider = DataProvider.get()
+		globalThis.dataProvider = new DataProvider()
 	}
 
 	var prms = {

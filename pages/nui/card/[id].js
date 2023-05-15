@@ -1,5 +1,5 @@
 import CardService from "@/services/CardService";
-import { DataProvider } from "@/utils/DataProvider";
+import DataProvider from "@/utils/DataProvider";
 import React from "react";
 
 import { APcard } from "@/Components/APcard";
@@ -69,7 +69,7 @@ export default class Item extends React.Component {
 
 export async function getServerSideProps({ req, params, query }) {
 	if (globalThis.dataProvider == null) {
-		globalThis.dataProvider = DataProvider.get()
+		globalThis.dataProvider = new DataProvider()
 	}
 	var cs = new CardService(req.headers.host);
 	var card = await cs.get(params.id)

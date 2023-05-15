@@ -107,6 +107,39 @@ class AgilePlace {
 		return data;
 	}
 
+	async getContextById(id) {
+
+	}
+	async getContextByString(queryField, queryStr) {
+		var standardFilter = true;
+
+		/**
+		 * For the moment, AP does not search on anything but name and title
+		 * If we want to search on anything else, we have to fetch them all and then select the ones we want
+		 */
+		if (queryStr) {
+			if ((queryField) && (queryField !== "title") && (queryField !== "name")) {
+				standardFilter = false
+			}
+		}
+
+	
+		var result = []
+		if (standardFilter) {
+			var searchTxt = "";
+			if (queryStr) searchTxt = "?search=" + queryStr;
+			var params = {
+				url: "/board" + searchTxt
+			}
+			result = await this.xfr(params)
+		} else {
+			/**
+			 * TODO: Fetch all and filter ourselves
+			 */
+		}
+		return result
+	}
+
 }
 
 export default AgilePlace;
