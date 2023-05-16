@@ -1,4 +1,4 @@
-import { CalendarToday, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { CalendarToday, CancelPresentation, Delete, DeleteForever, ExpandMore, HighlightOffOutlined, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { APBlocked } from "./AP-Fields/blocked";
@@ -9,10 +9,11 @@ import { APSize } from "./AP-Fields/size";
 import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { ConnectionTable } from "./ConnectionTable";
+
+import { getBoard, getCardChildren, getListOfCards } from "../utils/Sdk"
 import React from "react";
 
-
-export class APcard extends React.Component {
+export class APHoverCard extends React.Component {
 
 	static CONNECTIONS_PANEL_NAME = "connectionsSection";
 	static PEOPLE_PANEL_NAME = "peopleSection";
@@ -24,89 +25,17 @@ export class APcard extends React.Component {
 		this.state = {
 			data: props.card || null,
 			description: props.card || props.card.description,
-			changed: false,
 			context: props.context || null,
 			contextIcons: null,
 			openAll: true,
-			blocked: props.card || props.card.blockedStatus.isBlocked,
 			loadSource: props.loadType || 'card'
 		}
-		this.state[APcard.CONNECTIONS_PANEL_NAME] = false;
-		this.state[APcard.PEOPLE_PANEL_NAME] = false;
-		this.state[APcard.DETAILS_PANEL_NAME] = true;
-		this.state[APcard.SCHEDULE_PANEL_NAME] = false;
+		this.state[APHoverCard.CONNECTIONS_PANEL_NAME] = false;
+		this.state[APHoverCard.PEOPLE_PANEL_NAME] = false;
+		this.state[APHoverCard.DETAILS_PANEL_NAME] = true;
+		this.state[APHoverCard.SCHEDULE_PANEL_NAME] = false;
 
 		this.savedData = props.card;
-	}
-	
-	updateDescription = (e) => {
-		if (this.isChanged !== true) {
-			return;
-		}
-		var data = { ...this.state.data };
-		this.setChanged(data);
-	}
-
-	updateTitle = (e) => {
-		if (this.isChanged !== true) {
-			return;
-		}
-		var data = { ...this.state.data };
-		this.setChanged(data);
-	}
-
-	setChanged = (data) => {
-		this.setState({ data: data });
-		this.isChanged = true;
-
-	}
-
-	/**
-	 * 
-	 * @param {*} editorValue 
-	 * 
-	 * Description Editor is a lexical richtexteditor
-	 * that needs special attention.
-	 */
-	descriptionChanged = (editorValue) => {
-		if (!this.dscrEditorLoaded) {
-			this.dscrEditorLoaded = true;
-		} else {
-			if (!this.dispatchDescClear) {
-				var data = { ...this.state.data }
-				data.description = editorValue
-				this.setChanged(data)
-			}
-			this.dispatchDescClear = false
-		}
-	}
-
-	titleChanged = (e) => {
-		var data = { ...this.state.data };
-		data.title = e.target.value.substr(0, 127);
-		this.setChanged(data);
-	}
-
-	checkBeforeLeave = (e) => {
-		if (this.isChanged) {
-			SdkUtils.showError({ message: "Save/Cancel changes before leaving page" });
-			e.preventDefault();
-			e.returnValue = ''
-		}
-		window.removeEventListener('beforeunload', this.checkBeforeLeave);
-	}
-
-	cancelChanges = (e) => {
-		this.isChanged = false;
-		this.setState({ data: this.savedData })
-		this.dispatchDescClear = true;
-		window.dispatchEvent(new Event('clear-editor-description'));
-	}
-
-	cleanIconPath = (path) => {
-		var pos = path.search("/customicons")
-		var newPath = path.substr(pos);
-		return newPath
 	}
 
 	handleAccordionChange = (event, requestedState) => {
@@ -115,18 +44,14 @@ export class APcard extends React.Component {
 		this.setState(ed);
 	}
 
-	toggleBlocked = (evt) => {
-
-		if (!this.props.readOnly) this.setState((prev) => { return { blocked: !prev.blocked } })
-	}
 
 	changeSection = (evt) => {
 		var ed = {}
 
-		ed[APcard.DETAILS_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APHoverCard.DETAILS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APHoverCard.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APHoverCard.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APHoverCard.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
 
 		if ((evt.currentTarget.id !== "openAll") && (evt.currentTarget.id !== "closeAll")) {
 			ed[evt.currentTarget.id] = true;
@@ -137,15 +62,43 @@ export class APcard extends React.Component {
 
 	}
 
+	componentDidMount = () => {
+		var data = this.props.card;
+
+		//Get the connection info
+		getCardChildren(this.props.host, data).then(async (children) => {
+			var childArray = await children.json()
+			this.setState({ descendants: childArray.cards })
+			if (data.parentCards && data.parentCards.length) {
+				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then(async (parents) => {
+					var parentArray = await parents.json()
+					this.setState({ parents: parentArray.cards })
+				})
+			}
+		})
+
+		//Get the context info
+		getBoard(this.props.host, data.board.id).then(async (info) => {
+			var board = await info.json()
+			this.setState({ context: board })
+		})
+		//Get the context info
+		// getBoardIcons(this.props.host, this.state.data.board.id).then(async (info) => {
+		// 	var icons = await info.json()
+		// 	this.setState({ contextIcons: icons })
+		// })
+		
+
+	}
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
 
-		var typeTitle = (this.state.loadSource === 'card') ?  this.state.data.type.title : this.state.data.cardType.name
-		var typeColour = (this.state.loadSource === 'card') ?  this.state.data.type.cardColor : this.state.data.color
+		var typeTitle = (this.state.loadSource === 'card') ? this.state.data.type.title : this.state.data.cardType.name
+		var typeColour = (this.state.loadSource === 'card') ? this.state.data.type.cardColor : this.state.data.color
 		if (this.state.data != null) {
 			return (
-				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-"+ this.state.data.id}>
+				<Card  className="card" sx={this.props.cardProps} variant='outlined' iid={this.state.data.id}>
 					<Grid style={{ backgroundColor: typeColour }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'left' }} >
@@ -155,22 +108,22 @@ export class APcard extends React.Component {
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Details">
-									<IconButton id={APcard.DETAILS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.DETAILS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<List />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Schedule">
-									<IconButton id={APcard.SCHEDULE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.SCHEDULE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<CalendarToday />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Connections">
-									<IconButton id={APcard.CONNECTIONS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.CONNECTIONS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<SettingsEthernet />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="People">
-									<IconButton id={APcard.PEOPLE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.PEOPLE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<People />
 									</IconButton>
 								</Tooltip>
@@ -181,56 +134,24 @@ export class APcard extends React.Component {
 								</Tooltip>
 							</CardActions>
 						</Grid>
-						{!this.props.readOnly ?
-							<Grid item xs={6}>
-								<CardActions style={{ backgroundColor: typeColour, justifyContent: 'right' }} >
-									<Tooltip title="Save Changes">
-										<IconButton
-											size='large'
-											className="options-button-icon"
-											aria-label='save card'
-											onClick={this.checkUpdates}
-											color={this.isChanged ? 'error' : 'default'}
-										>
-											<SaveAltOutlined />
-										</IconButton>
-									</Tooltip>
-									<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
-										<IconButton
-											size='large'
-											className="options-button-icon"
-											aria-label='save if needed, and close'
-											onClick={this.updateDataClose}
-											color={this.isChanged ? 'error' : 'default'}
-										>
-											<Logout />
-										</IconButton>
-									</Tooltip>
-									<Tooltip title="Cancel Changes">
-										<IconButton size='large' className="options-button-icon" aria-label='cancel changes' onClick={this.cancelChanges}>
-											<CancelPresentation />
-										</IconButton>
-									</Tooltip>
 
-									<Tooltip title="Send to Recycle Bin">
-										<IconButton size='large' className="options-button-icon" aria-label="send to recycle bin" onClick={this.deleteRecycle}>
-											<Delete />
-										</IconButton>
-									</Tooltip>
+						<Grid item xs={6}>
+							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'right' }} >
 
-									<Tooltip title="Delete Forever">
-										<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.deleteForever} >
-											<DeleteForever />
-										</IconButton>
-									</Tooltip>
-								</CardActions>
-							</Grid>
-							: null}
+
+								<Tooltip title="Close">
+									<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.props.onClose} >
+										<HighlightOffOutlined />
+									</IconButton>
+								</Tooltip>
+							</CardActions>
+						</Grid>
+
 					</Grid>
 					<CardContent sx={{ backgroundColor: typeColour }}>
-						<Accordion expanded={this.state[APcard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="details-content" id={APcard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state[APcard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
+						<Accordion expanded={this.state[APHoverCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="details-content" id={APHoverCard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
+								<Typography variant={sectionHeaderType}>{this.state[APHoverCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
 							</AccordionSummary>
 							<Grid container direction="column" >
 								<Grid item>
@@ -239,12 +160,12 @@ export class APcard extends React.Component {
 											<Grid>
 												<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Title</Typography></Paper>
 												<TextField
-
+													InputProps={{
+														readOnly: true,
+													}}
 													variant="outlined"
 													className='card-description-field'
 													value={this.state.data.title}
-													onBlur={this.updateTitle}
-													onChange={this.titleChanged}
 												/>
 											</Grid>
 										</Grid>
@@ -261,7 +182,6 @@ export class APcard extends React.Component {
 												<Grid xs={2} item>
 													<APBlocked
 														status={this.state.data.blockedStatus}
-														toggleBlocked={this.toggleBlocked}
 													/>
 												</Grid>
 												<Grid xs={2} item>
@@ -279,7 +199,7 @@ export class APcard extends React.Component {
 														{Boolean(this.state.data.customIcon) ? (
 															<>
 																<Grid item sx={{ margin: "0px" }}>
-																	<img style={{ width: "28px", height: "28px" }} alt={this.state.data.customIcon.name} src={this.state.data.customIcon.iconPath} />
+																	<img style={{ width: "28px", height: "28px" }} src={this.state.data.customIcon.iconPath} />
 																</Grid>
 																<Grid item>
 																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>
@@ -295,16 +215,16 @@ export class APcard extends React.Component {
 
 								<Grid item className='card-description-field'>
 									<APdescription
+										readOnly
 										description={this.state.data.description}
-										onChange={this.descriptionChanged}
 										headerType={fieldHeaderType}
 									/>
 								</Grid>
 
 							</Grid>
 						</Accordion>
-						<Accordion expanded={this.state[APcard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="schedule-content" id={APcard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[APHoverCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="schedule-content" id={APHoverCard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
@@ -330,19 +250,19 @@ export class APcard extends React.Component {
 								</Grid>
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state[APcard.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="connections-content" id={APcard.CONNECTIONS_PANEL_NAME} expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[APHoverCard.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="connections-content" id={APHoverCard.CONNECTIONS_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Connections</Typography>
 
 							</AccordionSummary>
 							<AccordionDetails>
-								{this.props.parents.length ?
+								{this.props.parents && this.props.parents.length ?
 									<ConnectionTable
 										items={this.props.parents}
 										title="Parents"
 										titleType={fieldHeaderType}
 									/> : null}
-								{this.props.descendants.length ?
+								{this.props.descendants&&this.props.descendants.length ?
 									<ConnectionTable
 										title="Descendants"
 										titleType={fieldHeaderType}
@@ -350,8 +270,8 @@ export class APcard extends React.Component {
 									/> : null}
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state[APcard.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="people-content" id={APcard.PEOPLE_PANEL_NAME} expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[APHoverCard.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="people-content" id={APHoverCard.PEOPLE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
 							<AccordionDetails>

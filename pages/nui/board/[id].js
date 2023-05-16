@@ -1,15 +1,14 @@
-import DataProvider from "@/utils/DataProvider";
-import { Autocomplete, Chip, Drawer, Fade, Grid, Menu, MenuItem, Popover, Popper, Stack, TextField } from "@mui/material";
+import { Autocomplete, Chip, Drawer, Grid, Menu, MenuItem, Popover, Popper, Stack, TextField, ThemeProvider } from "@mui/material";
 import * as d3 from 'd3';
 import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
+import DataProvider from "../../../utils/DataProvider";
 
-import { doRequest, getCardChildren } from "@/utils/Sdk";
 import { FilterAlt, HighlightOff, OpenInBrowser } from "@mui/icons-material";
-import React from "react";
-import { createRoot } from 'react-dom/client';
-import { APhoverCard } from "@/Components/MousePopover";
-
+import React, { createRef } from "react";
+import { APHoverCard } from "../../../Components/APHoverCard";
+import { doRequest, getCardChildren } from "../../../utils/Sdk";
+import { useTheme } from "@emotion/react";
 
 export class Board extends React.Component {
 	constructor(props) {
@@ -33,14 +32,16 @@ export class Board extends React.Component {
 			depth: this.props.depth || 0,
 			pending: 0,
 			total: 0,
-			topLevelList: []
+			topLevelList: [],
+			popUp: null
 		}
 	}
 
+	portals = [];
 	root = {
 		id: 'root',
 		children: []
-	}
+	};
 
 	getTopLevel = async (params) => {
 
@@ -81,8 +82,13 @@ export class Board extends React.Component {
 		})
 	}
 
+	closePopUp = () => {
+		console.log("clicked close")
+		this.setState({ popUp: null })
+	}
 
 	update = () => {
+		this.portals = [];
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		var svg = d3.select(svgEl);
 		svgEl.replaceChildren()
@@ -131,10 +137,30 @@ export class Board extends React.Component {
 					.data(mtr.descendants().slice(1))
 					.enter()
 
+				var me = this;
 				nodes.each(function (d) {
 					d.colMargin = 80;
 					d.colWidth = colWidth - d.colMargin;
 					d.rowHeight = rowHeight;
+					me.portals.push(
+						<Popper
+							onClose={me.closePopUp}
+							key={d.data.id}
+							open={me.state.popUp === d.data.id}
+							anchorReference='anchorPosition'
+							anchorPosition={{ left: d.y - colWidth, top: d.x }}
+							anchorOrigin={{
+								vertical: 'top',
+								horizontal: 'left',
+							}}
+							transformOrigin={{
+								vertical: 'top',
+								horizontal: 'left',
+							}}
+						>
+							<APHoverCard cardProps={{ maxWidth: 650 }} loadSource='card' host={me.props.host} card={d.data} context={me.state.context} onClose={me.closePopUp} />
+						</Popper>
+					)
 				})
 
 				nodes.append("clipPath")
@@ -146,13 +172,14 @@ export class Board extends React.Component {
 					.attr("height", 30)
 
 				var nodeGroups = nodes.append('g')
+					.attr("id", function (d) {
+						return "g_" + d.data.id
+					})
 
 				nodeGroups.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
 					.text(function (d) { return d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""); })
 					.on('click', this.nodeClicked)
-					.on('mouseover', this.showCard)
-					.on('mouseout', this.hideCard)
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
 					.attr("id", function (d) {
@@ -221,67 +248,71 @@ export class Board extends React.Component {
 	}
 
 	render() {
-		if (!this.state.fetchActive) return (
-			<Stack>
-				<Grid alignItems={'center'} alignContent={'center'} container direction={'row'}>
-					<Grid item>
-						<FilterAlt fontSize="large" onClick={this.openDrawer} />
-					</Grid>
-					<Grid item>
-						<Chip label={this.state.board.title} onClick={this.enableMenu} />
-					</Grid>
-					<Grid item className="last-column">
-						{this.state.pending ?
-							<Chip label={"Queued: " + this.state.pending} />
-							: <Chip label={"Total loaded: " + this.state.total}></Chip>}
-					</Grid>
-				</Grid>
-
-				<Menu
-					open={Boolean(this.state.anchorEl)}
-					anchorEl={this.state.anchorEl}
-					onClose={this.closeMenu}
-					anchorOrigin={{
-						vertical: 'top',
-						horizontal: 'right',
-					}}
-				>
-					<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
-					<MenuItem value='analysis' onClick={this.closeMenu}>Analysis</MenuItem>
-					<MenuItem value='expand' onClick={this.closeMenu}>Expand All</MenuItem>
-					{(this.state.active && this.state.active.length) ?
-						<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
-						: null
-					}
-				</Menu>
-
-				<div style={{ margin: '5px' }} id={"surface_" + this.state.board.id} >
-					<svg id={"svg_" + this.state.board.id} />
-				</div>
-
-				<Drawer
-					variant='persistent'
-					open={Boolean(this.state.drawerOpen)}
-					anchor='left'
-					sx={{
-						width: this.state.drawerWidth,
-						flexShrink: 0,
-						[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
-					}}
-				>
-					<Grid container direction="column">
-						<Grid sx={{ margin: "5px" }} item>
-							<HighlightOff onClick={this.closeDrawer} />
-							<OpenInBrowser onClick={this.openAsActive} />
-						</Grid>
-
+		if (!this.state.fetchActive) {
+			console.log(this.portals, this.state)
+			return (
+				<Stack>
+					{this.portals}
+					<Grid alignItems={'center'} alignContent={'center'} container direction={'row'}>
 						<Grid item>
-							{this.topLevelList()}
+							<FilterAlt fontSize="large" onClick={this.openDrawer} />
+						</Grid>
+						<Grid item>
+							<Chip label={this.state.board.title} onClick={this.enableMenu} />
+						</Grid>
+						<Grid item className="last-column">
+							{this.state.pending ?
+								<Chip label={"Queued: " + this.state.pending} />
+								: <Chip label={"Total loaded: " + this.state.total}></Chip>}
 						</Grid>
 					</Grid>
-				</Drawer>
-			</Stack>
-		)
+
+					<Menu
+						open={Boolean(this.state.anchorEl)}
+						anchorEl={this.state.anchorEl}
+						onClose={this.closeMenu}
+						anchorOrigin={{
+							vertical: 'top',
+							horizontal: 'right',
+						}}
+					>
+						<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
+						<MenuItem value='analysis' onClick={this.closeMenu}>Analysis</MenuItem>
+						<MenuItem value='expand' onClick={this.closeMenu}>Expand All</MenuItem>
+						{(this.state.active && this.state.active.length) ?
+							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
+							: null
+						}
+					</Menu>
+
+					<div style={{ margin: '5px' }} id={"surface_" + this.state.board.id} >
+						<svg id={"svg_" + this.state.board.id}/>
+					</div>
+
+					<Drawer
+						variant='persistent'
+						open={Boolean(this.state.drawerOpen)}
+						anchor='left'
+						sx={{
+							width: this.state.drawerWidth,
+							flexShrink: 0,
+							[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
+						}}
+					>
+						<Grid container direction="column">
+							<Grid sx={{ margin: "5px" }} item>
+								<HighlightOff onClick={this.closeDrawer} />
+								<OpenInBrowser onClick={this.openAsActive} />
+							</Grid>
+
+							<Grid item>
+								{this.topLevelList()}
+							</Grid>
+						</Grid>
+					</Drawer>
+				</Stack>
+			)
+		}
 		else return <div>loading</div>;
 	}
 
@@ -306,31 +337,11 @@ export class Board extends React.Component {
 		}
 	}
 
-	showCard = (e, d) => {
-		// d.popperOpen = true;
-		// if (d.popperEl) {
-		// 	d.popperEl.style.visibility = 'visible';
-		// }
-		// else {
-		// 	d.popperEl = document.createElement('div');
-		// 	e.currentTarget.appendChild(d.popperEl)
-		// 	var item =
-		// 		<APhoverCard
-		// 			targetEl={d.popperEl}
-		// 			data={d.data}
-		// 		/>
-		// 	createRoot(d.popperEl).render(item)
-		// }
-		// console.log(e, d);
-	}
-
 	hideCard = (e, d) => {
 		// d.popperEl.style.visibility = 'hidden';
 	}
 
 	nodeClicked = (ev, d) => {
-		ev.preventDefault()
-		ev.stopPropagation();
 		if (ev.ctrlKey) {
 			if (d.data.children && d.data.children.length) {
 				d.data.savedChildren = _.union(d.data.children, d.data.savedChildren)
@@ -343,8 +354,12 @@ export class Board extends React.Component {
 			this.setState((prev) => {
 				return { cardData: prev.cardData }
 			})
-		} else {
+		}
+		else if (ev.shiftKey) {
 			document.open("/nui/card/" + d.data.id, "", "noopener=true")
+		}
+		else {
+			this.setState({ popUp: d.data.id })
 		}
 	}
 

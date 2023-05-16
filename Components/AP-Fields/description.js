@@ -13,6 +13,7 @@ export class APdescription extends React.Component {
 			<Grid>
 				<Paper elevation={0} className="title-paper"><Typography variant={this.props.headerType} className="title-field">Description</Typography></Paper>
 				<Editor
+					readOnly={this.props.readOnly}
 					onChange={this.props.onChange}
 					value={this.props.description || ""}
 					type='description'

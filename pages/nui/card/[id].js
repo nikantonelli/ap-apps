@@ -1,9 +1,9 @@
-import CardService from "@/services/CardService";
-import DataProvider from "@/utils/DataProvider";
+import CardService from "../../../services/CardService";
+import DataProvider from "../../../utils/DataProvider";
 import React from "react";
 
-import { APcard } from "@/Components/APcard";
-import { getBoard, getCardChildren, getListOfCards } from "@/utils/Sdk";
+import { APcard } from "../../../Components/APcard";
+import { getBoard, getCardChildren, getListOfCards } from "../../../utils/Sdk"
 
 export default class Item extends React.Component {
 
@@ -52,7 +52,8 @@ export default class Item extends React.Component {
 		if (this.props.card != null) {
 			return (
 				<APcard
-					cardProps={{ minWidth: 600 }}
+					cardProps={{margin:"10px"}}
+					loadSource='card'
 					readOnly={false}
 					card={this.props.card}
 					descendants={this.state.descendants}

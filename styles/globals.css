@@ -43,6 +43,11 @@ text {
 	vertical-align: middle;
 }
 
+.hover-card-popup {
+	min-width: 400px;
+	min-height: 100px;
+}
+
 .textBox {
 	color: aqua;
 	fill: none;

@@ -81,12 +81,13 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 
 	},[state, editor, initialValue, onChange, className])
 }
-export const Editor = ({ onChange, type, value }) => {
+export const Editor = ({ onChange, type, value, readOnly }) => {
 
 	const {historyState} = useSharedHistoryContext();
 	const [initial, setInitial] = useState(true);
 
 	const initialConfig = {
+		editable: !Boolean(readOnly),
 		namespace: type + '-editor',
 		onError: onError,
 		nodes: [
