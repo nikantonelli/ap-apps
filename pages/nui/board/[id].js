@@ -49,10 +49,29 @@ export class Board extends React.Component {
 			var response = await doRequest(params)
 			var result = await response.json()
 			var cards = result.cards
-			this.root.children = cards
+			//Collect the ids and get the 'real' versions of the cards
+			var cardList = ""
+			if (cards?.length) {
+				cardList = "?cards="
+				cards.forEach((card, idx) => {
+					if (idx < 200) {
+						cardList += card.id
+						if (idx < (cards.length -1)) cardList += ","
+					}
+				})
+			}
+			var cParams = {
+				host: this.props.host,
+				mode: "GET",
+				url: "/card" + cardList
+			}
+			var cResponse = await doRequest(params)
+			var cResult = await cResponse.json()
+			var cCards = cResult.cards
+
 			if (this.state.active && !this.reloadInProgress) {
 				var activeCards = this.state.active.split(',')
-				cards = _.filter(cards, function (child) {
+				cCards = _.filter(cards, function (child) {
 					var result = (_.filter(activeCards, function (value) {
 						var eqv = value === child.id;
 						return eqv
@@ -60,6 +79,7 @@ export class Board extends React.Component {
 					return (result.length > 0)
 				})
 			}
+			this.root.children = cCards
 			if (this.state.depth > 0) this.childrenOf(params.host, cards, 1)
 		} catch (error) {
 			console.log("Caught error: ", error)
@@ -107,7 +127,7 @@ export class Board extends React.Component {
 					}
 				};
 
-				var rowHeight = 30;
+				var rowHeight = 40;
 
 				childCount(0, data);
 				var treeBoxHeight = d3.max(levelWidth) * rowHeight;
@@ -143,9 +163,9 @@ export class Board extends React.Component {
 					d.colWidth = colWidth - d.colMargin;
 					d.rowHeight = rowHeight;
 					me.portals.push(
-						<Popper
+						<Popover
 							onClose={me.closePopUp}
-							key={d.data.id}
+							key={d.data.id + "-" + d.parent?.data.id}
 							open={me.state.popUp === d.data.id}
 							anchorReference='anchorPosition'
 							anchorPosition={{ left: d.y - colWidth, top: d.x }}
@@ -158,8 +178,8 @@ export class Board extends React.Component {
 								horizontal: 'left',
 							}}
 						>
-							<APHoverCard cardProps={{ maxWidth: 650 }} loadSource='card' host={me.props.host} card={d.data} context={me.state.context} onClose={me.closePopUp} />
-						</Popper>
+							<APHoverCard cardProps={{ maxWidth: 650 }} loadSource={d.depth < 2 ? 'board' : 'card'} host={me.props.host} card={d.data} context={me.state.context} onClose={me.closePopUp} />
+						</Popover>
 					)
 				})
 
@@ -249,7 +269,6 @@ export class Board extends React.Component {
 
 	render() {
 		if (!this.state.fetchActive) {
-			console.log(this.portals, this.state)
 			return (
 				<Stack>
 					{this.portals}
@@ -285,8 +304,8 @@ export class Board extends React.Component {
 						}
 					</Menu>
 
-					<div style={{ margin: '5px' }} id={"surface_" + this.state.board.id} >
-						<svg id={"svg_" + this.state.board.id}/>
+					<div id={"surface_" + this.state.board.id} >
+						<svg id={"svg_" + this.state.board.id} />
 					</div>
 
 					<Drawer

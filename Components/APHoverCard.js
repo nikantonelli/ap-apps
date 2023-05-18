@@ -28,7 +28,7 @@ export class APHoverCard extends React.Component {
 			context: props.context || null,
 			contextIcons: null,
 			openAll: true,
-			loadSource: props.loadType || 'card'
+			loadSource: props.loadSource || 'card'
 		}
 		this.state[APHoverCard.CONNECTIONS_PANEL_NAME] = false;
 		this.state[APHoverCard.PEOPLE_PANEL_NAME] = false;
@@ -87,7 +87,7 @@ export class APHoverCard extends React.Component {
 		// 	var icons = await info.json()
 		// 	this.setState({ contextIcons: icons })
 		// })
-		
+
 
 	}
 	render() {
@@ -98,7 +98,7 @@ export class APHoverCard extends React.Component {
 		var typeColour = (this.state.loadSource === 'card') ? this.state.data.type.cardColor : this.state.data.color
 		if (this.state.data != null) {
 			return (
-				<Card  className="card" sx={this.props.cardProps} variant='outlined' iid={this.state.data.id}>
+				<Card className="card" sx={this.props.cardProps} variant='outlined' iid={this.state.data.id}>
 					<Grid style={{ backgroundColor: typeColour }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'left' }} >
@@ -171,11 +171,12 @@ export class APHoverCard extends React.Component {
 										</Grid>
 										<Grid item className='card-description-field' >
 											<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">
-												{"Status: " + ((this.state.data.lane.cardStatus === "finished") ?
+												{"Status: " + ((this.state.data.actualFinish?.length) ?
 													" Finished (" + this.state.data.actualFinish + ")" :
-													(this.state.data.lane.cardStatus === "notStarted") ?
-														" Not Started" :
-														" Started (" + this.state.data.actualStart + ")"
+													(this.state.data.actualStart?.length) ?
+														" Started (" + this.state.data.actualStart + ")" :
+														" Not Started"
+
 												)}
 											</Typography></Paper>
 											<Grid container direction="row">
@@ -262,7 +263,7 @@ export class APHoverCard extends React.Component {
 										title="Parents"
 										titleType={fieldHeaderType}
 									/> : null}
-								{this.props.descendants&&this.props.descendants.length ?
+								{this.props.descendants && this.props.descendants.length ?
 									<ConnectionTable
 										title="Descendants"
 										titleType={fieldHeaderType}
