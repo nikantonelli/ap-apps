@@ -336,13 +336,13 @@ export class APcard extends React.Component {
 
 							</AccordionSummary>
 							<AccordionDetails>
-								{this.props.parents.length ?
+								{this.props.parents?.length ?
 									<ConnectionTable
 										items={this.props.parents}
 										title="Parents"
 										titleType={fieldHeaderType}
 									/> : null}
-								{this.props.descendants.length ?
+								{this.props.descendants?.length ?
 									<ConnectionTable
 										title="Descendants"
 										titleType={fieldHeaderType}

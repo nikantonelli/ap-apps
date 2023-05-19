@@ -36,74 +36,16 @@ export class Board extends React.Component {
 			popUp: null
 		}
 	}
-
+	popUp = null
 	portals = [];
 	root = {
 		id: 'root',
 		children: []
 	};
 
-	getTopLevel = async (params) => {
-
-		try {
-			var response = await doRequest(params)
-			var result = await response.json()
-			var cards = result.cards
-			//Collect the ids and get the 'real' versions of the cards
-			var cardList = ""
-			if (cards?.length) {
-				cardList = "?cards="
-				cards.forEach((card, idx) => {
-					if (idx < 200) {
-						cardList += card.id
-						if (idx < (cards.length -1)) cardList += ","
-					}
-				})
-			}
-			var cParams = {
-				host: this.props.host,
-				mode: "GET",
-				url: "/card" + cardList
-			}
-			var cResponse = await doRequest(params)
-			var cResult = await cResponse.json()
-			var cCards = cResult.cards
-
-			if (this.state.active && !this.reloadInProgress) {
-				var activeCards = this.state.active.split(',')
-				cCards = _.filter(cards, function (child) {
-					var result = (_.filter(activeCards, function (value) {
-						var eqv = value === child.id;
-						return eqv
-					}))
-					return (result.length > 0)
-				})
-			}
-			this.root.children = cCards
-			if (this.state.depth > 0) this.childrenOf(params.host, cards, 1)
-		} catch (error) {
-			console.log("Caught error: ", error)
-		}
-		return null;
-	}
-
-	childrenOf = (host, cards, depth) => {
-		if (cards.length == 0) this.setState({ cardData: this.root })
-		forEach(cards, (card) => {
-			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
-			getCardChildren(host, card).then(async (result) => {
-				this.setState((prev) => { return { pending: prev.pending - 1 } })
-				var children = await result.json()
-				card.children = children.cards
-				var ld = depth;
-				if (ld < this.state.depth) this.childrenOf(host, card.children, ld + 1)
-				else this.setState({ cardData: this.root })
-			}, this)
-		})
-	}
-
 	closePopUp = () => {
 		console.log("clicked close")
+		this.popUp = null
 		this.setState({ popUp: null })
 	}
 
@@ -112,9 +54,11 @@ export class Board extends React.Component {
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		var svg = d3.select(svgEl);
 		svgEl.replaceChildren()
+
+		var dataTree = d3.hierarchy(this.state.cardData)
+
 		switch (this.state.tileType) {
 			case 'tree': {
-				var data = d3.hierarchy(this.state.cardData)
 
 				var levelWidth = [1];
 				var childCount = function (level, n) {
@@ -129,12 +73,12 @@ export class Board extends React.Component {
 
 				var rowHeight = 40;
 
-				childCount(0, data);
+				childCount(0, dataTree);
 				var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				var colWidth = (viewBoxSize[0] / (data.height || 1))
+				var colWidth = (viewBoxSize[0] / (dataTree.height || 1))
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -151,7 +95,7 @@ export class Board extends React.Component {
 					}
 					);
 
-				var mtr = tree(data);
+				var mtr = tree(dataTree);
 
 				var nodes = svg.selectAll(".node")
 					.data(mtr.descendants().slice(1))
@@ -162,24 +106,31 @@ export class Board extends React.Component {
 					d.colMargin = 80;
 					d.colWidth = colWidth - d.colMargin;
 					d.rowHeight = rowHeight;
+					var parents = d.parent.depth>0?[d.parent.data]:null
+					var children = []
+					d.children?.forEach((child) => {
+						children.push(child.data)
+					})
 					me.portals.push(
-						<Popover
+
+						<Drawer
 							onClose={me.closePopUp}
 							key={d.data.id + "-" + d.parent?.data.id}
-							open={me.state.popUp === d.data.id}
-							anchorReference='anchorPosition'
-							anchorPosition={{ left: d.y - colWidth, top: d.x }}
-							anchorOrigin={{
-								vertical: 'top',
-								horizontal: 'left',
-							}}
-							transformOrigin={{
-								vertical: 'top',
-								horizontal: 'left',
-							}}
+							open={me.popUp === d.data.id}
 						>
-							<APHoverCard cardProps={{ maxWidth: 650 }} loadSource={d.depth < 2 ? 'board' : 'card'} host={me.props.host} card={d.data} context={me.state.context} onClose={me.closePopUp} />
-						</Popover>
+							<div>
+								<APHoverCard 
+									descendants={children}
+									parents={parents}
+									cardProps={{ maxWidth: 650 }} 
+									loadSource={d.depth < 2 ? 'board' : 'card'} 
+									host={me.props.host} card={d.data} 
+									context={me.state.context} 
+									onClose={me.closePopUp} 
+								/>
+							</div>
+						</Drawer>
+
 					)
 				})
 
@@ -211,6 +162,10 @@ export class Board extends React.Component {
 					.style('cursor', 'pointer')
 
 				this.paths(svg, nodes)
+				break;
+			}
+			case 'timeline': {
+				break;
 			}
 		}
 	}
@@ -263,14 +218,15 @@ export class Board extends React.Component {
 		})
 	}
 
-	componentDidUpdate() {
-		this.update()
+	shouldComponentUpdate() {
+		if (!this.state.fetchActive) this.update()
+		return true;
 	}
 
 	render() {
 		if (!this.state.fetchActive) {
 			return (
-				<Stack>
+				<Stack id="portalContainer">
 					{this.portals}
 					<Grid alignItems={'center'} alignContent={'center'} container direction={'row'}>
 						<Grid item>
@@ -335,14 +291,73 @@ export class Board extends React.Component {
 		else return <div>loading</div>;
 	}
 
-	load = () => {
-		this.getTopLevel(
-			{
-				host: this.props.host,
-				mode: "GET",
-				url: "/board/cards/" + this.state.board.id
+	getTopLevel = async () => {
+
+		var params = {
+			host: this.props.host,
+			mode: "POST",
+			url: "/card/list",
+			type: "application/json",
+			body : JSON.stringify({ "board" : this.state.board.id, "only" : [ "id" ]})
+		}
+	
+		try {
+			var response = await doRequest(params)
+			var result = await response.json()
+			var cards = result.cards
+
+			//Filter out the ones we don't want
+			if (this.state.active && !this.reloadInProgress) {
+				var activeCards = this.state.active.split(',')
+				cards = _.filter(cards, function (child) {
+					var result = (_.filter(activeCards, function (value) {
+						var eqv = value === child.id;
+						return eqv
+					}))
+					return (result.length > 0)
+				})
 			}
-		).then(() => {
+
+			//Collect the ids and get the 'real' versions of the cards
+			var cardList = '{ "cards" : ['
+			if (cards?.length) {
+				cards.forEach(async (card) => {
+
+					var cParams = {
+						host: this.props.host,
+						mode: "GET",
+						url: "/card/" + card.id
+					}
+					var cResponse = await doRequest(cParams)
+					var cResult = await cResponse.json()
+					this.root.children.push(cResult)
+
+					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
+				})
+			}
+		} catch (error) {
+			console.log("Caught error: ", error)
+		}
+		return null;
+	}
+
+	childrenOf = (host, cards, depth) => {
+		if (cards.length == 0) this.setState({ cardData: this.root })
+		forEach(cards, (card) => {
+			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
+			getCardChildren(host, card).then(async (result) => {
+				this.setState((prev) => { return { pending: prev.pending - 1 } })
+				var children = await result.json()
+				card.children = children.cards
+				var ld = depth;
+				if (ld < this.state.depth) this.childrenOf(host, card.children, ld + 1)
+				else this.setState({ cardData: this.root })
+			}, this)
+		})
+	}
+
+	load = () => {
+		this.getTopLevel().then(() => {
 			var clonedData = JSON.parse(JSON.stringify(this.root))
 			this.setState({ allData: clonedData })
 			this.setState({ cardData: this.root })
@@ -361,6 +376,7 @@ export class Board extends React.Component {
 	}
 
 	nodeClicked = (ev, d) => {
+		console.log("nc")
 		if (ev.ctrlKey) {
 			if (d.data.children && d.data.children.length) {
 				d.data.savedChildren = _.union(d.data.children, d.data.savedChildren)
@@ -378,6 +394,7 @@ export class Board extends React.Component {
 			document.open("/nui/card/" + d.data.id, "", "noopener=true")
 		}
 		else {
+			this.popUp = d.data.id
 			this.setState({ popUp: d.data.id })
 		}
 	}

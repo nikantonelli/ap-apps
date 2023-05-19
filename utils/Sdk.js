@@ -35,7 +35,17 @@ export const getBoardIcons = async (host, brdId) => {
 }
 
 export const doRequest = async (params) => {
-	var req = new Request("http://" + params.host + "/api" + params.url, { method: params.mode });
+	console.log(params)
+	var ps = { method: params.mode }
+	if (params.body) {
+		ps.body = params.body
+	}
+	if (params.type) {
+		var headers = new Headers();
+		headers.append("Content-Type", params.type)
+		ps.headers = headers
+	}
+	var req = new Request("http://" + params.host + "/api" + params.url, ps);
 	var res = await fetch(req, { next: { revalidate: 30 } })
 	return res
 }

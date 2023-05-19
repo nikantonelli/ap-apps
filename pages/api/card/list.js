@@ -8,14 +8,15 @@ export default async function handler(req, res) {
 	}
 
 	var params = {
-		url: "/card/" + id,
-		mode: 'GET'
+		url: "/card/list",
+		mode: 'POST',
+		body: JSON.stringify(req.body)
 	}
-	var result = globalThis.dataProvider.inCache(id);
-	if ( result == null ) {
-		result = await globalThis.dataProvider.xfr(params)
-		globalThis.dataProvider.addToCache(result);
-	}
-
+	try {
+	var result = await globalThis.dataProvider.xfr(params)
 	res.status(200).json(result)
+	}
+	catch(err) {
+		res.status(400).json({ error: "Failed to complete command", message: params})
+	}
 }

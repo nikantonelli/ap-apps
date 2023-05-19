@@ -33,8 +33,10 @@ class AgilePlace {
 			headers["Authorization"] = "Basic " + Base64.encode(token);
 		}
 
-		console.log("ap: ", this.count += 1, params.baseUrl + params.url,)
-		var req = new Request(params.baseUrl + params.url, { headers: headers, method: params.mode });
+		console.log("ap: ", this.count += 1, params.baseUrl + params.url, headers, params.body)
+		var ps =  { headers: headers, method: params.mode }
+		if (params.body) ps.body = params.body;
+		var req = new Request(params.baseUrl + params.url,ps);
 		const res = await fetch(req, { next: { revalidate: 30 } }).then(
 			async (response) => {
 				if (!response.ok) {

@@ -12,6 +12,7 @@ import { ConnectionTable } from "./ConnectionTable";
 
 import { getBoard, getCardChildren, getListOfCards } from "../utils/Sdk"
 import React from "react";
+import { cardDescriptionFieldStyle, cardStyle, optionsButtonIconStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 
 export class APHoverCard extends React.Component {
 
@@ -61,74 +62,46 @@ export class APHoverCard extends React.Component {
 
 
 	}
+	
 
-	componentDidMount = () => {
-		var data = this.props.card;
-
-		//Get the connection info
-		getCardChildren(this.props.host, data).then(async (children) => {
-			var childArray = await children.json()
-			this.setState({ descendants: childArray.cards })
-			if (data.parentCards && data.parentCards.length) {
-				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then(async (parents) => {
-					var parentArray = await parents.json()
-					this.setState({ parents: parentArray.cards })
-				})
-			}
-		})
-
-		//Get the context info
-		getBoard(this.props.host, data.board.id).then(async (info) => {
-			var board = await info.json()
-			this.setState({ context: board })
-		})
-		//Get the context info
-		// getBoardIcons(this.props.host, this.state.data.board.id).then(async (info) => {
-		// 	var icons = await info.json()
-		// 	this.setState({ contextIcons: icons })
-		// })
-
-
-	}
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
 
-		var typeTitle = (this.state.loadSource === 'card') ? this.state.data.type.title : this.state.data.cardType.name
-		var typeColour = (this.state.loadSource === 'card') ? this.state.data.type.cardColor : this.state.data.color
+		var typeColour =  this.state.data.type.cardColor
 		if (this.state.data != null) {
 			return (
-				<Card className="card" sx={this.props.cardProps} variant='outlined' iid={this.state.data.id}>
+				<Card sx={cardStyle} variant='outlined' iid={this.state.data.id}>
 					<Grid style={{ backgroundColor: typeColour }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'left' }} >
 								<Tooltip title="Open All">
-									<IconButton id="openAll" size='large' className="options-button-icon" aria-label='open panels' onClick={this.changeSection}>
+									<IconButton id="openAll" size='large' sx={optionsButtonIconStyle} aria-label='open panels' onClick={this.changeSection}>
 										<KeyboardDoubleArrowDown />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Details">
-									<IconButton id={APHoverCard.DETAILS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.DETAILS_PANEL_NAME} size='large' sx={optionsButtonIconStyle} aria-label='details panel' onClick={this.changeSection}>
 										<List />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Schedule">
-									<IconButton id={APHoverCard.SCHEDULE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.SCHEDULE_PANEL_NAME} size='large' sx={optionsButtonIconStyle} aria-label='details panel' onClick={this.changeSection}>
 										<CalendarToday />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Connections">
-									<IconButton id={APHoverCard.CONNECTIONS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.CONNECTIONS_PANEL_NAME} size='large' sx={optionsButtonIconStyle} aria-label='details panel' onClick={this.changeSection}>
 										<SettingsEthernet />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="People">
-									<IconButton id={APHoverCard.PEOPLE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APHoverCard.PEOPLE_PANEL_NAME} size='large' sx={optionsButtonIconStyle} aria-label='details panel' onClick={this.changeSection}>
 										<People />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Close All">
-									<IconButton id="closeAll" size='large' className="options-button-icon" aria-label='close panels' onClick={this.changeSection}>
+									<IconButton id="closeAll" size='large' sx={optionsButtonIconStyle} aria-label='close panels' onClick={this.changeSection}>
 										<KeyboardDoubleArrowUp />
 									</IconButton>
 								</Tooltip>
@@ -140,7 +113,7 @@ export class APHoverCard extends React.Component {
 
 
 								<Tooltip title="Close">
-									<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.props.onClose} >
+									<IconButton size='large' sx={optionsButtonIconStyle} aria-label="delete forever" onClick={this.props.onClose} >
 										<HighlightOffOutlined />
 									</IconButton>
 								</Tooltip>
@@ -151,26 +124,26 @@ export class APHoverCard extends React.Component {
 					<CardContent sx={{ backgroundColor: typeColour }}>
 						<Accordion expanded={this.state[APHoverCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="details-content" id={APHoverCard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state[APHoverCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
+								<Typography variant={sectionHeaderType}>{this.state[APHoverCard.DETAILS_PANEL_NAME] ? this.state.data.type.title + ": " + this.state.data.id : this.state.data.title}</Typography>
 							</AccordionSummary>
 							<Grid container direction="column" >
 								<Grid item>
 									<Grid container direction="row">
-										<Grid item className='card-description-field' >
+										<Grid item sx={cardDescriptionFieldStyle} >
 											<Grid>
-												<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Title</Typography></Paper>
+												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography></Paper>
 												<TextField
 													InputProps={{
 														readOnly: true,
 													}}
 													variant="outlined"
-													className='card-description-field'
+													sx={cardDescriptionFieldStyle}
 													value={this.state.data.title}
 												/>
 											</Grid>
 										</Grid>
-										<Grid item className='card-description-field' >
-											<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">
+										<Grid item sx={cardDescriptionFieldStyle} >
+											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
 												{"Status: " + ((this.state.data.actualFinish?.length) ?
 													" Finished (" + this.state.data.actualFinish + ")" :
 													(this.state.data.actualStart?.length) ?
@@ -214,7 +187,7 @@ export class APHoverCard extends React.Component {
 									</Grid>
 								</Grid>
 
-								<Grid item className='card-description-field'>
+								<Grid item sx={cardDescriptionFieldStyle}>
 									<APdescription
 										readOnly
 										description={this.state.data.description}
@@ -230,23 +203,23 @@ export class APHoverCard extends React.Component {
 							</AccordionSummary>
 							<AccordionDetails>
 								<Grid container direction="row">
-									<Grid item className='card-description-field' >
-										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography>
+									<Grid item sx={cardDescriptionFieldStyle} >
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Planned Dates</Typography>
 										</Paper>
 										<APdateRange
 											start={this.state.data.plannedStart}
 											end={this.state.data.plannedFinish}
 										/>
 									</Grid>
-									<Grid item className='card-description-field' >
-										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Actual Dates</Typography></Paper>
+									<Grid item sx={cardDescriptionFieldStyle} >
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Actual Dates</Typography></Paper>
 										<APdateRange
 											start={this.state.data.actualStart}
 											end={this.state.data.actualFinish}
 										/>
 									</Grid>
-									<Grid item className='card-description-field' >
-										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Time Box</Typography></Paper>
+									<Grid item sx={cardDescriptionFieldStyle} >
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Time Box</Typography></Paper>
 									</Grid>
 								</Grid>
 							</AccordionDetails>
@@ -257,13 +230,13 @@ export class APHoverCard extends React.Component {
 
 							</AccordionSummary>
 							<AccordionDetails>
-								{this.props.parents && this.props.parents.length ?
+								{this.props.parents?.length ?
 									<ConnectionTable
 										items={this.props.parents}
 										title="Parents"
 										titleType={fieldHeaderType}
 									/> : null}
-								{this.props.descendants && this.props.descendants.length ?
+								{this.props.descendants?.length ?
 									<ConnectionTable
 										title="Descendants"
 										titleType={fieldHeaderType}
@@ -276,9 +249,9 @@ export class APHoverCard extends React.Component {
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Assigned Users</Typography></Paper>
+								<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Assigned Users</Typography></Paper>
 								<AssignedUserTable card={this.state.data} />
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Involved Users</Typography></Paper>
+								<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Involved Users</Typography></Paper>
 								<CardUserTable card={this.state.data} />
 							</AccordionDetails>
 						</Accordion>

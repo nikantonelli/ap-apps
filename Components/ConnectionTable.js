@@ -2,6 +2,7 @@ import { Paper, Typography, Grid } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import React from "react";
 import { cloneDeep } from "lodash";
+import { titleFieldStyle, titlePaperStyle } from "../styles/globals";
 export class ConnectionTable extends React.Component {
 	columns = [
 		{ field: 'title', headerName: 'Title', width: 400 },
@@ -51,7 +52,7 @@ export class ConnectionTable extends React.Component {
 		if (Boolean(this.props.items)) {
 			return (
 				<>
-					<Paper square elevation={2} className="title-paper"><Typography variant={this.props.titleType} className="title-field">{this.props.title}</Typography></Paper>
+					<Paper square elevation={0}  sx={titlePaperStyle}><Typography variant={this.props.titleType} sx={titleFieldStyle}>{this.props.title}</Typography></Paper>
 
 					<DataGrid
 						rows={this.props.items}
