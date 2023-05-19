@@ -35,7 +35,6 @@ export const getBoardIcons = async (host, brdId) => {
 }
 
 export const doRequest = async (params) => {
-	console.log(params)
 	var ps = { method: params.mode }
 	if (params.body) {
 		ps.body = params.body

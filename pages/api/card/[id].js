@@ -11,10 +11,10 @@ export default async function handler(req, res) {
 		url: "/card/" + id,
 		mode: 'GET'
 	}
-	var result = globalThis.dataProvider.inCache(id);
+	var result = globalThis.dataProvider.inCache(id, 'card');
 	if ( result == null ) {
 		result = await globalThis.dataProvider.xfr(params)
-		globalThis.dataProvider.addToCache(result);
+		globalThis.dataProvider.addToCache(result, 'card');
 	}
 
 	res.status(200).json(result)

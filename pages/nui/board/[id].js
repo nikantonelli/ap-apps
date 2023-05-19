@@ -14,7 +14,7 @@ export class Board extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
-			tileType: 'tree',
+			tileType: 'sunburst',
 			anchorEl: null,
 			cardData:
 			{
@@ -42,11 +42,17 @@ export class Board extends React.Component {
 		id: 'root',
 		children: []
 	};
+	tileType = 'sunburst'
 
 	closePopUp = () => {
-		console.log("clicked close")
 		this.popUp = null
 		this.setState({ popUp: null })
+	}
+
+	calcTreeData = (mtr) => {
+		mtr.leaves(function (d) {
+			d.value = d.data.size || 1;
+		})
 	}
 
 	update = () => {
@@ -57,7 +63,7 @@ export class Board extends React.Component {
 
 		var dataTree = d3.hierarchy(this.state.cardData)
 
-		switch (this.state.tileType) {
+		switch (this.tileType) {
 			case 'tree': {
 
 				var levelWidth = [1];
@@ -96,6 +102,7 @@ export class Board extends React.Component {
 					);
 
 				var mtr = tree(dataTree);
+				this.calcTreeData(mtr);
 
 				var nodes = svg.selectAll(".node")
 					.data(mtr.descendants().slice(1))
@@ -106,27 +113,31 @@ export class Board extends React.Component {
 					d.colMargin = 80;
 					d.colWidth = colWidth - d.colMargin;
 					d.rowHeight = rowHeight;
-					var parents = d.parent.depth>0?[d.parent.data]:null
+					var parents = d.parent.depth > 0 ? [d.parent.data] : null
 					var children = []
 					d.children?.forEach((child) => {
 						children.push(child.data)
 					})
+					var analysisData = {
+						calculatedSize: d.value
+					}
 					me.portals.push(
 
 						<Drawer
 							onClose={me.closePopUp}
-							key={d.data.id + "-" + d.parent?.data.id}
+							key={d.data.id + "-" + d.parent?.data.id + "-" + d.depth}
 							open={me.popUp === d.data.id}
 						>
 							<div>
-								<APHoverCard 
+								<APHoverCard
+									analysis={analysisData}
 									descendants={children}
 									parents={parents}
-									cardProps={{ maxWidth: 650 }} 
-									loadSource={d.depth < 2 ? 'board' : 'card'} 
-									host={me.props.host} card={d.data} 
-									context={me.state.context} 
-									onClose={me.closePopUp} 
+									cardProps={{ maxWidth: 650 }}
+									loadSource={d.depth < 2 ? 'board' : 'card'}
+									host={me.props.host} card={d.data}
+									context={me.state.context}
+									onClose={me.closePopUp}
 								/>
 							</div>
 						</Drawer>
@@ -166,6 +177,142 @@ export class Board extends React.Component {
 			}
 			case 'timeline': {
 				break;
+			}
+			case 'sunburst': {
+				var root = partition(dataTree);
+				root.each(d => d.current = d);
+				var rootPairs = root.links()
+				rootPairs.forEach((pair, idx) => {
+					pair.source.index = idx;
+				})
+				var ringWidth = 100;
+				var width = root.height * ringWidth;
+				var rootEl = document.getElementById("surface_" + this.state.board.id)
+				width = _.min([width, rootEl.getBoundingClientRect().width / 2])
+				svg.attr('viewBox', [0, 0, width * 2, width * 2])
+				svg.attr("height", width * 2)
+				const g = svg.append("g")
+					.attr("transform", `translate(${width},${width})`);
+				var color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, root.children?.length))
+				var format = d3.format(",d");
+				var arc = d3.arc()
+					.startAngle(d => d.x0)
+					.endAngle(d => d.x1)
+					.padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+					.padRadius((width / 3) * 1.5)
+					.innerRadius(d => d.y0 * (width / 3))
+					.outerRadius(d => Math.max(d.y0 * (width / 3), d.y1 * (width / 3) - 1))
+				var path = g.append("g")
+					.selectAll("path")
+					.data(root.descendants().slice(1))
+					.join("path")
+					.attr("fill", d => {
+						while (d.depth > 1)
+							d = d.parent;
+						return color(d.index);
+					})
+					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+
+					.attr("d", d => arc(d.current));
+				path.filter(d => d.children)
+					.style("cursor", "pointer")
+					.on("click", clicked);
+
+				path.append("title")
+					.text(d => {
+						return d.data.data.title + " : " + d.data.data.size;
+					})
+
+				const label = g.append("g")
+					.attr("pointer-events", "none")
+					.attr("text-anchor", "middle")
+					.style("user-select", "none")
+					.selectAll("text")
+					.data(root.descendants().slice(1))
+					.join("text")
+					.attr("dy", "0.35em")
+					//					.attr("fill-opacity", 1)
+					.attr("fill-opacity", d => +labelVisible(d.current))
+					.attr("transform", d => labelTransform(d.current))
+					.text(d => d.data.data.id);
+
+				const parent = g.append("circle")
+					.datum(root)
+					.attr("r", (width / 3))
+					.attr("fill", "#888")
+					.attr("pointer-events", "all")
+					.on("click", clicked)
+
+				const parentLabel = g.append("text")
+					.datum(root)
+					.text(d =>
+						d.data.data.id)
+						
+					.attr("text-anchor", "middle");
+
+
+				function partition(data) {
+					const root = d3.hierarchy(data)
+						.sum(d => {
+							return Boolean(d.data.size) ? d.data.size : 1
+						})
+						.sort((a, b) => b.value - a.value);
+					return d3.partition()
+						.size([2 * Math.PI, root.height + 1])
+						(root);
+				}
+
+				function clicked(event, p) {
+					parent.datum(p.parent || root);
+					parentLabel.datum(p).text(d =>
+						d.data.data.id);
+
+					root.each(d => d.target = {
+						x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+						x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+						y0: Math.max(0, d.y0 - p.depth),
+						y1: Math.max(0, d.y1 - p.depth)
+					});
+
+					const t = g.transition().duration(750);
+
+					// Transition the data on all arcs, even the ones that aren’t visible,
+					// so that if this transition is interrupted, entering arcs will start
+					// the next transition from the desired position.
+					path.transition(t)
+						.tween("data", d => {
+							const i = d3.interpolate(d.current, d.target);
+							return t => d.current = i(t);
+						})
+						.filter(function (d) {
+							return +this.getAttribute("fill-opacity") || arcVisible(d.target);
+						})
+						.attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
+						.attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+
+						.attrTween("d", d => () => arc(d.current));
+
+					label.filter(function (d) {
+						return +this.getAttribute("fill-opacity") || labelVisible(d.target);
+					}).transition(t)
+						.attr("fill-opacity", d => +labelVisible(d.target))
+						.attrTween("transform", d => () => labelTransform(d.current));
+				}
+
+				function arcVisible(d) {
+					return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+				}
+
+				function labelVisible(d) {
+					return d.y1 <= 3 && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.06;
+				}
+
+				function labelTransform(d) {
+					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+					const y = (d.y0 + d.y1) / 2 * (width / 3);
+					return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+				}
 			}
 		}
 	}
@@ -252,7 +399,7 @@ export class Board extends React.Component {
 						}}
 					>
 						<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
-						<MenuItem value='analysis' onClick={this.closeMenu}>Analysis</MenuItem>
+						<MenuItem value='sunburst' onClick={this.closeMenu}>Sunburst</MenuItem>
 						<MenuItem value='expand' onClick={this.closeMenu}>Expand All</MenuItem>
 						{(this.state.active && this.state.active.length) ?
 							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
@@ -298,9 +445,9 @@ export class Board extends React.Component {
 			mode: "POST",
 			url: "/card/list",
 			type: "application/json",
-			body : JSON.stringify({ "board" : this.state.board.id, "only" : [ "id" ]})
+			body: JSON.stringify({ "board": this.state.board.id, "only": ["id"] })
 		}
-	
+
 		try {
 			var response = await doRequest(params)
 			var result = await response.json()
@@ -376,7 +523,6 @@ export class Board extends React.Component {
 	}
 
 	nodeClicked = (ev, d) => {
-		console.log("nc")
 		if (ev.ctrlKey) {
 			if (d.data.children && d.data.children.length) {
 				d.data.savedChildren = _.union(d.data.children, d.data.savedChildren)
@@ -421,7 +567,8 @@ export class Board extends React.Component {
 				break;
 			}
 			case 'tree':
-			case 'analysis': {
+			case 'sunburst': {
+				this.tileType = e.target.getAttribute('value');
 				this.setState({ tileType: e.target.getAttribute('value') })
 				break;
 			}
