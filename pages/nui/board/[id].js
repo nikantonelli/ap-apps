@@ -299,7 +299,7 @@ export class Board extends React.Component {
 			}
 			case 'sunburst': {
 				var dRoot = dataTree.sum(d => {
-					return Boolean(d.data?.size) ? d.data.size : 1
+					return Boolean(d.data && d.data.size) ? d.data.size : 1
 				})
 					.sort((a, b) => b.value - a.value);
 
@@ -372,7 +372,7 @@ export class Board extends React.Component {
 					//					.attr("fill-opacity", 1)
 					.attr("fill-opacity", d => +labelVisible(d.current))
 					.attr("transform", d => labelTransform(d.current))
-					.text(d => d.data.id);
+					.text(d => (d.data.id ==="root"?"":d.data.id));
 
 				const parent = g.append("circle")
 					.datum(root)
@@ -384,7 +384,7 @@ export class Board extends React.Component {
 				const parentLabel = g.append("text")
 					.datum(root)
 					.text(d =>
-						d.data.id)
+						(d.data.id ==="root"?"":d.data.id))
 					.attr("text-anchor", "middle");
 
 				const parentTitle = g.append("title")
@@ -398,7 +398,7 @@ export class Board extends React.Component {
 
 					parent.datum(p.parent || root);
 					parentLabel.datum(p).text(d =>
-						d.data.id);
+						(d.data.id ==="root"?"":d.data.id));
 					parentTitle.datum(p).text(d => {
 						return d.data.title + " : " + d.data.size;
 					})
@@ -437,16 +437,16 @@ export class Board extends React.Component {
 				}
 
 				function arcVisible(d) {
-					return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+					return d.y1 <= ringCount && d.y0 >= 1 && d.x1 > d.x0;
 				}
 
 				function labelVisible(d) {
-					return d.y1 <= 3 && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.06;
+					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.06;
 				}
 
 				function labelTransform(d) {
 					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-					const y = (d.y0 + d.y1) / 2 * (width / 3);
+					const y = (d.y0 + d.y1) / 2 * (width / ringCount);
 					return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
 				}
 			}
@@ -536,6 +536,7 @@ export class Board extends React.Component {
 					>
 						<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
 						<MenuItem value='sunburst' onClick={this.closeMenu}>Size Sunburst</MenuItem>
+						<MenuItem value='partition' onClick={this.closeMenu}>Size Partition Map</MenuItem>
 						<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
 						{(this.state.active && this.state.active.length) ?
 							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
@@ -622,7 +623,7 @@ export class Board extends React.Component {
 					else {
 						this.root = cResult;
 					}
-
+					this.clonedData = JSON.parse(JSON.stringify(this.root))
 					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
 				})
 			}
@@ -643,14 +644,14 @@ export class Board extends React.Component {
 				var ld = depth;
 				if (ld < this.state.depth) this.childrenOf(host, card.children, ld + 1)
 				else this.setState({ cardData: this.root })
+				this.clonedData = JSON.parse(JSON.stringify(this.root));
 			}, this)
 		})
 	}
 
 	load = () => {
 		this.getTopLevel().then(() => {
-			var clonedData = JSON.parse(JSON.stringify(this.root))
-			this.setState({ allData: clonedData })
+			//We add the root and in the background the fetches add the children
 			this.setState({ cardData: this.root })
 		})
 	}
@@ -660,10 +661,6 @@ export class Board extends React.Component {
 			this.setState({ fetchActive: false })
 			this.load();
 		}
-	}
-
-	hideCard = (e, d) => {
-		// d.popperEl.style.visibility = 'hidden';
 	}
 
 	nodeClicked = (ev, d) => {
@@ -711,6 +708,7 @@ export class Board extends React.Component {
 				break;
 			}
 			case 'tree':
+			case 'partition':
 			case 'sunburst': {
 				this.tileType = e.target.getAttribute('value');
 				//Force a redraw as well
@@ -799,7 +797,7 @@ export class Board extends React.Component {
 		//Top level list is the children of root
 
 		var cardList = null;
-		if (this.state.allData) cardList = this.state.allData.children
+		if (this.clonedData) cardList = this.clonedData.children
 		return (cardList && cardList.length) ? (
 			<Autocomplete
 				freeSolo

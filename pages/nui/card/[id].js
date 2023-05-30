@@ -3,7 +3,7 @@ import DataProvider from "../../../utils/Server/DataProvider";
 import React from "react";
 
 import { APcard } from "../../../Components/APcard";
-import { getBoard, getCardChildren, getListOfCards } from "../../../utils/Sdk"
+import { getBoard, getCardChildren, getListOfCards } from "../../../utils/Client/Sdk"
 
 export default class Item extends React.Component {
 
