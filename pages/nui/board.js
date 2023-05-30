@@ -1,8 +1,8 @@
-import { Button, Card, CardActionArea, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
-import BoardService from "../../services/BoardService"
+import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
+import BoardService from "../../services/BoardService";
 
-import { useState } from 'react'
-import { Cancel, Clear, OpenInBrowser, OpenInNew } from "@mui/icons-material";
+import { Cancel } from "@mui/icons-material";
+import { useState } from 'react';
 
 export default function Board({ host }) {
 

@@ -10,7 +10,7 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { ConnectionTable } from "./ConnectionTable";
 
-import { getBoard, getCardChildren, getListOfCards } from "../utils/Sdk"
+import { getBoard, getCardChildren, getListOfCards } from "../utils/Client/Sdk"
 import React from "react";
 import { cardDescriptionFieldStyle, cardStyle, optionsButtonIconStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 

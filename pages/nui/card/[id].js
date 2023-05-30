@@ -1,5 +1,5 @@
 import CardService from "../../../services/CardService";
-import DataProvider from "../../../utils/DataProvider";
+import DataProvider from "../../../utils/Server/DataProvider";
 import React from "react";
 
 import { APcard } from "../../../Components/APcard";

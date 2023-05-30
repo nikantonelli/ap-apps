@@ -1,4 +1,7 @@
-
+/**
+ * Cache is for stuff fetched from AP by the local server
+ * and not for the browser client
+ */
 class ItemCache {
 	constructor(size) {
 		this.size = size;
