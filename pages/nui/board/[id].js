@@ -42,17 +42,19 @@ export class Board extends React.Component {
 		id: 'root',
 		children: []
 	};
-	tileType = this.props.mode || 'sunburst';
+	tileType = this.props.mode || 'tree';
 
 	closePopUp = () => {
 		this.popUp = null
 		this.setState({ popUp: null })
 	}
 
-	calcTreeData = (mtr) => {
-		mtr.leaves(function (d) {
-			d.value = d.data.size || 1;
+	calcTreeData = (dataTree) => {
+		return dataTree.sum(d => {
+			return Boolean(d.size) ? d.size : 1
 		})
+			.sort((a, b) => b.value - a.value);
+
 	}
 
 	addPortals = (me, nodes) => {
@@ -110,19 +112,16 @@ export class Board extends React.Component {
 			}
 		};
 
-		var rowHeight = 40;
+		var rowHeight = 80;
 		childCount(0, dataTree);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) , treeBoxHeight])
-
+		var dRoot = this.calcTreeData(dataTree)
+		
 		switch (this.tileType) {
 			case 'partition': {
 
 				var viewBox = [window.innerWidth, treeBoxHeight]
-				var dRoot = dataTree.sum(d => {
-					return Boolean(d.data && d.data.size) ? d.data.size : 1
-				})
-					.sort((a, b) => b.value - a.value);
 
 				var nodes = d3.selectAll(".node")
 					.data(dRoot.descendants().slice(1))
@@ -154,7 +153,7 @@ export class Board extends React.Component {
 					.attr("transform", d => `translate(${d.y0},${d.x0})`);
 
 				const rect = cell.append("rect")
-					.attr("width", d => d.y1 - d.y0 - 1)
+					.attr("width", d => d.y1 - d.y0 - 2)
 					.attr("height", d => rectHeight(d))
 					.attr("fill-opacity", 0.6)
 					.attr("fill", d => {
@@ -183,15 +182,14 @@ export class Board extends React.Component {
 					.text(d => d.data.title);
 
 				cell.append("title")
-					.text(d => d.data.title);
+					.text(d => {return d.data.title + " : " + d.data.size + " (" + d.value + ")";});
 
 				function clicked(event, p) {
 
 					if (!event.shiftKey) me.nodeClicked(event, p);
 					focus = focus === p ? p = p.parent : p;
-					var rowHeight = 40;
-					var levelWidth = [1];
-					childCount(0, root);
+					levelWidth = [1];
+					childCount(0, focus);
 					var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 					treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) , treeBoxHeight])
 
@@ -214,7 +212,7 @@ export class Board extends React.Component {
 					text.transition(t).attr("fill-opacity", d => +labelVisible(d.target));
 				}
 				function rectHeight(d) {
-					return d.x1 - d.x0 - Math.min(1, (d.x1 - d.x0) / 2);
+					return d.x1 - d.x0 - Math.min(2, (d.x1 - d.x0) / 2);
 				}
 
 				function labelVisible(d) {
@@ -227,7 +225,7 @@ export class Board extends React.Component {
 
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight/3]
 				var colWidth = (viewBoxSize[0] / (dataTree.height || 1))
 
 
@@ -245,11 +243,10 @@ export class Board extends React.Component {
 					}
 					);
 
-				var mtr = tree(dataTree);
-				this.calcTreeData(mtr);
+				var root = tree(dRoot);
 
 				var nodes = svg.selectAll(".node")
-					.data(mtr.descendants().slice(1))
+					.data(root.descendants().slice(1))
 					.enter()
 
 				var me = this;
@@ -265,12 +262,12 @@ export class Board extends React.Component {
 				this.addPortals(me, nodes);
 
 				nodes.append("clipPath")
-					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
+					.attr("id", function (d, idx) { return "clip_" + idx })
 					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
 					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
 					.attr("x", function (d) { return d.y })
 					.attr("width", function (d) { return d.colWidth })
-					.attr("height", 30)
+					.attr("height", d => d.rowHeight)
 
 				var nodeGroups = nodes.append('g')
 					.attr("id", function (d) {
@@ -278,7 +275,7 @@ export class Board extends React.Component {
 					})
 
 				nodeGroups.append("text")
-					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
+					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
 					.text(function (d) { return d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""); })
 					.on('click', this.nodeClicked)
 					.attr('class', "idText")
@@ -298,11 +295,7 @@ export class Board extends React.Component {
 				break;
 			}
 			case 'sunburst': {
-				var dRoot = dataTree.sum(d => {
-					return Boolean(d.data && d.data.size) ? d.data.size : 1
-				})
-					.sort((a, b) => b.value - a.value);
-
+				
 				var nodes = d3.selectAll(".node")
 					.data(dRoot.descendants().slice(1))
 					.enter()
@@ -357,13 +350,12 @@ export class Board extends React.Component {
 
 				path.append("title")
 					.text(d => {
-						return d.data.title + " : " + d.data.size;
+						return d.data.title + " : " + d.data.size + " (" + d.value + ")";
 					})
 					;
 
 				const label = g.append("g")
 					.attr("pointer-events", "none")
-					.attr("text-anchor", "middle")
 					.style("user-select", "none")
 					.selectAll("text")
 					.data(root.descendants().slice(1))
@@ -372,6 +364,8 @@ export class Board extends React.Component {
 					//					.attr("fill-opacity", 1)
 					.attr("fill-opacity", d => +labelVisible(d.current))
 					.attr("transform", d => labelTransform(d.current))
+					
+					.attr("text-anchor", d => labelAnchor(d.current))
 					.text(d => (d.data.id ==="root"?"":d.data.id));
 
 				const parent = g.append("circle")
@@ -390,7 +384,7 @@ export class Board extends React.Component {
 				const parentTitle = g.append("title")
 					.datum(root)
 					.text(d => {
-						return d.data.title + " : " + d.data.size;
+						return d.data.id ==="root"?"":d.data.title + " : " + d.data.size;
 					})
 
 				function arcClicked(event, p) {
@@ -441,12 +435,20 @@ export class Board extends React.Component {
 				}
 
 				function labelVisible(d) {
-					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.06;
+					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.04;
 				}
 
-				function labelTransform(d) {
+				function labelAnchor(d) {
+					
 					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-					const y = (d.y0 + d.y1) / 2 * (width / ringCount);
+					return (x <180)?"end":"start"
+				}
+				function labelTransform(d) {
+					// const x = d.x0  * 180 / Math.PI;
+					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+					
+					const y = (d.y1 * (width / ringCount)) - 5;
+					// const y = (d.y0 + d.y1) / 2 * (width / ringCount);
 					return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
 				}
 			}
@@ -461,6 +463,7 @@ export class Board extends React.Component {
 			links.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
 				.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
+	
 				.attr("x1", function (d) {
 					return d.y
 				})
