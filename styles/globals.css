@@ -73,6 +73,22 @@ text {
 	flex-shrink: 0;
 }
 
+.card-status {
+	stroke-width: 3px;
+}
+
+.card-not-started {
+	stroke: #4989e4;
+}
+
+.card-started {
+	stroke: #27a444;
+}
+
+.card-finished {
+	stroke: #444444;
+}
+
 .options-button-icon {
 	background-color: #fff;
 }

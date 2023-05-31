@@ -1,4 +1,4 @@
-import { Autocomplete, Chip, Drawer, Grid, Menu, MenuItem, Stack, TextField } from "@mui/material";
+import { Autocomplete, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField } from "@mui/material";
 import * as d3 from 'd3';
 import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
@@ -33,7 +33,9 @@ export class Board extends React.Component {
 			total: 0,
 			topLevelList: [],
 			popUp: null,
-			rootDrawNode: null
+			tileType: this.props.mode || 'tree',
+			sortType: this.props.sort || 'size',
+			sortDirection: this.props.dir || 'ascending'
 		}
 	}
 	popUp = null
@@ -42,7 +44,7 @@ export class Board extends React.Component {
 		id: 'root',
 		children: []
 	};
-	tileType = this.props.mode || 'tree';
+
 
 	closePopUp = () => {
 		this.popUp = null
@@ -50,12 +52,18 @@ export class Board extends React.Component {
 	}
 
 	calcTreeData = (dataTree) => {
+		var me = this;
 		return dataTree.sum(d => {
 			return Boolean(d.size) ? d.size : 1
 		})
-			.sort((a, b) => b.value - a.value);
-
-	}
+			.sort((a, b) => {
+				var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
+				if (me.state.sortType === "title") {
+					return dirFnc(a.data.title, b.data.title)
+				}
+				else return me.state.sortDirection === "ascending" ? a.value - b.value : b.value - a.value;
+			})
+	};
 
 	addPortals = (me, nodes) => {
 		nodes.each(function (d) {
@@ -94,6 +102,7 @@ export class Board extends React.Component {
 	update = () => {
 		this.portals = [];
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
+		if (!Boolean(svgEl)) return;
 		var svg = d3.select(svgEl);
 		svgEl.replaceChildren()
 
@@ -115,10 +124,11 @@ export class Board extends React.Component {
 		var rowHeight = 80;
 		childCount(0, dataTree);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) , treeBoxHeight])
+		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 		var dRoot = this.calcTreeData(dataTree)
-		
-		switch (this.tileType) {
+
+		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, dataTree.children && dataTree.children.length ? dataTree.children.length : 1))
+		switch (this.state.tileType) {
 			case 'partition': {
 
 				var viewBox = [window.innerWidth, treeBoxHeight]
@@ -145,7 +155,6 @@ export class Board extends React.Component {
 				svg.attr("height", viewBox[1])
 				svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
 				svg.attr('class', 'rootSurface')
-				var color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, root.children && root.children.length ? root.children.length + 1 : 1))
 				const cell = svg
 					.selectAll("g")
 					.data(root.descendants().slice(1))
@@ -153,14 +162,19 @@ export class Board extends React.Component {
 					.attr("transform", d => `translate(${d.y0},${d.x0})`);
 
 				const rect = cell.append("rect")
-					.attr("width", d => d.y1 - d.y0 - 2)
+					.attr("width", d => d.y1 - d.y0 - 4)
 					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", 0.6)
+					.attr("fill-opacity", 0.3)
 					.attr("fill", d => {
 						if (!d.depth) return "#ccc";
 						while (d.depth > 1) d = d.parent;
 						return color(d.index);
 					})
+					// .attr("class", d => {
+					// 	return d.data.lane.cardStatus === 'finished'? "card-status card-finished" :
+					// 		d.data.lane.cardStatus === 'started'? "card-status card-started" :
+					// 			"card-status card-not-started"
+					// })
 					.style("cursor", "pointer")
 					.on("click", clicked)
 
@@ -179,40 +193,46 @@ export class Board extends React.Component {
 					.attr("fill-opacity", d => +labelVisible(d));
 
 				text.append("tspan")
-					.text(d => d.data.title);
+					.text(d => d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")"))
+					
 
 				cell.append("title")
-					.text(d => {return d.data.title + " : " + d.data.size + " (" + d.value + ")";});
+					.text(d => { return d.data.title + " : " + d.data.size + " (" + d.value + ")"; });
 
 				function clicked(event, p) {
 
-					if (!event.shiftKey) me.nodeClicked(event, p);
-					focus = focus === p ? p = p.parent : p;
-					levelWidth = [1];
-					childCount(0, focus);
-					var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-					treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) , treeBoxHeight])
+					if (!event.shiftKey) me.nodeClicked(event, p)
+					else {
 
-					var viewBox = [window.innerWidth, treeBoxHeight]
-					svg.attr("width", viewBox[0])
-					svg.attr("height", viewBox[1])
-					svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
+						focus = focus === p ? p = p.parent : p;
 
-					root.each(d => d.target = {
-						x0: (d.x0 - p.x0) / (p.x1 - p.x0) * treeBoxHeight,
-						x1: (d.x1 - p.x0) / (p.x1 - p.x0) * treeBoxHeight,
-						y0: d.y0 - p.y0,
-						y1: d.y1 - p.y0
-					});
+						levelWidth = [1];
+						childCount(0, focus);
+						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 
-					const t = cell.transition().duration(750)
-						.attr("transform", d => `translate(${d.target.y0},${d.target.x0})`);
+						var viewBox = [window.innerWidth, treeBoxHeight]
+						svg.attr("width", viewBox[0])
+						svg.attr("height", viewBox[1])
 
-					rect.transition(t).attr("height", d => rectHeight(d.target));
-					text.transition(t).attr("fill-opacity", d => +labelVisible(d.target));
+						svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
+
+						root.each(d => d.target = {
+							x0: ((d.x0 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
+							x1: ((d.x1 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
+							y0: d.y0 - p.y0,
+							y1: d.y1 - p.y0
+						});
+
+						const t = cell.transition().duration(750)
+							.attr("transform", d => `translate(${d.target.y0},${d.target.x0})`);
+
+						rect.transition(t).attr("height", d => rectHeight(d.target));
+						text.transition(t).attr("fill-opacity", d => +labelVisible(d.target));
+					}
 				}
 				function rectHeight(d) {
-					return d.x1 - d.x0 - Math.min(2, (d.x1 - d.x0) / 2);
+					return d.x1 - d.x0 - Math.min(4, (d.x1 - d.x0) / 2);
 				}
 
 				function labelVisible(d) {
@@ -220,12 +240,179 @@ export class Board extends React.Component {
 				}
 				break;
 			}
-			case 'tree': {
+
+
+			case 'timeline': {
+				break;
+			}
+			case 'sunburst': {
+
+				var nodes = d3.selectAll(".node")
+					.data(dRoot.descendants().slice(1))
+					.enter()
+
+				var me = this;
+				this.addPortals(me, nodes);
+
+				var root = d3.partition()
+					.size([2 * Math.PI, dRoot.height + 1])
+					(dRoot);
+
+				root.each(d => d.current = d);
+				var rootPairs = root.links()
+				rootPairs.forEach((pair, idx) => {
+					pair.source.index = idx;
+				})
+
+				var width = _.min([window.innerWidth / 2, (window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) / 2])
+
+				svg.attr("width", width * 2)
+				svg.attr("height", width * 2)
+				svg.attr('viewBox', [0, 0, width * 2, width * 2])
+				svg.attr("height", width * 2)
+				svg.attr('class', 'rootSurface')
+				const g = svg.append("g")
+					.attr("transform", `translate(${width},${width})`);
+
+				var ringCount = 4;
+				var arc = d3.arc()
+					.startAngle(d => d.x0)
+					.endAngle(d => d.x1)
+					.padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+					.padRadius((width / ringCount) * 1.5)
+					.innerRadius(d => d.y0 * (width / ringCount))
+					.outerRadius(d => Math.max(d.y0 * (width / ringCount), d.y1 * (width / ringCount) - 1))
+				var path = g.append("g")
+					.selectAll("path")
+					.data(root.descendants().slice(1))
+					.join("path")
+					.attr("fill", d => {
+						while (d.depth > 1)
+							d = d.parent;
+						return color(d.index);
+					})
+					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+
+					.attr("d", d => arc(d.current))
+					.style("cursor", "pointer")
+					.on("click", arcClicked);
+
+				path.append("title")
+					.text(d => {
+						return d.data.title + " : " + d.data.size + " (" + d.value + ")";
+					})
+					;
+
+				const label = g.append("g")
+					.attr("pointer-events", "none")
+					.style("user-select", "none")
+					.selectAll("text")
+					.data(root.descendants().slice(1))
+					.join("text")
+					.attr("dy", "0.35em")
+					//					.attr("fill-opacity", 1)
+					.attr("fill-opacity", d => +labelVisible(d.current))
+					.attr("transform", d => labelTransform(d.current))
+
+					.attr("text-anchor", d => labelAnchor(d.current))
+					.text(d => {
+						return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " " + d.data.size)
+					});
+
+				const parent = g.append("circle")
+					.datum(root)
+					.attr("r", (width / ringCount))
+					.attr("fill", "#888")
+					.attr("pointer-events", "all")
+					.on("click", arcClicked)
+
+				const parentLabel = g.append("text")
+					.datum(root)
+					.text(d =>
+						(d.data.id === "root" ? "" : d.data.id))
+					.attr("text-anchor", "middle");
+
+				const parentTitle = g.append("title")
+					.datum(root)
+					.text(d => {
+						return d.data.id === "root" ? "" : d.data.title + " : " + d.data.size;
+					})
+
+				function arcClicked(event, p) {
+					if (!event.shiftKey) me.nodeClicked(event, p);
+
+					parent.datum(p.parent || root);
+					parentLabel.datum(p).text(d =>
+						(d.data.id === "root" ? "" : d.data.id));
+					parentTitle.datum(p).text(d => {
+						return d.data.title + " : " + d.data.size;
+					})
+
+					root.each(d => d.target = {
+						x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+						x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+						y0: Math.max(0, d.y0 - p.depth),
+						y1: Math.max(0, d.y1 - p.depth)
+					});
+
+					const t = g.transition().duration(750);
+
+					// Transition the data on all arcs, even the ones that aren’t visible,
+					// so that if this transition is interrupted, entering arcs will start
+					// the next transition from the desired position.
+					path.transition(t)
+						.tween("data", d => {
+							const i = d3.interpolate(d.current, d.target);
+							return t => d.current = i(t);
+						})
+						.filter(function (d) {
+							return +this.getAttribute("fill-opacity") || arcVisible(d.target);
+						})
+						.attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
+						.attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+
+						.attrTween("d", d => () => arc(d.current));
+
+					label.filter(function (d) {
+						return +this.getAttribute("fill-opacity") || labelVisible(d.target);
+					}).transition(t)
+						.attr("fill-opacity", d => +labelVisible(d.target))
+						.attrTween("transform", d => () => labelTransform(d.current))
+						.attrTween("text-anchor", d => () => labelAnchor(d.current))
+
+				}
+
+				function arcVisible(d) {
+					return d.y1 <= ringCount && d.y0 >= 1 && d.x1 > d.x0;
+				}
+
+				function labelVisible(d) {
+					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.04;
+				}
+
+				function labelAnchor(d) {
+
+					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+					return (x < 180) ? "end" : "start"
+				}
+				function labelTransform(d) {
+					// const x = d.x0  * 180 / Math.PI;
+					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+
+					const y = (d.y1 * (width / ringCount)) - 5;
+					// const y = (d.y0 + d.y1) / 2 * (width / ringCount);
+					return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+				}
+				break;
+			}
+			case 'tree':
+			default: {
 
 
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight/3]
+				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight / 3]
 				var colWidth = (viewBoxSize[0] / (dataTree.height || 1))
 
 
@@ -291,167 +478,6 @@ export class Board extends React.Component {
 				this.paths(svg, nodes)
 				break;
 			}
-			case 'timeline': {
-				break;
-			}
-			case 'sunburst': {
-				
-				var nodes = d3.selectAll(".node")
-					.data(dRoot.descendants().slice(1))
-					.enter()
-
-				var me = this;
-				this.addPortals(me, nodes);
-
-				var root = d3.partition()
-					.size([2 * Math.PI, dRoot.height + 1])
-					(dRoot);
-
-				root.each(d => d.current = d);
-				var rootPairs = root.links()
-				rootPairs.forEach((pair, idx) => {
-					pair.source.index = idx;
-				})
-
-				var width = _.min([window.innerWidth / 2, (window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) / 2])
-
-				svg.attr("width", width * 2)
-				svg.attr("height", width * 2)
-				svg.attr('viewBox', [0, 0, width * 2, width * 2])
-				svg.attr("height", width * 2)
-				svg.attr('class', 'rootSurface')
-				const g = svg.append("g")
-					.attr("transform", `translate(${width},${width})`);
-				var color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, root.children && root.children.length ? root.children.length + 1 : 1))
-
-				var ringCount = 4;
-				var arc = d3.arc()
-					.startAngle(d => d.x0)
-					.endAngle(d => d.x1)
-					.padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
-					.padRadius((width / ringCount) * 1.5)
-					.innerRadius(d => d.y0 * (width / ringCount))
-					.outerRadius(d => Math.max(d.y0 * (width / ringCount), d.y1 * (width / ringCount) - 1))
-				var path = g.append("g")
-					.selectAll("path")
-					.data(root.descendants().slice(1))
-					.join("path")
-					.attr("fill", d => {
-						while (d.depth > 1)
-							d = d.parent;
-						return color(d.index);
-					})
-					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
-					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
-
-					.attr("d", d => arc(d.current))
-					.style("cursor", "pointer")
-					.on("click", arcClicked);
-
-				path.append("title")
-					.text(d => {
-						return d.data.title + " : " + d.data.size + " (" + d.value + ")";
-					})
-					;
-
-				const label = g.append("g")
-					.attr("pointer-events", "none")
-					.style("user-select", "none")
-					.selectAll("text")
-					.data(root.descendants().slice(1))
-					.join("text")
-					.attr("dy", "0.35em")
-					//					.attr("fill-opacity", 1)
-					.attr("fill-opacity", d => +labelVisible(d.current))
-					.attr("transform", d => labelTransform(d.current))
-					
-					.attr("text-anchor", d => labelAnchor(d.current))
-					.text(d => (d.data.id ==="root"?"":d.data.id));
-
-				const parent = g.append("circle")
-					.datum(root)
-					.attr("r", (width / ringCount))
-					.attr("fill", "#888")
-					.attr("pointer-events", "all")
-					.on("click", arcClicked)
-
-				const parentLabel = g.append("text")
-					.datum(root)
-					.text(d =>
-						(d.data.id ==="root"?"":d.data.id))
-					.attr("text-anchor", "middle");
-
-				const parentTitle = g.append("title")
-					.datum(root)
-					.text(d => {
-						return d.data.id ==="root"?"":d.data.title + " : " + d.data.size;
-					})
-
-				function arcClicked(event, p) {
-					if (!event.shiftKey) me.nodeClicked(event, p);
-
-					parent.datum(p.parent || root);
-					parentLabel.datum(p).text(d =>
-						(d.data.id ==="root"?"":d.data.id));
-					parentTitle.datum(p).text(d => {
-						return d.data.title + " : " + d.data.size;
-					})
-
-					root.each(d => d.target = {
-						x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-						x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-						y0: Math.max(0, d.y0 - p.depth),
-						y1: Math.max(0, d.y1 - p.depth)
-					});
-
-					const t = g.transition().duration(750);
-
-					// Transition the data on all arcs, even the ones that aren’t visible,
-					// so that if this transition is interrupted, entering arcs will start
-					// the next transition from the desired position.
-					path.transition(t)
-						.tween("data", d => {
-							const i = d3.interpolate(d.current, d.target);
-							return t => d.current = i(t);
-						})
-						.filter(function (d) {
-							return +this.getAttribute("fill-opacity") || arcVisible(d.target);
-						})
-						.attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
-						.attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
-
-						.attrTween("d", d => () => arc(d.current));
-
-					label.filter(function (d) {
-						return +this.getAttribute("fill-opacity") || labelVisible(d.target);
-					}).transition(t)
-						.attr("fill-opacity", d => +labelVisible(d.target))
-						.attrTween("transform", d => () => labelTransform(d.current));
-
-				}
-
-				function arcVisible(d) {
-					return d.y1 <= ringCount && d.y0 >= 1 && d.x1 > d.x0;
-				}
-
-				function labelVisible(d) {
-					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.04;
-				}
-
-				function labelAnchor(d) {
-					
-					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-					return (x <180)?"end":"start"
-				}
-				function labelTransform(d) {
-					// const x = d.x0  * 180 / Math.PI;
-					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-					
-					const y = (d.y1 * (width / ringCount)) - 5;
-					// const y = (d.y0 + d.y1) / 2 * (width / ringCount);
-					return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-				}
-			}
 		}
 	}
 
@@ -463,7 +489,7 @@ export class Board extends React.Component {
 			links.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
 				.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
-	
+
 				.attr("x1", function (d) {
 					return d.y
 				})
@@ -504,30 +530,86 @@ export class Board extends React.Component {
 		})
 	}
 
-	shouldComponentUpdate() {
-		if (this.state && !this.state.fetchActive) this.update()
-		return true;
+	modeChange = (e) => {
+		this.setState({ tileType: e.target.value });
 	}
-
+	sortChange = (e) => {
+		this.setState({ sortType: e.target.value });
+	}
+	sortDirChange = (e) => {
+		this.setState({ sortDirection: e.target.value });
+	}
 	render() {
 		if (!this.state.fetchActive) {
+			this.update()
 			return (
 				<Stack id="portalContainer">
 					{this.portals}
-					<Grid id="header-box" alignItems={'center'} alignContent={'center'} container direction={'row'}>
-						<Grid item>
-							<FilterAlt fontSize="large" onClick={this.openDrawer} />
+					<Grid id="header-box" container direction={'row'}>
+						<Grid xs={6} item>
+							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
+								<Grid item>
+									<FilterAlt fontSize="large" onClick={this.openDrawer} />
+								</Grid>
+								<Grid item>
+									<TextField
+										variant="filled"
+										sx={{ m: 1, minWidth: 400 }}
+										size="small"
+										defaultValue={this.state.board.title}
+										label="Root Context"
+										InputProps={{ readOnly: true }} />
+								</Grid>
+								<Grid item>
+									<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+										<InputLabel>Mode</InputLabel>
+										<Select
+											value={this.state.tileType}
+											onChange={this.modeChange}
+											label="Mode"
+										>
+											<MenuItem value="tree">Tree</MenuItem>
+											<MenuItem value="sunburst">Sunburst</MenuItem>
+											<MenuItem value="partition">Partition</MenuItem>
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item>
+									<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+										<InputLabel>Sort By</InputLabel>
+										<Select
+											value={this.state.sortType}
+											onChange={this.sortChange}
+											label="Sort By"
+										>
+											<MenuItem value="size">Size</MenuItem>
+											<MenuItem value="title">Title</MenuItem>
+										</Select>
+									</FormControl>
+								</Grid>
+								<Grid item >
+									<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+										<InputLabel>Sort Direction</InputLabel>
+										<Select
+											value={this.state.sortDirection}
+											onChange={this.sortDirChange}
+											label="Sort Direction"
+										>
+											<MenuItem value="ascending">Ascending</MenuItem>
+											<MenuItem value="descending">Descending</MenuItem>
+										</Select>
+									</FormControl>
+								</Grid>
+							</Grid>
 						</Grid>
-						<Grid item>
-							<Chip label={this.state.board.title} onClick={this.enableMenu} />
-						</Grid>
-						<Grid item className="last-column">
-							{this.state.pending ?
-								<Chip label={"Queued: " + this.state.pending} />
-								: <Chip label={"Total loaded: " + this.state.total}></Chip>}
+						<Grid item xs={6} sx={{ alignItems: 'center' }}>
+							<Grid container style={{ justifyContent: 'flex-end' }} >
+								{this.state.pending ?
+									<Chip label={"Queued: " + this.state.pending} />
+									: <Chip label={"Total loaded: " + this.state.total}></Chip>}
+							</Grid>
 						</Grid>
 					</Grid>
-
 					<Menu
 						open={Boolean(this.state.anchorEl)}
 						anchorEl={this.state.anchorEl}
@@ -537,21 +619,14 @@ export class Board extends React.Component {
 							horizontal: 'right',
 						}}
 					>
-						<MenuItem value='tree' onClick={this.closeMenu}>Tree</MenuItem>
-						<MenuItem value='sunburst' onClick={this.closeMenu}>Size Sunburst</MenuItem>
-						<MenuItem value='partition' onClick={this.closeMenu}>Size Partition Map</MenuItem>
+
 						<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
 						{(this.state.active && this.state.active.length) ?
 							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
-							: null
-						}
-					</Menu>
-
-					<div id={"surface_" + this.state.board.id} >
+							: null}
+					</Menu><div id={"surface_" + this.state.board.id}>
 						<svg id={"svg_" + this.state.board.id} />
-					</div>
-
-					<Drawer
+					</div><Drawer
 						variant='persistent'
 						open={Boolean(this.state.drawerOpen)}
 						anchor='left'
@@ -572,7 +647,7 @@ export class Board extends React.Component {
 							</Grid>
 						</Grid>
 					</Drawer>
-				</Stack>
+				</Stack >
 			)
 		}
 		else return <div>loading</div>;
@@ -713,7 +788,6 @@ export class Board extends React.Component {
 			case 'tree':
 			case 'partition':
 			case 'sunburst': {
-				this.tileType = e.target.getAttribute('value');
 				//Force a redraw as well
 				this.setState({ tileType: e.target.getAttribute('value') })
 				break;
@@ -867,8 +941,16 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.mode) {
 			mode = query.mode;
 		}
-		return { props: { board: board, active: active, depth: depth, mode: mode, host: req.headers.host } }
+		var sort = null;
+		if (query.sort) {
+			sort = query.sort;
+		}
+		var dir = null;
+		if (query.dir) {
+			dir = query.dir;
+		}
+		return { props: { board: board, active: active, depth: depth, mode: mode, sort: sort, dir: dir, host: req.headers.host } }
 	}
-	return { props: { board: null, active: null, depth: null, mode: null, host: req.headers.host } }
+	return { props: { board: null, active: null, depth: null, mode: null, sort: null, dir: null, host: req.headers.host } }
 }
 export default Board
