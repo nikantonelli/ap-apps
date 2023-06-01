@@ -98,6 +98,18 @@ text {
 	margin: 5px;
 }
 
+.linear-progress-bar-box {
+	min-width: 200px;
+}
+
+.linear-progress-bar {
+}
+
+.circular-progress-bar {
+	border-radius: 4px;
+	background-color: #ddd;
+}
+
 
 .card-description-field-input {
 	width: 100%;

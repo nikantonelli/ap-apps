@@ -4,7 +4,7 @@ import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 
-import { FilterAlt, HighlightOff, OpenInBrowser } from "@mui/icons-material";
+import { BreakfastDiningOutlined, FilterAlt, HighlightOff, OpenInBrowser } from "@mui/icons-material";
 import React from "react";
 import { APHoverCard } from "../../../Components/APHoverCard";
 import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
@@ -34,7 +34,7 @@ export class Board extends React.Component {
 			topLevelList: [],
 			popUp: null,
 			tileType: this.props.mode || 'tree',
-			sortType: this.props.sort || 'size',
+			sortType: this.props.sort || ((this.props.mode === 'partition') ? 'count' : 'size'),
 			sortDirection: this.props.dir || 'ascending'
 		}
 	}
@@ -53,32 +53,61 @@ export class Board extends React.Component {
 
 	calcTreeData = (dataTree) => {
 		var me = this;
-		return dataTree.sum(d => {
-			return me.state.sortType === "count"? 1 : (Boolean(d.size) ? d.size : 1)
-		})
-			.sort((a, b) => {
-				var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
-				if (me.state.sortType === "title") {
-					return dirFnc(a.data.title, b.data.title)
+		return dataTree
+			.sum(d => {
+				switch (me.state.sortType) {
+
+					default:
+					case 'count': {
+						return 1;
+					}
+					case 'size': {
+						return Boolean(d.size) ? d.size : 1
+					}
 				}
-				else return me.state.sortDirection === "ascending" ? a.value - b.value : b.value - a.value;
+			})
+			.sort((a, b) => {
+				switch (me.state.sortType) {
+					case 'title': {
+						var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
+						return dirFnc(a.data.title, b.data.title)
+					}
+					case 'score': {
+						return me.state.sortDirection === "ascending" 
+							? a.data.scoring.scoreTotal - b.data.scoring.scoreTotal 
+							: b.data.scoring.scoreTotal - a.data.scoring.scoreTotal;
+					}
+					default: {
+						return me.state.sortDirection === "ascending" 
+							? a.value - b.value 
+							: b.value - a.value;
+					}
+				}
 			})
 	};
 
 	addPortals = (me, nodes) => {
-		nodes.each(function (d) {
-			var parents = d.parent.depth > 0 ? [d.parent.data] : null
+		nodes.each(function (d, idx) {
+			var parents = d.parent && (d.parent.depth > 0) ? [d.parent.data] : null
 			var children = []
-			d.children?.forEach((child) => {
-				children.push(child.data)
-			})
+
+			//Get child data ready to pass to APCard
+			if (Boolean(d.children)) {
+				d.children.forEach((child) => {
+					children.push(child.data)
+				})
+			}
+
+			//Placeholder for future developments. Might pass extra data to card view
 			var analysisData = {
 				calculatedSize: d.value
 			}
+
+			//Create a load of popups to show card details
 			me.portals.push(
 				<Drawer
 					onClose={me.closePopUp}
-					key={d.data.id + "-" + d.parent?.data.id + "-" + d.depth}
+					key={idx}
 					open={me.popUp === d.data.id}
 				>
 					<div>
@@ -127,14 +156,17 @@ export class Board extends React.Component {
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 		var dRoot = this.calcTreeData(dataTree)
 
-		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, dataTree.children && dataTree.children.length ? dataTree.children.length : 1))
+		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, dataTree.children && dataTree.children.length ? dataTree.children.length + 1 : 2))
 		switch (this.state.tileType) {
+			case 'table': {
+				break;
+			}
 			case 'partition': {
 
 				var viewBox = [window.innerWidth, treeBoxHeight]
 
 				var nodes = d3.selectAll(".node")
-					.data(dRoot.descendants().slice(1))
+					.data(dRoot.descendants())
 					.enter()
 
 				var me = this;
@@ -194,7 +226,7 @@ export class Board extends React.Component {
 
 				text.append("tspan")
 					.text(d => d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")"))
-					
+
 
 				cell.append("title")
 					.text(d => { return d.data.title + " : " + d.data.size + " (" + d.value + ")"; });
@@ -582,6 +614,7 @@ export class Board extends React.Component {
 										>
 											<MenuItem value="size">Size</MenuItem>
 											<MenuItem value="title">Title</MenuItem>
+											<MenuItem value="score">Score Total</MenuItem>
 											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Child Count</MenuItem>}
 										</Select>
 									</FormControl>
@@ -837,7 +870,15 @@ export class Board extends React.Component {
 					as += ","
 				}
 			})
+			as += "&"
 		}
+		else {
+			as += "?"
+		}
+		as += "sort=" + this.state.sortType
+		as += "&mode=" + this.state.tileType
+		as += "&dir=" + this.state.sortDirection
+
 		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
 	}
 	handleChangeMultiple = (evt, valueList) => {

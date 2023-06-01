@@ -13,6 +13,7 @@ import { ConnectionTable } from "./ConnectionTable";
 import { getBoard, getCardChildren, getListOfCards } from "../utils/Client/Sdk"
 import React from "react";
 import { cardDescriptionFieldStyle, cardStyle, optionsButtonIconStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
+import { APChildStats } from "./ChildStats";
 
 export class APHoverCard extends React.Component {
 
@@ -153,22 +154,22 @@ export class APHoverCard extends React.Component {
 												)}
 											</Typography></Paper>
 											<Grid container direction="row">
-												<Grid xs={2} item>
+												<Grid item sx={{margin: '0px 5px 0px 5px'}}>
 													<APBlocked
 														status={this.state.data.blockedStatus}
 													/>
 												</Grid>
-												<Grid xs={2} item>
+												<Grid sx={{margin: '0px 5px 0px 5px'}} item>
 													<APSize
 														size={this.state.data.size}
 													/>
 												</Grid>
-												<Grid xs={2} item>
+												<Grid item sx={{margin: '0px 5px 0px 5px'}}>
 													<APPriority
 														priority={this.state.data.priority}
 													/>
 												</Grid>
-												<Grid xs={2} item>
+												<Grid item sx={{margin: '0px 5px 0px 5px'}}>
 													<Grid container sx={{ alignItems: 'center' }} direction="column">
 														{Boolean(this.state.data.customIcon) ? (
 															<>
@@ -181,6 +182,13 @@ export class APHoverCard extends React.Component {
 															</>
 														) : null}
 													</Grid>
+												</Grid>
+												<Grid item >
+													<APChildStats
+														data={this.state.data}
+														showByPoints
+														showByCount
+													/>
 												</Grid>
 											</Grid>
 										</Grid>
