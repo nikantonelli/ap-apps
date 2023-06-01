@@ -54,7 +54,7 @@ export class Board extends React.Component {
 	calcTreeData = (dataTree) => {
 		var me = this;
 		return dataTree.sum(d => {
-			return Boolean(d.size) ? d.size : 1
+			return me.state.sortType === "count"? 1 : (Boolean(d.size) ? d.size : 1)
 		})
 			.sort((a, b) => {
 				var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
@@ -316,9 +316,7 @@ export class Board extends React.Component {
 					.attr("transform", d => labelTransform(d.current))
 
 					.attr("text-anchor", d => labelAnchor(d.current))
-					.text(d => {
-						return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " " + d.data.size)
-					});
+					.text(d => d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""));
 
 				const parent = g.append("circle")
 					.datum(root)
@@ -584,6 +582,7 @@ export class Board extends React.Component {
 										>
 											<MenuItem value="size">Size</MenuItem>
 											<MenuItem value="title">Title</MenuItem>
+											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Child Count</MenuItem>}
 										</Select>
 									</FormControl>
 								</Grid>
