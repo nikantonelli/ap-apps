@@ -10,7 +10,7 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { ConnectionTable } from "./ConnectionTable";
 
-import { getBoard, getCardChildren, getListOfCards } from "../utils/Client/Sdk"
+import { getBoard, getCardChildren, getListOfCards, statusString } from "../utils/Client/Sdk"
 import React from "react";
 import { cardDescriptionFieldStyle, cardStyle, optionsButtonIconStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 import { APChildStats } from "./ChildStats";
@@ -145,13 +145,7 @@ export class APHoverCard extends React.Component {
 										</Grid>
 										<Grid item sx={cardDescriptionFieldStyle} >
 											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
-												{"Status: " + ((this.state.data.actualFinish?.length) ?
-													" Finished (" + this.state.data.actualFinish + ")" :
-													(this.state.data.actualStart?.length) ?
-														" Started (" + this.state.data.actualStart + ")" :
-														" Not Started"
-
-												)}
+												{"Status: " + statusString(this.state.data)}
 											</Typography></Paper>
 											<Grid container direction="row">
 												<Grid item sx={{margin: '0px 5px 0px 5px'}}>

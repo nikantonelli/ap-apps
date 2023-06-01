@@ -96,7 +96,7 @@ export class Board extends React.Component {
 			if (Boolean(d.children)) {
 				d.children.forEach((child) => {
 					children.push(child.data)
-					
+
 				})
 			}
 
@@ -231,7 +231,7 @@ export class Board extends React.Component {
 
 
 				cell.append("title")
-					.text(d => { return d.data.title + " : " + d.data.size + " (" + d.value + ")"; });
+					.text(d => getTitle(d));
 
 				function clicked(event, p) {
 
@@ -458,9 +458,9 @@ export class Board extends React.Component {
 
 				var root = tree(dRoot);
 
-				var nodes = svg.selectAll(".node")
+				var nodes = svg.selectAll("g")
 					.data(root.descendants().slice(1))
-					.enter()
+					.join("g")
 
 				var me = this;
 
@@ -482,14 +482,9 @@ export class Board extends React.Component {
 					.attr("width", function (d) { return d.colWidth })
 					.attr("height", d => d.rowHeight)
 
-				var nodeGroups = nodes.append('g')
-					.attr("id", function (d) {
-						return "g_" + d.data.id
-					})
-
-				nodeGroups.append("text")
+				nodes.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-					.text(d =>getLabel(d))
+					.text(d => getLabel(d))
 					.on('click', this.nodeClicked)
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
@@ -501,14 +496,17 @@ export class Board extends React.Component {
 					.attr("y", function (d) { return d.x })
 					.style('cursor', 'pointer')
 
+				nodes.append("title")
+					.text(d => getTitle(d));
+
 				this.paths(svg, nodes)
 				break;
 			}
 		}
 		function getLabel(d) {
-			switch(me.state.tileType) {
+			switch (me.state.tileType) {
 				case 'sunburst': {
-					return d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+					return d.data.id === "root" ? "" : d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
 				}
 
 				default:
@@ -520,12 +518,14 @@ export class Board extends React.Component {
 		}
 
 		function getTitle(d) {
-			switch(me.state.tileType) {
+			switch (me.state.tileType) {
 				case 'sunburst': {
-					return d.data.id
+					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
 				}
+				default:
+				case 'tree':
 				case 'partition': {
-					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + (d.value-(d.data.size+1)) + ")")
+					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")")
 				}
 			}
 		}
@@ -633,10 +633,10 @@ export class Board extends React.Component {
 											label="Sort By"
 										>
 											<MenuItem value="size">Size</MenuItem>
-											{this.state.tileType === 'sunburst' ? null :<MenuItem value="title">Title</MenuItem>}
+											{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 											<MenuItem value="score">Score Total</MenuItem>
 											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Child Count</MenuItem>}
-											
+
 											<MenuItem value="id">ID#</MenuItem>
 										</Select>
 									</FormControl>

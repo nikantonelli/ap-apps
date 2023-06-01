@@ -1,3 +1,4 @@
+import { shortDate } from "./Helpers";
 
 export const getCardChildren = async (host, card) => {
 	var params = {
@@ -29,7 +30,7 @@ export const getBoardIcons = async (host, brdId) => {
 	var params = {
 		host: host,
 		mode: 'GET',
-		url: "/board/" + brdId +"/customIcon" 
+		url: "/board/" + brdId + "/customIcon"
 	}
 	return await doRequest(params);
 }
@@ -47,4 +48,14 @@ export const doRequest = async (params) => {
 	var req = new Request("http://" + params.host + "/api" + params.url, ps);
 	var res = await fetch(req, { next: { revalidate: 30 } })
 	return res
+}
+
+export const statusString = (card) => {
+	return ((card.actualFinish?.length) ?
+		" Finished (" + shortDate(card.actualFinish) + ")" :
+		(card.actualStart?.length) ?
+			" Started (" + shortDate(card.actualStart) + ")" :
+			" Not Started"
+
+	)
 }

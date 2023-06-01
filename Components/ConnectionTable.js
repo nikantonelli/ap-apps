@@ -3,6 +3,8 @@ import { DataGrid } from "@mui/x-data-grid";
 import React from "react";
 import { cloneDeep } from "lodash";
 import { titleFieldStyle, titlePaperStyle } from "../styles/globals";
+import { shortDate } from "../utils/Client/Helpers";
+import { statusString } from "../utils/Client/Sdk";
 export class ConnectionTable extends React.Component {
 	columns = [
 		{ field: 'title', headerName: 'Title', width: 400 },
@@ -19,17 +21,7 @@ export class ConnectionTable extends React.Component {
 		{
 			field: 'status', headerName: 'Status', width: 400,
 			valueGetter: (params) => {
-				switch( params.row.lane.laneType ) {
-					case 'completed': {
-						return "Finished"
-					}
-					case 'inProcess': {
-						return "Started"
-					}
-					case 'ready': {
-						return "Not Started"
-					}
-				}
+				return statusString(params.row)
 			}
 		},
 
