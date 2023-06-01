@@ -3,7 +3,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable"
 import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary"
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin"
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin"
-import {ClearEditorPlugin} from '@lexical/react/LexicalClearEditorPlugin';
+import { ClearEditorPlugin } from '@lexical/react/LexicalClearEditorPlugin';
 import { CodeHighlightNode, CodeNode } from "@lexical/code"
 import { AutoLinkNode, LinkNode } from "@lexical/link"
 import { ListItemNode, ListNode } from "@lexical/list"
@@ -13,7 +13,7 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin"
 import { ListPlugin } from "@lexical/react/LexicalListPlugin"
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin"
 import { HeadingNode, QuoteNode } from "@lexical/rich-text"
-import {ImageNode } from './Nodes/ImageNode'
+import { ImageNode } from './Nodes/ImageNode'
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table"
 import { useEffect, useState } from "react"
 import ToolbarPlugin from "./Plugins/ToolbarPlugin"
@@ -26,7 +26,7 @@ import CodeHighlightPlugin from "./Plugins/CodeHighlightPlugin"
 import AutoLinkPlugin from "./Plugins/EditorAutoLinkPlugin"
 import ListMaxIndentLevelPlugin from "./Plugins/ListMaxIndentLevelPlugin"
 
-import {useSharedHistoryContext} from './Context/SharedHistoryContext';
+import { useSharedHistoryContext } from './Context/SharedHistoryContext';
 import ImagesPlugin from './Plugins/ImagesPlugin';
 
 function onError(e) {
@@ -51,20 +51,20 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 			//Use the class name to distinguish different editors on the page
 			//This does rely on there only being one of each....
 
-			window.addEventListener('clear-editor-'+className, clearEditorEvent)
-			
-				editor.registerCommand(CLEAR_EDITOR_COMMAND, () => {
-					if (Boolean(initialValue)) {
-						const parser = new DOMParser()
-						const dom = parser.parseFromString(initialValue, 'text/html')
-						const nodes = $generateNodesFromDOM(editor, dom)
-						const root = $getRoot()
-						root.clear();
-						nodes.forEach((node) => root.append(node))
-						return true;
-					}
-				}, COMMAND_PRIORITY_HIGH)
-				
+			window.addEventListener('clear-editor-' + className, clearEditorEvent)
+
+			editor.registerCommand(CLEAR_EDITOR_COMMAND, () => {
+				if (Boolean(initialValue)) {
+					const parser = new DOMParser()
+					const dom = parser.parseFromString(initialValue, 'text/html')
+					const nodes = $generateNodesFromDOM(editor, dom)
+					const root = $getRoot()
+					root.clear();
+					nodes.forEach((node) => root.append(node))
+					return true;
+				}
+			}, COMMAND_PRIORITY_HIGH)
+
 			editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
 			editor.blur();
 			editor.registerUpdateListener(({ editorState }) => {
@@ -79,18 +79,18 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 		}
 
 
-	},[state, editor, initialValue, onChange, className])
+	}, [state, editor, initialValue, onChange, className])
 }
 export const Editor = ({ onChange, type, value, readOnly }) => {
 
-	const {historyState} = useSharedHistoryContext();
+	const { historyState } = useSharedHistoryContext();
 	const [initial, setInitial] = useState(true);
 
 	const initialConfig = {
 		editable: !Boolean(readOnly),
 		namespace: type + '-editor',
 		onError: onError,
-		nodes: [
+		nodes: readOnly ? [] : [
 			ParagraphNode,
 			HeadingNode,
 			ListNode,
@@ -115,22 +115,22 @@ export const Editor = ({ onChange, type, value, readOnly }) => {
 	return (
 		<LexicalComposer initialConfig={initialConfig}>
 			<div className={type + "-editor-container"}>
-				<ToolbarPlugin className={type + "-editor-toolbar"} />
+			{!readOnly ? (
+						<ToolbarPlugin className={type + "-editor-toolbar"} />
+					) : null}
 				<div className={type + "-editor-inner"}>
+					
+
 					<RichTextPlugin
 						contentEditable={<ContentEditable className={type + "-editor-input"} value={value} />}
 						ErrorBoundary={LexicalErrorBoundary}
 					/>
-					<ClearEditorPlugin />
-					<HistoryPlugin externalHistoryState={historyState} />
-					<CodeHighlightPlugin />
-					<ListPlugin />
-					<LinkPlugin />
-					<ImagesPlugin />
-					<AutoLinkPlugin />
-					<ListMaxIndentLevelPlugin maxDepth={7} />
-					<MarkdownShortcutPlugin transformers={TRANSFORMERS} />
 					<UpdateText className={type} onChange={onChange} initialValue={init ? null : value} />
+					{!readOnly ? (<>
+						<ClearEditorPlugin />
+						<HistoryPlugin externalHistoryState={historyState} />
+						<CodeHighlightPlugin /><ListPlugin /><LinkPlugin /><ImagesPlugin /><AutoLinkPlugin /><ListMaxIndentLevelPlugin maxDepth={7} /><MarkdownShortcutPlugin transformers={TRANSFORMERS} /></>
+					) : null}
 				</div>
 			</div>
 		</LexicalComposer>

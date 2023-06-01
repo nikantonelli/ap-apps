@@ -16,6 +16,22 @@ export class ConnectionTable extends React.Component {
 			valueGetter: (params) =>
 				`${params.row.board.title || ''}`
 		},
+		{
+			field: 'status', headerName: 'Status', width: 400,
+			valueGetter: (params) => {
+				switch( params.row.lane.laneType ) {
+					case 'completed': {
+						return "Finished"
+					}
+					case 'inProcess': {
+						return "Started"
+					}
+					case 'ready': {
+						return "Not Started"
+					}
+				}
+			}
+		},
 
 	]
 	constructor(props) {

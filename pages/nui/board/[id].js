@@ -4,7 +4,7 @@ import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 
-import { BreakfastDiningOutlined, FilterAlt, HighlightOff, OpenInBrowser } from "@mui/icons-material";
+import { BreakfastDiningOutlined, FilterAlt, HighlightOff, OpenInBrowser, Settings } from "@mui/icons-material";
 import React from "react";
 import { APHoverCard } from "../../../Components/APHoverCard";
 import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
@@ -67,20 +67,21 @@ export class Board extends React.Component {
 				}
 			})
 			.sort((a, b) => {
+				var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
 				switch (me.state.sortType) {
 					case 'title': {
-						var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
 						return dirFnc(a.data.title, b.data.title)
 					}
+
 					case 'score': {
-						return me.state.sortDirection === "ascending" 
-							? a.data.scoring.scoreTotal - b.data.scoring.scoreTotal 
-							: b.data.scoring.scoreTotal - a.data.scoring.scoreTotal;
+						return dirFnc(a.data.scoring.scoreTotal, b.data.scoring.scoreTotal)
 					}
+					case 'id': {
+						return dirFnc(Number(a.data.id), Number(b.data.id))
+					}
+
 					default: {
-						return me.state.sortDirection === "ascending" 
-							? a.value - b.value 
-							: b.value - a.value;
+						return dirFnc(a.data.size, b.data.size)
 					}
 				}
 			})
@@ -95,6 +96,7 @@ export class Board extends React.Component {
 			if (Boolean(d.children)) {
 				d.children.forEach((child) => {
 					children.push(child.data)
+					
 				})
 			}
 
@@ -225,7 +227,7 @@ export class Board extends React.Component {
 					.attr("fill-opacity", d => +labelVisible(d));
 
 				text.append("tspan")
-					.text(d => d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")"))
+					.text(d => getLabel(d))
 
 
 				cell.append("title")
@@ -283,7 +285,6 @@ export class Board extends React.Component {
 					.data(dRoot.descendants().slice(1))
 					.enter()
 
-				var me = this;
 				this.addPortals(me, nodes);
 
 				var root = d3.partition()
@@ -331,9 +332,7 @@ export class Board extends React.Component {
 					.on("click", arcClicked);
 
 				path.append("title")
-					.text(d => {
-						return d.data.title + " : " + d.data.size + " (" + d.value + ")";
-					})
+					.text(d => getTitle(d))
 					;
 
 				const label = g.append("g")
@@ -348,7 +347,7 @@ export class Board extends React.Component {
 					.attr("transform", d => labelTransform(d.current))
 
 					.attr("text-anchor", d => labelAnchor(d.current))
-					.text(d => d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""));
+					.text(d => getLabel(d));
 
 				const parent = g.append("circle")
 					.datum(root)
@@ -359,15 +358,12 @@ export class Board extends React.Component {
 
 				const parentLabel = g.append("text")
 					.datum(root)
-					.text(d =>
-						(d.data.id === "root" ? "" : d.data.id))
+					.text(d => getLabel(d))
 					.attr("text-anchor", "middle");
 
 				const parentTitle = g.append("title")
 					.datum(root)
-					.text(d => {
-						return d.data.id === "root" ? "" : d.data.title + " : " + d.data.size;
-					})
+					.text(d => getTitle(d))
 
 				function arcClicked(event, p) {
 					if (!event.shiftKey) me.nodeClicked(event, p);
@@ -493,7 +489,7 @@ export class Board extends React.Component {
 
 				nodeGroups.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-					.text(function (d) { return d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : ""); })
+					.text(d =>getLabel(d))
 					.on('click', this.nodeClicked)
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
@@ -507,6 +503,30 @@ export class Board extends React.Component {
 
 				this.paths(svg, nodes)
 				break;
+			}
+		}
+		function getLabel(d) {
+			switch(me.state.tileType) {
+				case 'sunburst': {
+					return d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+				}
+
+				default:
+				case 'tree':
+				case 'partition': {
+					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+				}
+			}
+		}
+
+		function getTitle(d) {
+			switch(me.state.tileType) {
+				case 'sunburst': {
+					return d.data.id
+				}
+				case 'partition': {
+					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + (d.value-(d.data.size+1)) + ")")
+				}
 			}
 		}
 	}
@@ -579,7 +599,7 @@ export class Board extends React.Component {
 						<Grid xs={6} item>
 							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
 								<Grid item>
-									<FilterAlt fontSize="large" onClick={this.openDrawer} />
+									<Settings onClick={this.openDrawer} />
 								</Grid>
 								<Grid item>
 									<TextField
@@ -613,9 +633,11 @@ export class Board extends React.Component {
 											label="Sort By"
 										>
 											<MenuItem value="size">Size</MenuItem>
-											<MenuItem value="title">Title</MenuItem>
+											{this.state.tileType === 'sunburst' ? null :<MenuItem value="title">Title</MenuItem>}
 											<MenuItem value="score">Score Total</MenuItem>
 											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Child Count</MenuItem>}
+											
+											<MenuItem value="id">ID#</MenuItem>
 										</Select>
 									</FormControl>
 								</Grid>
