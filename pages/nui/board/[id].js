@@ -53,7 +53,7 @@ export class Board extends React.Component {
 
 	calcTreeData = (dataTree) => {
 		var me = this;
-		return dataTree
+		dataTree
 			.sum(d => {
 				switch (me.state.sortType) {
 
@@ -85,6 +85,7 @@ export class Board extends React.Component {
 					}
 				}
 			})
+		
 	};
 
 	addPortals = (me, nodes) => {
@@ -156,7 +157,7 @@ export class Board extends React.Component {
 		childCount(0, dataTree);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
-		var dRoot = this.calcTreeData(dataTree)
+		this.calcTreeData(dataTree)
 
 		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, dataTree.children && dataTree.children.length ? dataTree.children.length + 1 : 2))
 		switch (this.state.tileType) {
@@ -168,7 +169,7 @@ export class Board extends React.Component {
 				var viewBox = [window.innerWidth, treeBoxHeight]
 
 				var nodes = d3.selectAll(".node")
-					.data(dRoot.descendants())
+					.data(dataTree.descendants())
 					.enter()
 
 				var me = this;
@@ -176,7 +177,7 @@ export class Board extends React.Component {
 
 				var root = d3.partition()
 					.size([viewBox[1], viewBox[0]])
-					(dRoot)
+					(dataTree)
 
 				var rootPairs = root.links()
 				rootPairs.forEach((pair, idx) => {
@@ -223,7 +224,7 @@ export class Board extends React.Component {
 					.style("user-select", "none")
 					.attr("pointer-events", "none")
 					.attr("x", 4)
-					.attr("y", 13)
+					.attr("y", 12)
 					.attr("fill-opacity", d => +labelVisible(d));
 
 				text.append("tspan")
@@ -270,7 +271,7 @@ export class Board extends React.Component {
 				}
 
 				function labelVisible(d) {
-					return d.y1 <= window.innerWidth && d.y0 >= 0 && d.x1 - d.x0 > 12;
+					return d.y1 <= window.innerWidth && d.y0 >= 0 && d.x1 - d.x0 > 16;
 				}
 				break;
 			}
@@ -282,14 +283,14 @@ export class Board extends React.Component {
 			case 'sunburst': {
 
 				var nodes = d3.selectAll(".node")
-					.data(dRoot.descendants().slice(1))
+					.data(dataTree.descendants().slice(1))
 					.enter()
 
 				this.addPortals(me, nodes);
 
 				var root = d3.partition()
-					.size([2 * Math.PI, dRoot.height + 1])
-					(dRoot);
+					.size([2 * Math.PI, dataTree.height + 1])
+					(dataTree);
 
 				root.each(d => d.current = d);
 				var rootPairs = root.links()
@@ -456,7 +457,7 @@ export class Board extends React.Component {
 					}
 					);
 
-				var root = tree(dRoot);
+				var root = tree(dataTree);
 
 				var nodes = svg.selectAll("g")
 					.data(root.descendants().slice(1))
@@ -519,12 +520,7 @@ export class Board extends React.Component {
 
 		function getTitle(d) {
 			switch (me.state.tileType) {
-				case 'sunburst': {
-					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
-				}
-				default:
-				case 'tree':
-				case 'partition': {
+				default: {
 					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")")
 				}
 			}
