@@ -10,6 +10,7 @@ import React from "react";
  * endValue: integer
  * currentValue: integer
  * circleSize: integer
+ * showProgress: boolean	calculate colour
  * 
  */
 export class APProgressBar extends React.Component {
@@ -52,7 +53,7 @@ export class APProgressBar extends React.Component {
 						size={this.props.circleSize ? this.props.circleSize : 40}
 						variant="determinate"
 						value={this.percentComplete}
-						color="success"
+						color={this.props.showProgress?this.calcColour():'primary'}
 						thickness={this.props.circleSize ? this.props.circleSize / 10 : 4}
 					/>
 					<Box
@@ -77,7 +78,13 @@ export class APProgressBar extends React.Component {
 				<Box className='linear-progress-bar-box'>
 					<Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }} >
 						<Box sx={{ width: '100%', mr: 1 }}>
-							<LinearProgress thickness={5} sx={{ backgroundColor: '#eee' }} variant="determinate" value={this.percentComplete} />
+							<LinearProgress 
+								thickness={5} 
+								color={this.props.showProgress?this.calcColour():'primary'}
+								sx={{ backgroundColor: '#eee' }} 
+								variant="determinate" 
+								value={this.percentComplete} 
+							/>
 						</Box>
 						<Box sx={{ minWidth: 35 }}>
 							<Typography variant='body2'>{`${Math.round(this.percentComplete)}%`}</Typography>

@@ -177,14 +177,22 @@ export class APHoverCard extends React.Component {
 														) : null}
 													</Grid>
 												</Grid>
-												<Grid item >
-													<APChildStats
-														data={this.state.data}
-														showByPoints
-													/>
-												</Grid>
+												
 											</Grid>
 										</Grid>
+										<Grid item sx={cardDescriptionFieldStyle} >
+											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+												{"Progress" }
+											</Typography></Paper>
+											<APChildStats
+														data={this.state.data}
+														showByPoints
+														showByCount
+														showProgress
+														showAsCircles
+														circleSize={80}
+													/>
+											</Grid>
 									</Grid>
 								</Grid>
 

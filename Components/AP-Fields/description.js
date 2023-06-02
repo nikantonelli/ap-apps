@@ -1,6 +1,7 @@
 import { Grid, Paper, Typography } from "@mui/material";
 import React from "react";
 import { Editor } from "../Editor/Editor";
+import { titleFieldStyle, titlePaperStyle } from "../../styles/globals";
 
 export class APdescription extends React.Component {
 
@@ -11,7 +12,9 @@ export class APdescription extends React.Component {
 	render() {
 		return (
 			<Grid>
-				<Paper elevation={0} className="title-paper"><Typography variant={this.props.headerType} className="title-field">Description</Typography></Paper>
+				<Paper elevation={0}  sx={titlePaperStyle}>
+					<Typography variant={this.props.headerType} sx={titleFieldStyle}>Description</Typography>
+				</Paper>
 				<Editor
 					readOnly={this.props.readOnly}
 					onChange={this.props.onChange}
