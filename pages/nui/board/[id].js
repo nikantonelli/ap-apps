@@ -1,10 +1,10 @@
-import { Autocomplete, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField } from "@mui/material";
+import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
 import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 
-import { BreakfastDiningOutlined, FilterAlt, HighlightOff, OpenInBrowser, Settings } from "@mui/icons-material";
+import { HighlightOff, OpenInBrowser, OpenInNew, Settings } from "@mui/icons-material";
 import React from "react";
 import { APHoverCard } from "../../../Components/APHoverCard";
 import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
@@ -85,7 +85,7 @@ export class Board extends React.Component {
 					}
 				}
 			})
-		
+
 	};
 
 	addPortals = (me, nodes) => {
@@ -188,7 +188,7 @@ export class Board extends React.Component {
 				var format = d3.format(",d")
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
-				svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
+				svg.attr('viewBox', [(treeBoxHeight/(root.height?root.height:1)), 0, viewBox[0], viewBox[1]])
 				svg.attr('class', 'rootSurface')
 				const cell = svg
 					.selectAll("g")
@@ -577,7 +577,16 @@ export class Board extends React.Component {
 	}
 
 	modeChange = (e) => {
-		this.setState({ tileType: e.target.value });
+		var newMode = e.target.value;
+		this.setState((prev) => {
+			if ((prev.sortType === "title") && (newMode === 'sunburst')) {
+				return { tileType: newMode, sortType: 'count' }
+			}
+			else if ((prev.sortType === "count") && (newMode === 'tree')) {
+				return { tileType: newMode, sortType: 'size' }
+			}
+			return { tileType: newMode}
+		});
 	}
 	sortChange = (e) => {
 		this.setState({ sortType: e.target.value });
@@ -589,10 +598,10 @@ export class Board extends React.Component {
 		if (!this.state.fetchActive) {
 			this.update()
 			return (
-				<Stack id="portalContainer">
+				<Stack id="portalContainer" sx={{ width: '100%' }}>
 					{this.portals}
 					<Grid id="header-box" container direction={'row'}>
-						<Grid xs={6} item>
+						<Grid xs={10} item>
 							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
 								<Grid item>
 									<Settings onClick={this.openDrawer} />
@@ -631,7 +640,7 @@ export class Board extends React.Component {
 											<MenuItem value="size">Size</MenuItem>
 											{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 											<MenuItem value="score">Score Total</MenuItem>
-											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Child Count</MenuItem>}
+											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
 
 											<MenuItem value="id">ID#</MenuItem>
 										</Select>
@@ -652,7 +661,7 @@ export class Board extends React.Component {
 								</Grid>
 							</Grid>
 						</Grid>
-						<Grid item xs={6} sx={{ alignItems: 'center' }}>
+						<Grid item xs={2} sx={{ alignItems: 'center' }}>
 							<Grid container style={{ justifyContent: 'flex-end' }} >
 								{this.state.pending ?
 									<Chip label={"Queued: " + this.state.pending} />
@@ -687,11 +696,28 @@ export class Board extends React.Component {
 						}}
 					>
 						<Grid container direction="column">
-							<Grid sx={{ margin: "5px" }} item>
-								<HighlightOff onClick={this.closeDrawer} />
-								<OpenInBrowser onClick={this.openAsActive} />
-							</Grid>
+							<Grid item>
+								<Grid container direction="row">
+									<Grid xs={6} item>
+										<Tooltip title='Close Settings'>
+											<HighlightOff color='primary' onClick={this.closeDrawer} />
+										</Tooltip>
+									</Grid>
+									<Grid xs={6} item>
+										<Grid sx={{ justifyContent: 'flex-end' }} container>
+											<Button
+												aria-label="Open As New Tab"
+												color='primary'
+												onClick={this.openAsActive}
+												endIcon={<OpenInNew />}
+											>
+												Open In new Tab
+											</Button>
 
+										</Grid>
+									</Grid>
+								</Grid>
+							</Grid>
 							<Grid item>
 								{this.topLevelList()}
 							</Grid>
@@ -732,10 +758,6 @@ export class Board extends React.Component {
 
 			//Collect the ids and get the 'real' versions of the cards
 			if (cards && cards.length) {
-				var pushAsChildren = true;
-				if (cards.length == 1) {
-					pushAsChildren = false
-				}
 				cards.forEach(async (card) => {
 
 					var cParams = {
@@ -745,14 +767,10 @@ export class Board extends React.Component {
 					}
 					var cResponse = await doRequest(cParams)
 					var cResult = await cResponse.json()
-					if (pushAsChildren) {
-						this.root.children.push(cResult)
-					}
-					else {
-						this.root = cResult;
-					}
+					this.root.children.push(cResult)
 					this.clonedData = JSON.parse(JSON.stringify(this.root))
 					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
+					else this.setState({ cardData: this.root })
 				})
 			}
 		} catch (error) {
@@ -777,17 +795,10 @@ export class Board extends React.Component {
 		})
 	}
 
-	load = () => {
-		this.getTopLevel().then(() => {
-			//We add the root and in the background the fetches add the children
-			this.setState({ cardData: this.root })
-		})
-	}
-
 	componentDidMount = () => {
 		if (this.state.fetchActive) {
 			this.setState({ fetchActive: false })
-			this.load();
+			this.getTopLevel();
 		}
 	}
 

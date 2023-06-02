@@ -103,6 +103,7 @@ text {
 }
 
 .linear-progress-bar {
+	background-color: #eee;
 }
 
 .circular-progress-bar {

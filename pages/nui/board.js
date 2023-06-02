@@ -90,23 +90,18 @@ export default function Board({ host }) {
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							sx={{ minWidth: 300, maxWidth: 600 }}
+							sx={{ minWidth: 300, maxWidth: 600, cursor: 'pointer' }}
 							className="card"
 							variant="standard"
 							raised
+							onClick={cardClicked}
+							id={brd.id}
 						>
 							<CardHeader 
 								title={brd.title} 
 								style={{ textAlign: 'center' }}
 								/>
 							<CardActions>
-								<Button
-									onClick={cardClicked}
-									id={brd.id}
-									size="small"
-								>
-									Open
-								</Button>
 								
 							</CardActions>
 						</Card>
