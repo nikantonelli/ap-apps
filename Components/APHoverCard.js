@@ -21,6 +21,8 @@ export class APHoverCard extends React.Component {
 	static PEOPLE_PANEL_NAME = "peopleSection";
 	static DETAILS_PANEL_NAME = "detailsSection";
 	static SCHEDULE_PANEL_NAME = "scheduleSection"
+	static PROGRESS_PANEL_NAME = "progressSection"
+
 	constructor(props) {
 		super(props);
 
@@ -36,6 +38,7 @@ export class APHoverCard extends React.Component {
 		this.state[APHoverCard.PEOPLE_PANEL_NAME] = false;
 		this.state[APHoverCard.DETAILS_PANEL_NAME] = true;
 		this.state[APHoverCard.SCHEDULE_PANEL_NAME] = false;
+		this.state[APHoverCard.PROGRESS_PANEL_NAME] = false;
 
 		this.savedData = props.card;
 	}
@@ -54,6 +57,7 @@ export class APHoverCard extends React.Component {
 		ed[APHoverCard.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
 		ed[APHoverCard.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
 		ed[APHoverCard.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APHoverCard.PROGRESS_PANEL_NAME] = evt.currentTarget.id === "openAll";
 
 		if ((evt.currentTarget.id !== "openAll") && (evt.currentTarget.id !== "closeAll")) {
 			ed[evt.currentTarget.id] = true;
@@ -144,6 +148,19 @@ export class APHoverCard extends React.Component {
 											</Grid>
 										</Grid>
 										<Grid item sx={cardDescriptionFieldStyle} >
+											<Grid>
+												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography></Paper>
+												<TextField
+													InputProps={{
+														readOnly: true,
+													}}
+													variant="outlined"
+													sx={cardDescriptionFieldStyle}
+													value={this.state.data.board.title}
+												/>
+											</Grid>
+										</Grid>
+										<Grid item sx={cardDescriptionFieldStyle} >
 											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
 												{"Status: " + statusString(this.state.data)}
 											</Typography></Paper>
@@ -184,14 +201,7 @@ export class APHoverCard extends React.Component {
 											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
 												{"Progress" }
 											</Typography></Paper>
-											<APChildStats
-														data={this.state.data}
-														showByPoints
-														showByCount
-														showProgress
-														showAsCircles
-														circleSize={80}
-													/>
+											
 											</Grid>
 									</Grid>
 								</Grid>
@@ -206,6 +216,28 @@ export class APHoverCard extends React.Component {
 
 							</Grid>
 						</Accordion>
+						<Accordion expanded={this.state[APHoverCard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="progress-content" id={APHoverCard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
+								<Typography variant={sectionHeaderType}>Progress</Typography>
+							</AccordionSummary>
+							<AccordionDetails>
+								<Grid container direction="row">
+									<Grid item sx={cardDescriptionFieldStyle} >
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Percent Complete</Typography>
+										</Paper>
+										<APChildStats
+														data={this.state.data}
+														showByPoints
+														showByCount
+														showProgress
+														showAsCircles
+														circleSize={80}
+													/>
+									</Grid>
+								</Grid>
+							</AccordionDetails>
+						</Accordion>
+
 						<Accordion expanded={this.state[APHoverCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="schedule-content" id={APHoverCard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Schedule</Typography>

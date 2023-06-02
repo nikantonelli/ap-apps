@@ -1,4 +1,4 @@
-import { CalendarToday, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { APBlocked } from "./AP-Fields/blocked";
@@ -10,6 +10,8 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { ConnectionTable } from "./ConnectionTable";
 import React from "react";
+import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
+import { APChildStats } from "./ChildStats";
 
 
 export class APcard extends React.Component {
@@ -18,6 +20,8 @@ export class APcard extends React.Component {
 	static PEOPLE_PANEL_NAME = "peopleSection";
 	static DETAILS_PANEL_NAME = "detailsSection";
 	static SCHEDULE_PANEL_NAME = "scheduleSection"
+	static PROGRESS_PANEL_NAME = "progressSection"
+
 	constructor(props) {
 		super(props);
 
@@ -35,10 +39,11 @@ export class APcard extends React.Component {
 		this.state[APcard.PEOPLE_PANEL_NAME] = false;
 		this.state[APcard.DETAILS_PANEL_NAME] = true;
 		this.state[APcard.SCHEDULE_PANEL_NAME] = false;
+		this.state[APcard.PROGRESS_PANEL_NAME] = false;
 
 		this.savedData = props.card;
 	}
-	
+
 	updateDescription = (e) => {
 		if (this.isChanged !== true) {
 			return;
@@ -127,6 +132,7 @@ export class APcard extends React.Component {
 		ed[APcard.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
 		ed[APcard.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
 		ed[APcard.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APcard.PROGRESS_PANEL_NAME] = evt.currentTarget.id === "openAll";
 
 		if ((evt.currentTarget.id !== "openAll") && (evt.currentTarget.id !== "closeAll")) {
 			ed[evt.currentTarget.id] = true;
@@ -141,11 +147,11 @@ export class APcard extends React.Component {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
 
-		var typeTitle = (this.state.loadSource === 'card') ?  this.state.data.type.title : this.state.data.cardType.name
-		var typeColour = (this.state.loadSource === 'card') ?  this.state.data.type.cardColor : this.state.data.color
+		var typeTitle = (this.state.loadSource === 'card') ? this.state.data.type.title : this.state.data.cardType.name
+		var typeColour = (this.state.loadSource === 'card') ? this.state.data.type.cardColor : this.state.data.color
 		if (this.state.data != null) {
 			return (
-				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-"+ this.state.data.id}>
+				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-" + this.state.data.id}>
 					<Grid style={{ backgroundColor: typeColour }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'left' }} >
@@ -159,6 +165,13 @@ export class APcard extends React.Component {
 										<List />
 									</IconButton>
 								</Tooltip>
+								{this.state.data.connectedCardStats ?
+									<Tooltip title="Child Progress">
+										<IconButton id={APcard.PROGRESS_PANEL_NAME} size='large' className="options-button-icon" aria-label='progress panel' onClick={this.changeSection}>
+											<BarChart />
+										</IconButton>
+									</Tooltip>
+									: null}
 								<Tooltip title="Schedule">
 									<IconButton id={APcard.SCHEDULE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<CalendarToday />
@@ -235,9 +248,9 @@ export class APcard extends React.Component {
 							<Grid container direction="column" >
 								<Grid item>
 									<Grid container direction="row">
-										<Grid item className='card-description-field' >
+										<Grid item sx={cardDescriptionFieldStyle} >
 											<Grid>
-												<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Title</Typography></Paper>
+												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography></Paper>
 												<TextField
 
 													variant="outlined"
@@ -248,8 +261,21 @@ export class APcard extends React.Component {
 												/>
 											</Grid>
 										</Grid>
-										<Grid item className='card-description-field' >
-											<Paper elevation={0} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">
+										<Grid item sx={cardDescriptionFieldStyle} >
+											<Grid>
+												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography></Paper>
+												<TextField
+													InputProps={{
+														readOnly: true,
+													}}
+													variant="outlined"
+													sx={cardDescriptionFieldStyle}
+													value={this.state.data.board.title}
+												/>
+											</Grid>
+										</Grid>
+										<Grid item sx={cardDescriptionFieldStyle} >
+											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
 												{"Status: " + ((this.state.data.lane.cardStatus === "finished") ?
 													" Finished (" + this.state.data.actualFinish + ")" :
 													(this.state.data.lane.cardStatus === "notStarted") ?
@@ -293,7 +319,7 @@ export class APcard extends React.Component {
 									</Grid>
 								</Grid>
 
-								<Grid item className='card-description-field'>
+								<Grid item sx={cardDescriptionFieldStyle}>
 									<APdescription
 										description={this.state.data.description}
 										onChange={this.descriptionChanged}
@@ -303,29 +329,59 @@ export class APcard extends React.Component {
 
 							</Grid>
 						</Accordion>
+						{this.state.data.connectedCardStats ?
+							<Accordion expanded={this.state[APcard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+								<AccordionSummary aria-controls="progress-content" id={APcard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
+									<Typography variant={sectionHeaderType}>Progress</Typography>
+								</AccordionSummary>
+								<AccordionDetails>
+									<Grid container direction="row">
+										<Grid item sx={cardDescriptionFieldStyle} >
+											<Paper square elevation={2} sx={titlePaperStyle}>
+												<Typography 
+													variant={fieldHeaderType} 
+													sx={titleFieldStyle}
+													color={(!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart))? "error":"text.primary"}
+													>
+														{"Percent Complete " + ((!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart))? "(Incomplete Planned Dates)":"")}
+												</Typography>
+											</Paper>
+											<APChildStats
+												data={this.state.data}
+												showByPoints
+												showByCount
+												showProgress
+												showAsCircles
+												circleSize={80}
+											/>
+										</Grid>
+									</Grid>
+								</AccordionDetails>
+							</Accordion>
+							: null}
 						<Accordion expanded={this.state[APcard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="schedule-content" id={APcard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
 								<Grid container direction="row">
-									<Grid item className='card-description-field' >
-										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Planned Dates</Typography>
+									<Grid item sx={cardDescriptionFieldStyle}>
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Planned Dates</Typography>
 										</Paper>
 										<APdateRange
 											start={this.state.data.plannedStart}
 											end={this.state.data.plannedFinish}
 										/>
 									</Grid>
-									<Grid item className='card-description-field' >
-										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Actual Dates</Typography></Paper>
+									<Grid item sx={cardDescriptionFieldStyle} >
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Actual Dates</Typography></Paper>
 										<APdateRange
 											start={this.state.data.actualStart}
 											end={this.state.data.actualFinish}
 										/>
 									</Grid>
-									<Grid item className='card-description-field' >
-										<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Time Box</Typography></Paper>
+									<Grid itemsx={cardDescriptionFieldStyle} >
+										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Time Box</Typography></Paper>
 									</Grid>
 								</Grid>
 							</AccordionDetails>
@@ -355,9 +411,9 @@ export class APcard extends React.Component {
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Assigned Users</Typography></Paper>
+								<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Assigned Users</Typography></Paper>
 								<AssignedUserTable card={this.state.data} />
-								<Paper square elevation={2} className="title-paper"><Typography variant={fieldHeaderType} className="title-field">Involved Users</Typography></Paper>
+								<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Involved Users</Typography></Paper>
 								<CardUserTable card={this.state.data} />
 							</AccordionDetails>
 						</Accordion>
