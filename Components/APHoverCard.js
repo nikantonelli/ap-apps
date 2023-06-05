@@ -197,12 +197,7 @@ export class APHoverCard extends React.Component {
 												
 											</Grid>
 										</Grid>
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
-												{"Progress" }
-											</Typography></Paper>
-											
-											</Grid>
+										
 									</Grid>
 								</Grid>
 

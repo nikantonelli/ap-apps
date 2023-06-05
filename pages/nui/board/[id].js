@@ -15,7 +15,7 @@ export class Board extends React.Component {
 		this.state = {
 			tileType: this.props.mode || 'sunburst',
 			anchorEl: null,
-			cardData:
+			rootNode:
 			{
 				id: 'root',
 				children: null,
@@ -35,7 +35,8 @@ export class Board extends React.Component {
 			popUp: null,
 			tileType: this.props.mode || 'tree',
 			sortType: this.props.sort || ((this.props.mode === 'partition') ? 'count' : 'size'),
-			sortDirection: this.props.dir || 'ascending'
+			sortDirection: this.props.dir || 'ascending',
+			clickCount: 0
 		}
 	}
 	popUp = null
@@ -51,9 +52,9 @@ export class Board extends React.Component {
 		this.setState({ popUp: null })
 	}
 
-	calcTreeData = (dataTree) => {
+	calcTreeData = (rootNode) => {
 		var me = this;
-		dataTree
+		rootNode
 			.sum(d => {
 				switch (me.state.sortType) {
 
@@ -71,6 +72,9 @@ export class Board extends React.Component {
 				switch (me.state.sortType) {
 					case 'title': {
 						return dirFnc(a.data.title, b.data.title)
+					}
+					case 'count': {
+						return dirFnc(a.value, b.value)
 					}
 
 					case 'score': {
@@ -138,8 +142,6 @@ export class Board extends React.Component {
 		var svg = d3.select(svgEl);
 		svgEl.replaceChildren()
 
-		var dataTree = d3.hierarchy(this.state.cardData)
-
 		var me = this;
 
 		var levelWidth = [1];
@@ -154,45 +156,47 @@ export class Board extends React.Component {
 		};
 
 		var rowHeight = 80;
-		childCount(0, dataTree);
+		childCount(0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
-		this.calcTreeData(dataTree)
+		this.calcTreeData(this.state.rootNode)
 
-		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, dataTree.children && dataTree.children.length ? dataTree.children.length + 1 : 2))
+		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, this.state.rootNode.children && this.state.rootNode.children.length ? this.state.rootNode.children.length + 1 : 2))
 		switch (this.state.tileType) {
 			case 'table': {
 				break;
 			}
 			case 'partition': {
 
+				var me = this;
 				var viewBox = [window.innerWidth, treeBoxHeight]
 
+				d3.partition()
+				.size([viewBox[1], viewBox[0]])
+				(this.state.rootNode)
+
 				var nodes = d3.selectAll(".node")
-					.data(dataTree.descendants())
+					.data(this.state.rootNode.descendants())
 					.enter()
 
-				var me = this;
 				this.addPortals(me, nodes);
 
-				var root = d3.partition()
-					.size([viewBox[1], viewBox[0]])
-					(dataTree)
-
-				var rootPairs = root.links()
+				var rootPairs = this.state.rootNode.links()
 				rootPairs.forEach((pair, idx) => {
 					pair.source.index = idx;
 				})
 
-				var focus = root
-				var format = d3.format(",d")
+				//Focus is (re-)set when zooming to items
+				var focus = this.state.rootNode
+
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
-				svg.attr('viewBox', [(treeBoxHeight/(root.height?root.height:1)), 0, viewBox[0], viewBox[1]])
+				svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
 				svg.attr('class', 'rootSurface')
+				
 				const cell = svg
 					.selectAll("g")
-					.data(root.descendants().slice(1))
+					.data(this.state.rootNode.descendants().slice(1))
 					.join("g")
 					.attr("transform", d => `translate(${d.y0},${d.x0})`);
 
@@ -211,7 +215,7 @@ export class Board extends React.Component {
 					// 			"card-status card-not-started"
 					// })
 					.style("cursor", "pointer")
-					.on("click", clicked)
+					.on("click", blockClicked)
 
 				cell.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
@@ -228,13 +232,13 @@ export class Board extends React.Component {
 					.attr("fill-opacity", d => +labelVisible(d));
 
 				text.append("tspan")
-					.text(d => getLabel(d))
+					.text(d => me.getLabel(d))
 
 
 				cell.append("title")
-					.text(d => getTitle(d));
+					.text(d => me.getTitle(d));
 
-				function clicked(event, p) {
+				function blockClicked(event, p) {
 
 					if (!event.shiftKey) me.nodeClicked(event, p)
 					else {
@@ -246,13 +250,7 @@ export class Board extends React.Component {
 						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 
-						var viewBox = [window.innerWidth, treeBoxHeight]
-						svg.attr("width", viewBox[0])
-						svg.attr("height", viewBox[1])
-
-						svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
-
-						root.each(d => d.target = {
+						me.state.rootNode.each(d => d.target = {
 							x0: ((d.x0 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
 							x1: ((d.x1 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
 							y0: d.y0 - p.y0,
@@ -283,17 +281,17 @@ export class Board extends React.Component {
 			case 'sunburst': {
 
 				var nodes = d3.selectAll(".node")
-					.data(dataTree.descendants().slice(1))
+					.data(this.state.rootNode.descendants().slice(1))
 					.enter()
 
 				this.addPortals(me, nodes);
 
-				var root = d3.partition()
-					.size([2 * Math.PI, dataTree.height + 1])
-					(dataTree);
+				d3.partition()
+					.size([2 * Math.PI, this.state.rootNode.height + 1])
+					(this.state.rootNode);
 
-				root.each(d => d.current = d);
-				var rootPairs = root.links()
+				this.state.rootNode.each(d => d.current = d);
+				var rootPairs = this.state.rootNode.links()
 				rootPairs.forEach((pair, idx) => {
 					pair.source.index = idx;
 				})
@@ -318,7 +316,7 @@ export class Board extends React.Component {
 					.outerRadius(d => Math.max(d.y0 * (width / ringCount), d.y1 * (width / ringCount) - 1))
 				var path = g.append("g")
 					.selectAll("path")
-					.data(root.descendants().slice(1))
+					.data(this.state.rootNode.descendants().slice(1))
 					.join("path")
 					.attr("fill", d => {
 						while (d.depth > 1)
@@ -333,14 +331,14 @@ export class Board extends React.Component {
 					.on("click", arcClicked);
 
 				path.append("title")
-					.text(d => getTitle(d))
+					.text(d => me.getTitle(d))
 					;
 
 				const label = g.append("g")
 					.attr("pointer-events", "none")
 					.style("user-select", "none")
 					.selectAll("text")
-					.data(root.descendants().slice(1))
+					.data(this.state.rootNode.descendants().slice(1))
 					.join("text")
 					.attr("dy", "0.35em")
 					//					.attr("fill-opacity", 1)
@@ -348,35 +346,35 @@ export class Board extends React.Component {
 					.attr("transform", d => labelTransform(d.current))
 
 					.attr("text-anchor", d => labelAnchor(d.current))
-					.text(d => getLabel(d));
+					.text(d => me.getLabel(d));
 
 				const parent = g.append("circle")
-					.datum(root)
+					.datum(this.state.rootNode)
 					.attr("r", (width / ringCount))
 					.attr("fill", "#888")
 					.attr("pointer-events", "all")
 					.on("click", arcClicked)
 
 				const parentLabel = g.append("text")
-					.datum(root)
-					.text(d => getLabel(d))
+					.datum(this.state.rootNode)
+					.text(d => me.getLabel(d))
 					.attr("text-anchor", "middle");
 
 				const parentTitle = g.append("title")
-					.datum(root)
-					.text(d => getTitle(d))
+					.datum(this.state.rootNode)
+					.text(d => me.getTitle(d))
 
 				function arcClicked(event, p) {
 					if (!event.shiftKey) me.nodeClicked(event, p);
 
-					parent.datum(p.parent || root);
+					parent.datum(p.parent || this.state.rootNode);
 					parentLabel.datum(p).text(d =>
 						(d.data.id === "root" ? "" : d.data.id));
 					parentTitle.datum(p).text(d => {
 						return d.data.title + " : " + d.data.size;
 					})
 
-					root.each(d => d.target = {
+					me.state.rootNode.each(d => d.target = {
 						x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
 						x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
 						y0: Math.max(0, d.y0 - p.depth),
@@ -415,7 +413,7 @@ export class Board extends React.Component {
 				}
 
 				function labelVisible(d) {
-					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > 0.04;
+					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > (0.06/d.depth);
 				}
 
 				function labelAnchor(d) {
@@ -440,7 +438,7 @@ export class Board extends React.Component {
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight / 3]
-				var colWidth = (viewBoxSize[0] / (dataTree.height || 1))
+				var colWidth = (viewBoxSize[0] / (this.state.rootNode.height || 1))
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -457,10 +455,10 @@ export class Board extends React.Component {
 					}
 					);
 
-				var root = tree(dataTree);
+				tree(this.state.rootNode);
 
 				var nodes = svg.selectAll("g")
-					.data(root.descendants().slice(1))
+					.data(this.state.rootNode.descendants().slice(1))
 					.join("g")
 
 				var me = this;
@@ -485,8 +483,8 @@ export class Board extends React.Component {
 
 				nodes.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-					.text(d => getLabel(d))
-					.on('click', this.nodeClicked)
+					.text(d => me.getLabel(d))
+					.on('click', treeClicked)
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
 					.attr("id", function (d) {
@@ -498,31 +496,46 @@ export class Board extends React.Component {
 					.style('cursor', 'pointer')
 
 				nodes.append("title")
-					.text(d => getTitle(d));
+					.text(d => me.getTitle(d));
 
 				this.paths(svg, nodes)
 				break;
 			}
-		}
-		function getLabel(d) {
-			switch (me.state.tileType) {
-				case 'sunburst': {
-					return d.data.id === "root" ? "" : d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
-				}
 
-				default:
-				case 'tree':
-				case 'partition': {
-					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+			function treeClicked(event, p) {
+				if (!event.shiftKey) me.nodeClicked(event, p) 
+				else {
+					focus = focus === p ? p = p.parent : p;
+
+						levelWidth = [1];
+						childCount(0, focus);
+						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
+
 				}
 			}
 		}
+		
 
-		function getTitle(d) {
-			switch (me.state.tileType) {
-				default: {
-					return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")")
-				}
+	}
+	getLabel = (d) => {
+		switch (this.state.tileType) {
+			case 'sunburst': {
+				return d.data.id === "root" ? "" : d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+			}
+
+			default:
+			case 'tree':
+			case 'partition': {
+				return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+			}
+		}
+	}
+
+	getTitle = (d) => {
+		switch (this.state.tileType) {
+			default: {
+				return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")")
 			}
 		}
 	}
@@ -770,7 +783,7 @@ export class Board extends React.Component {
 					this.root.children.push(cResult)
 					this.clonedData = JSON.parse(JSON.stringify(this.root))
 					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
-					else this.setState({ cardData: this.root })
+					else this.setState({ rootNode: d3.hierarchy(this.root) })
 				})
 			}
 		} catch (error) {
@@ -780,7 +793,7 @@ export class Board extends React.Component {
 	}
 
 	childrenOf = (host, cards, depth) => {
-		if (cards.length == 0) this.setState({ cardData: this.root })
+		this.setState({ rootNode: d3.hierarchy(this.root) })
 		forEach(cards, (card) => {
 			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
 			getCardChildren(host, card).then(async (result) => {
@@ -789,7 +802,7 @@ export class Board extends React.Component {
 				card.children = children.cards
 				var ld = depth;
 				if (ld < this.state.depth) this.childrenOf(host, card.children, ld + 1)
-				else this.setState({ cardData: this.root })
+				else this.setState({ rootNode: d3.hierarchy(this.root)})
 				this.clonedData = JSON.parse(JSON.stringify(this.root));
 			}, this)
 		})
@@ -813,7 +826,7 @@ export class Board extends React.Component {
 				d.data.savedChildren = [];
 			}
 			this.setState((prev) => {
-				return { cardData: prev.cardData }
+				return { rootNode: d3.hierarchy(this.root)}
 			})
 		}
 		else if (ev.shiftKey) {
@@ -842,7 +855,7 @@ export class Board extends React.Component {
 
 		switch (command) {
 			case 'expand': {
-				var data = this.state.cardData && this.state.cardData.children
+				var data = this.state.rootNode && this.state.rootNode.children
 				if (data) data.forEach((item) => { this.resetChildren(item) })
 				break;
 			}
@@ -911,7 +924,7 @@ export class Board extends React.Component {
 		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
 	}
 	handleChangeMultiple = (evt, valueList) => {
-		var root = { ...this.state.cardData };
+		var root = { ...this.state.rootNode };
 		var allChildren = root.children
 		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = _.union(allChildren, root.savedChildren)
 		if (valueList.length > 0) {
@@ -936,14 +949,13 @@ export class Board extends React.Component {
 			root.children = allChildren
 			root.savedChildren = null;
 		}
-		this.setState({ cardData: root, topLevelList: valueList })
+		this.setState({ rootNode: root, topLevelList: valueList })
 	}
 
 	topLevelList = () => {
 		//Top level list is the children of root
 
-		var cardList = null;
-		if (this.clonedData) cardList = this.clonedData.children
+		var cardList = this.state.rootNode.children
 		return (cardList && cardList.length) ? (
 			<Autocomplete
 				freeSolo
