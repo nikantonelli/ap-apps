@@ -39,13 +39,13 @@ export class Board extends React.Component {
 			clickCount: 0
 		}
 	}
+
 	popUp = null
 	portals = [];
 	root = {
 		id: 'root',
 		children: []
 	};
-
 
 	closePopUp = () => {
 		this.popUp = null
@@ -135,6 +135,18 @@ export class Board extends React.Component {
 		})
 	}
 
+
+	childCount =  (levelWidth, level, n) => {
+		var me = this;
+		if (n.children && n.children.length > 0) {
+			if (levelWidth.length <= level + 1) levelWidth.push(0);
+			levelWidth[level + 1] += n.children.length;
+			n.children.forEach(function (d) {
+				me.childCount(levelWidth, level + 1, d);
+			});
+		}
+	}
+
 	update = () => {
 		this.portals = [];
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
@@ -145,18 +157,9 @@ export class Board extends React.Component {
 		var me = this;
 
 		var levelWidth = [1];
-		var childCount = function (level, n) {
-			if (n.children && n.children.length > 0) {
-				if (levelWidth.length <= level + 1) levelWidth.push(0);
-				levelWidth[level + 1] += n.children.length;
-				n.children.forEach(function (d) {
-					childCount(level + 1, d);
-				});
-			}
-		};
-
+		
 		var rowHeight = 80;
-		childCount(0, this.state.rootNode);
+		this.childCount(levelWidth, 0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 		this.calcTreeData(this.state.rootNode)
@@ -185,9 +188,6 @@ export class Board extends React.Component {
 				rootPairs.forEach((pair, idx) => {
 					pair.source.index = idx;
 				})
-
-				//Focus is (re-)set when zooming to items
-				var focus = this.state.rootNode
 
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
@@ -229,7 +229,7 @@ export class Board extends React.Component {
 					.attr("pointer-events", "none")
 					.attr("x", 4)
 					.attr("y", 12)
-					.attr("fill-opacity", d => +labelVisible(d));
+					.attr("fill-opacity", d => +partlabel(d));
 
 				text.append("tspan")
 					.text(d => me.getLabel(d))
@@ -243,14 +243,14 @@ export class Board extends React.Component {
 					if (!event.shiftKey) me.nodeClicked(event, p)
 					else {
 
-						focus = focus === p ? p = p.parent : p;
+						me.state.rootNode = me.state.rootNode === p ? p = p.parent : p;
 
 						levelWidth = [1];
-						childCount(0, focus);
+						me.childCount(levelWidth, 0, me.state.rootNode );
 						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 
-						me.state.rootNode.each(d => d.target = {
+						cell.each(d => d.target = {
 							x0: ((d.x0 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
 							x1: ((d.x1 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
 							y0: d.y0 - p.y0,
@@ -261,14 +261,14 @@ export class Board extends React.Component {
 							.attr("transform", d => `translate(${d.target.y0},${d.target.x0})`);
 
 						rect.transition(t).attr("height", d => rectHeight(d.target));
-						text.transition(t).attr("fill-opacity", d => +labelVisible(d.target));
+						text.transition(t).attr("fill-opacity", d => +partlabel(d.target));
 					}
 				}
 				function rectHeight(d) {
 					return d.x1 - d.x0 - Math.min(4, (d.x1 - d.x0) / 2);
 				}
 
-				function labelVisible(d) {
+				function partlabel(d) {
 					return d.y1 <= window.innerWidth && d.y0 >= 0 && d.x1 - d.x0 > 16;
 				}
 				break;
@@ -342,7 +342,7 @@ export class Board extends React.Component {
 					.join("text")
 					.attr("dy", "0.35em")
 					//					.attr("fill-opacity", 1)
-					.attr("fill-opacity", d => +labelVisible(d.current))
+					.attr("fill-opacity", d => +sbLabel(d, d.current))
 					.attr("transform", d => labelTransform(d.current))
 
 					.attr("text-anchor", d => labelAnchor(d.current))
@@ -367,7 +367,7 @@ export class Board extends React.Component {
 				function arcClicked(event, p) {
 					if (!event.shiftKey) me.nodeClicked(event, p);
 
-					parent.datum(p.parent || this.state.rootNode);
+					parent.datum(p.parent || me.state.rootNode);
 					parentLabel.datum(p).text(d =>
 						(d.data.id === "root" ? "" : d.data.id));
 					parentTitle.datum(p).text(d => {
@@ -400,9 +400,9 @@ export class Board extends React.Component {
 						.attrTween("d", d => () => arc(d.current));
 
 					label.filter(function (d) {
-						return +this.getAttribute("fill-opacity") || labelVisible(d.target);
+						return +this.getAttribute("fill-opacity") || sbLabel(d, d.target);
 					}).transition(t)
-						.attr("fill-opacity", d => +labelVisible(d.target))
+						.attr("fill-opacity", d => +sbLabel(d, d.target))
 						.attrTween("transform", d => () => labelTransform(d.current))
 						.attrTween("text-anchor", d => () => labelAnchor(d.current))
 
@@ -412,8 +412,12 @@ export class Board extends React.Component {
 					return d.y1 <= ringCount && d.y0 >= 1 && d.x1 > d.x0;
 				}
 
-				function labelVisible(d) {
-					return d.y1 <= ringCount && d.y0 >= 1 && ((d.y1 - d.y0) * (d.x1 - d.x0)) > (0.06/d.depth);
+				function sbLabel(d, target) {
+					return (
+						target.y1 <= ringCount && 
+						target.y0 >= 1 && 
+						((target.y1 - target.y0) * (target.x1 - target.x0)) > (0.06/d.depth)
+					);
 				}
 
 				function labelAnchor(d) {
@@ -505,10 +509,10 @@ export class Board extends React.Component {
 			function treeClicked(event, p) {
 				if (!event.shiftKey) me.nodeClicked(event, p) 
 				else {
-					focus = focus === p ? p = p.parent : p;
+					this.state.rootNode = this.state.rootNode === p ? p = p.parent : p;
 
 						levelWidth = [1];
-						childCount(0, focus);
+						childCount(levelWidth, 0, this.focus);
 						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 
@@ -924,7 +928,7 @@ export class Board extends React.Component {
 		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
 	}
 	handleChangeMultiple = (evt, valueList) => {
-		var root = { ...this.state.rootNode };
+		var root = { ...this.root };
 		var allChildren = root.children
 		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = _.union(allChildren, root.savedChildren)
 		if (valueList.length > 0) {
@@ -949,13 +953,13 @@ export class Board extends React.Component {
 			root.children = allChildren
 			root.savedChildren = null;
 		}
-		this.setState({ rootNode: root, topLevelList: valueList })
+		this.setState({ rootNode: d3.hierarchy(root), topLevelList: valueList })
 	}
 
 	topLevelList = () => {
 		//Top level list is the children of root
 
-		var cardList = this.state.rootNode.children
+		var cardList = this.root.children
 		return (cardList && cardList.length) ? (
 			<Autocomplete
 				freeSolo
