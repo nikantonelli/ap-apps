@@ -108,7 +108,12 @@ class AgilePlace {
 		).catch((error) => { console.log(error) })
 		var data = null;
 		if (res) {
-			data = await res.json()
+			if (params.raw) {
+				data = new Uint8Array( await res.arrayBuffer())
+			}
+			else {
+				data = await res.json()
+			}
 		}
 		return data;
 	}

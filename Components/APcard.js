@@ -109,8 +109,8 @@ export class APcard extends React.Component {
 	}
 
 	cleanIconPath = (path) => {
-		var pos = path.search("/customicons")
-		var newPath = path.substr(pos);
+		var pos = path.search("/customicon")
+		var newPath = "/api" + path.substr(pos);
 		return newPath
 	}
 
@@ -305,7 +305,7 @@ export class APcard extends React.Component {
 														{Boolean(this.state.data.customIcon) ? (
 															<>
 																<Grid item sx={{ margin: "0px" }}>
-																	<img style={{ width: "28px", height: "28px" }} alt={this.state.data.customIcon.name} src={this.state.data.customIcon.iconPath} />
+																	<img style={{ width: "28px", height: "28px" }} alt={this.state.data.customIcon.name} src={this.cleanIconPath(this.state.data.customIcon.iconPath)} />
 																</Grid>
 																<Grid item>
 																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>

@@ -15,6 +15,7 @@ export class APChildStats extends React.Component {
 	 * showPlanDates: boolean
 	 * showActualsDates: boolean
 	 * showAsCircles: boolean
+	 * circleSize: integer
 	 * showProgress: boolean	Colour code the progress bar by an algorithm using dates
 	 */
 
@@ -26,6 +27,7 @@ export class APChildStats extends React.Component {
 	* startValue: integer (defaults to 0)
 	* endValue: integer	(defaults to 100)
 	* currentValue: integer
+	* showAsCircles: boolean
 	* circleSize: integer
 	* showProgress: boolean	Colour code the progress bar by an algorithm using dates
 	*

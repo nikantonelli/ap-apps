@@ -69,6 +69,11 @@ export class APHoverCard extends React.Component {
 	}
 	
 
+	cleanIconPath = (path) => {
+		var pos = path.search("/customicon")
+		var newPath = "/api" + path.substr(pos);
+		return newPath
+	}
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
@@ -185,7 +190,7 @@ export class APHoverCard extends React.Component {
 														{Boolean(this.state.data.customIcon) ? (
 															<>
 																<Grid item sx={{ margin: "0px" }}>
-																	<img style={{ width: "28px", height: "28px" }} alt="Custom Icon" src={this.state.data.customIcon.iconPath} />
+																	<img style={{ width: "28px", height: "28px" }} alt="Custom Icon" src={this.cleanIconPath(this.state.data.customIcon.iconPath)} />
 																</Grid>
 																<Grid item>
 																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>
@@ -225,7 +230,6 @@ export class APHoverCard extends React.Component {
 														showByPoints
 														showByCount
 														showProgress
-														showAsCircles
 														circleSize={80}
 													/>
 									</Grid>

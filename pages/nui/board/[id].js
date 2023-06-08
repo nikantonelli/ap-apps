@@ -54,6 +54,7 @@ export class Board extends React.Component {
 
 	calcTreeData = (rootNode) => {
 		var me = this;
+		//Do some stuff for the app to work
 		rootNode
 			.sum(d => {
 				switch (me.state.sortType) {
@@ -89,7 +90,42 @@ export class Board extends React.Component {
 					}
 				}
 			})
+		//Do some other stuff for stats on the hierarchy to show to user
 
+		rootNode.eachAfter((d) => {
+			//If we are the leaves, then check if our dates are outside the parent's
+			if (d.parent && (d.parent.id !== "root")) {
+
+				//Compare dates
+				var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
+				var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
+				var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
+				var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
+
+				var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
+				var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+
+				if ((pf == null) || (ps == null)) {
+					d.dateIncomplete = true;
+				}
+
+				if ((pf > pPF) || (ps >= pPF)) {
+					d.dateError = true;
+				}
+
+				if (ps < pPS) {
+					d.dateWarning = true;
+				}
+
+				d.parent.earliest = earliest;
+				d.parent.latest = latest;
+
+				//Cascade up the tree
+				if (d.dateError) d.parent.dateError = true;
+				if (d.dateWarning) d.parent.dateWarning = true;
+				if (d.dateIncomplete) d.parent.dateIncomplete = true;
+			}
+		})
 	};
 
 	addPortals = (me, nodes) => {
@@ -136,7 +172,7 @@ export class Board extends React.Component {
 	}
 
 
-	childCount =  (levelWidth, level, n) => {
+	childCount = (levelWidth, level, n) => {
 		var me = this;
 		if (n.children && n.children.length > 0) {
 			if (levelWidth.length <= level + 1) levelWidth.push(0);
@@ -145,6 +181,36 @@ export class Board extends React.Component {
 				me.childCount(levelWidth, level + 1, d);
 			});
 		}
+	}
+
+	getSchedulingError = (d) => {
+
+		var txt = "Scheduling:\n";
+		if (d.earliest < (new Date(d.data.plannedStart).getTime())) {
+			txt += "   Child starts ealier\n"
+		}
+		if (d.latest > (new Date(d.data.plannedFinish).getTime())) {
+			txt += "   Child starts later\n"
+		}
+		if (d.dateIncomplete) {
+			txt += "   Imcomplete schedule information in hierarchy\n"
+		}
+		return txt;
+	}
+
+	getSchedulingWarning = (d) => {
+
+		var txt = "Scheduling:\n";
+		if (d.earliest < (new Date(d.data.plannedStart).getTime())) {
+			txt += "   Child starts ealier\n"
+		}
+		if (d.latest > (new Date(d.data.plannedFinish).getTime())) {
+			txt += "   Child starts later\n"
+		}
+		if (d.dateIncomplete) {
+			txt += "   Imcomplete schedule information in this item\n"
+		}
+		return txt;
 	}
 
 	update = () => {
@@ -157,7 +223,7 @@ export class Board extends React.Component {
 		var me = this;
 
 		var levelWidth = [1];
-		
+
 		var rowHeight = 80;
 		this.childCount(levelWidth, 0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
@@ -175,8 +241,8 @@ export class Board extends React.Component {
 				var viewBox = [window.innerWidth, treeBoxHeight]
 
 				d3.partition()
-				.size([viewBox[1], viewBox[0]])
-				(this.state.rootNode)
+					.size([viewBox[1], viewBox[0]])
+					(this.state.rootNode)
 
 				var nodes = d3.selectAll(".node")
 					.data(this.state.rootNode.descendants())
@@ -186,14 +252,14 @@ export class Board extends React.Component {
 
 				var rootPairs = this.state.rootNode.links()
 				rootPairs.forEach((pair, idx) => {
-					pair.source.index = idx;
+					pair.target.index = idx;
 				})
 
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
 				svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
 				svg.attr('class', 'rootSurface')
-				
+
 				const cell = svg
 					.selectAll("g")
 					.data(this.state.rootNode.descendants().slice(1))
@@ -201,13 +267,14 @@ export class Board extends React.Component {
 					.attr("transform", d => `translate(${d.y0},${d.x0})`);
 
 				const rect = cell.append("rect")
+					.attr("id", (d, idx) => "rect_" + idx)
 					.attr("width", d => d.y1 - d.y0 - 4)
 					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", 0.3)
+					.attr("fill-opacity", d => (d.children ? 0.6 : 0.3))
 					.attr("fill", d => {
 						if (!d.depth) return "#ccc";
 						while (d.depth > 1) d = d.parent;
-						return color(d.index);
+						return color(d.index + 1);
 					})
 					// .attr("class", d => {
 					// 	return d.data.lane.cardStatus === 'finished'? "card-status card-finished" :
@@ -215,7 +282,24 @@ export class Board extends React.Component {
 					// 			"card-status card-not-started"
 					// })
 					.style("cursor", "pointer")
-					.on("click", blockClicked)
+					.on("click", me.nodeClicked)
+
+				cell.filter(d => d.dateError).join("g")
+					.append("path")
+					.attr("d", d => {
+						return `M ${d.y1 - d.y0-4} ${d.x1 - d.x0-4} L ${d.y1 - d.y0-4} ${d.x1 - d.x0 - 24} L ${d.y1 - d.y0 - 24} ${d.x1 - d.x0-4} z`
+					})
+					.attr("fill", "red")
+					.append("title").text(d => me.getSchedulingError(d))
+
+				cell.filter(d => (d.dateWarning && !d.dateError))
+					.join("g")
+					.append("path")
+					.attr("d", d => {
+						return `M ${d.y1 - d.y0-4} ${d.x1 - d.x0-4} L ${d.y1 - d.y0-4} ${d.x1 - d.x0 - 24} L ${d.y1 - d.y0 - 24} ${d.x1 - d.x0-4} z`
+					})
+					.attr("fill", "orange")
+					.append("title").text(d => me.getSchedulingWarning(d))
 
 				cell.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
@@ -238,32 +322,7 @@ export class Board extends React.Component {
 				cell.append("title")
 					.text(d => me.getTitle(d));
 
-				function blockClicked(event, p) {
 
-					if (!event.shiftKey) me.nodeClicked(event, p)
-					else {
-
-						me.state.rootNode = me.state.rootNode === p ? p = p.parent : p;
-
-						levelWidth = [1];
-						me.childCount(levelWidth, 0, me.state.rootNode );
-						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
-
-						cell.each(d => d.target = {
-							x0: ((d.x0 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
-							x1: ((d.x1 - p.x0) / (p.x1 - p.x0)) * treeBoxHeight,
-							y0: d.y0 - p.y0,
-							y1: d.y1 - p.y0
-						});
-
-						const t = cell.transition().duration(750)
-							.attr("transform", d => `translate(${d.target.y0},${d.target.x0})`);
-
-						rect.transition(t).attr("height", d => rectHeight(d.target));
-						text.transition(t).attr("fill-opacity", d => +partlabel(d.target));
-					}
-				}
 				function rectHeight(d) {
 					return d.x1 - d.x0 - Math.min(4, (d.x1 - d.x0) / 2);
 				}
@@ -293,7 +352,7 @@ export class Board extends React.Component {
 				this.state.rootNode.each(d => d.current = d);
 				var rootPairs = this.state.rootNode.links()
 				rootPairs.forEach((pair, idx) => {
-					pair.source.index = idx;
+					pair.target.index = idx;
 				})
 
 				var width = _.min([window.innerWidth / 2, (window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) / 2])
@@ -353,7 +412,7 @@ export class Board extends React.Component {
 					.attr("r", (width / ringCount))
 					.attr("fill", "#888")
 					.attr("pointer-events", "all")
-					.on("click", arcClicked)
+					.on("click", me.nodeClicked)
 
 				const parentLabel = g.append("text")
 					.datum(this.state.rootNode)
@@ -414,9 +473,9 @@ export class Board extends React.Component {
 
 				function sbLabel(d, target) {
 					return (
-						target.y1 <= ringCount && 
-						target.y0 >= 1 && 
-						((target.y1 - target.y0) * (target.x1 - target.x0)) > (0.06/d.depth)
+						target.y1 <= ringCount &&
+						target.y0 >= 1 &&
+						((target.y1 - target.y0) * (target.x1 - target.x0)) > (0.06 / d.depth)
 					);
 				}
 
@@ -488,7 +547,7 @@ export class Board extends React.Component {
 				nodes.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
 					.text(d => me.getLabel(d))
-					.on('click', treeClicked)
+					.on('click', me.nodeClicked)
 					.attr('class', "idText")
 					.attr("height", rowHeight - 10)
 					.attr("id", function (d) {
@@ -505,21 +564,8 @@ export class Board extends React.Component {
 				this.paths(svg, nodes)
 				break;
 			}
-
-			function treeClicked(event, p) {
-				if (!event.shiftKey) me.nodeClicked(event, p) 
-				else {
-					this.state.rootNode = this.state.rootNode === p ? p = p.parent : p;
-
-						levelWidth = [1];
-						childCount(levelWidth, 0, this.focus);
-						var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-						treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
-
-				}
-			}
 		}
-		
+
 
 	}
 	getLabel = (d) => {
@@ -602,7 +648,7 @@ export class Board extends React.Component {
 			else if ((prev.sortType === "count") && (newMode === 'tree')) {
 				return { tileType: newMode, sortType: 'size' }
 			}
-			return { tileType: newMode}
+			return { tileType: newMode }
 		});
 	}
 	sortChange = (e) => {
@@ -784,6 +830,7 @@ export class Board extends React.Component {
 					}
 					var cResponse = await doRequest(cParams)
 					var cResult = await cResponse.json()
+					cResult.parent = this.root.id;
 					this.root.children.push(cResult)
 					this.clonedData = JSON.parse(JSON.stringify(this.root))
 					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
@@ -803,10 +850,12 @@ export class Board extends React.Component {
 			getCardChildren(host, card).then(async (result) => {
 				this.setState((prev) => { return { pending: prev.pending - 1 } })
 				var children = await result.json()
-				card.children = children.cards
-				var ld = depth;
-				if (ld < this.state.depth) this.childrenOf(host, card.children, ld + 1)
-				else this.setState({ rootNode: d3.hierarchy(this.root)})
+				if (children) {
+					card.children = children.cards
+					forEach(card.children, (cd) => cd.parent = card.id)
+					if (depth < this.state.depth) this.childrenOf(host, card.children, depth + 1)
+					else this.setState({ rootNode: d3.hierarchy(this.root) })
+				}
 				this.clonedData = JSON.parse(JSON.stringify(this.root));
 			}, this)
 		})
@@ -830,11 +879,61 @@ export class Board extends React.Component {
 				d.data.savedChildren = [];
 			}
 			this.setState((prev) => {
-				return { rootNode: d3.hierarchy(this.root)}
+				return { rootNode: d3.hierarchy(this.root) }
 			})
 		}
-		else if (ev.shiftKey) {
+		else if (ev.altKey) {
 			document.open("/nui/card/" + d.data.id, "", "noopener=true")
+		}
+		else if (ev.shiftKey) {
+
+			var me = this;
+
+			function searchTree(element, id) {
+				if (element.id === id) {
+					return element;
+				}
+				else if (Boolean(element.children)) {
+					var i;
+					var result = null;
+					for (i = 0; result == null && i < element.children.length; i++) {
+						result = searchTree(element.children[i], id);
+					}
+					return result;
+				}
+				return null;
+			}
+			var newRoot = searchTree(me.root, d.data.id);
+			var parent = searchTree(me.root, newRoot.parent);
+			if (parent.id !== "root") {
+				if (me.focus === d.data.id) {
+					me.focus = parent.id;
+					me.setState({
+						rootNode: d3.hierarchy(
+							{
+								id: 'root',
+								children: [parent]
+							}
+						)
+					});
+
+				} else {
+					me.focus = newRoot.id;
+					me.setState({
+						rootNode: d3.hierarchy(
+							{
+								id: 'root',
+								children: [newRoot]
+							}
+						)
+					})
+				}
+
+			}
+			else {
+				me.focus = null;
+				me.setState({ rootNode: d3.hierarchy(me.root) })
+			}
 		}
 		else {
 			this.popUp = d.data.id
