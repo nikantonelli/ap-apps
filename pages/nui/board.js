@@ -1,7 +1,7 @@
 import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
 import BoardService from "../../services/BoardService";
 
-import { Cancel, Search } from "@mui/icons-material";
+import { AccountTree, Brightness7, Cancel, Domain, OpenInNew, Search } from "@mui/icons-material";
 import { useState } from 'react';
 
 export default function Board({ host }) {
@@ -14,12 +14,16 @@ export default function Board({ host }) {
 
 	var bs = null;
 
-	function cardClicked(evt) {
-		document.open("/nui/board/" + evt.currentTarget.id, "", "noopener=true")
+	function treeClicked(evt) {
+		document.open("/nui/board/" + evt.currentTarget.id + "?mode=tree", "", "noopener=true")
 	}
-	
-	function cardClicked2(evt) {
-		document.open("/nui/board/" + evt.currentTarget.id, "_blank")
+
+	function sunClicked(evt) {
+		document.open("/nui/board/" + evt.currentTarget.id + "?mode=sunburst", "", "noopener=true")
+	}
+
+	function partClicked(evt) {
+		document.open("/nui/board/" + evt.currentTarget.id + "?mode=partition", "", "noopener=true")
 	}
 
 	function filterChange(e) {
@@ -80,7 +84,7 @@ export default function Board({ host }) {
 							<IconButton onClick={clearFilter}>
 								<Cancel />
 							</IconButton>
-							: <Search/>}
+							: <Search />}
 					</InputAdornment>
 				),
 			}}
@@ -94,15 +98,30 @@ export default function Board({ host }) {
 							className="card"
 							variant="standard"
 							raised
-							onClick={cardClicked}
-							id={brd.id}
 						>
-							<CardHeader 
-								title={brd.title} 
+							<CardHeader
+								title={brd.title}
 								style={{ textAlign: 'center' }}
-								/>
+							/>
 							<CardActions>
-								
+								<IconButton
+									onClick={treeClicked}
+									id={brd.id}
+								>
+									<AccountTree />
+								</IconButton>
+								<IconButton
+									onClick={partClicked}
+									id={brd.id}
+								>
+									< Domain />
+								</IconButton>
+								<IconButton
+									onClick={sunClicked}
+									id={brd.id}
+								>
+									<Brightness7 />
+								</IconButton>
 							</CardActions>
 						</Card>
 					</Grid>

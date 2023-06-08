@@ -262,7 +262,7 @@ export class APcard extends React.Component {
 											<Grid>
 												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography></Paper>
 												<TextField
-
+													sx={{width:"100%"}}
 													variant="outlined"
 													className='card-description-field'
 													value={this.state.data.title}
@@ -370,12 +370,15 @@ export class APcard extends React.Component {
 							: null}
 						<Accordion expanded={this.state[APcard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="schedule-content" id={APcard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>Schedule</Typography>
+								<Typography variant={sectionHeaderType} color={(Boolean(this.state.data.plannedStart) && Boolean(this.state.data.plannedFinish))?"text.primary":"error"}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
 								<Grid container direction="row">
 									<Grid item sx={cardDescriptionFieldStyle}>
-										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Planned Dates</Typography>
+										<Paper square elevation={2} sx={titlePaperStyle}>
+											<Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+												Planned Dates
+											</Typography>
 										</Paper>
 										<APdateRange
 											start={this.state.data.plannedStart}

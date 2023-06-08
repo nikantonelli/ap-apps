@@ -20,7 +20,7 @@ export class APdateRange extends React.Component {
 						showDaysOutsideCurrentMonth 
 						label="Start Date" 
 						format="LL" 
-						defaultValue={dayjs(this.props.start)}
+						defaultValue={this.props.start?dayjs(this.props.start):"invalid"}
 						onSelectionChange={this.props.startChange} 
 					/>
 					<Paper sx={{margin:"20px"}} elevation={0}> until </Paper>
@@ -28,7 +28,7 @@ export class APdateRange extends React.Component {
 						showDaysOutsideCurrentMonth 
 						label="End Date" 
 						format="LL" 
-						defaultValue={this.props.end?dayjs(this.props.end):null} 
+						defaultValue={this.props.end?dayjs(this.props.end):"invalid"} 
 						onSelectionChange={this.props.endChange}
 					/>
 				</LocalizationProvider>

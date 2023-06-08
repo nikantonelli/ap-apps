@@ -9,6 +9,7 @@ export class CardUserTable extends React.Component {
     }
     render = () => {
         var users = [];
+if (this.props.card.id=="31512106097022") console.log(this.props.card);
 
         users.push({ type: "Last Edit", user: this.props.card.updatedBy, date: Boolean(this.props.card.updatedOn) ? new Date(this.props.card.updatedOn).toString() : null })
         users.push({ type: "Last Move", user: this.props.card.movedBy, date: Boolean(this.props.card.movedOn) ? new Date(this.props.card.movedOn).toString() : null })
@@ -27,7 +28,8 @@ export class CardUserTable extends React.Component {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {users.map((row, idx) => (
+                        {users.map((row, idx) => {
+                            return Boolean(row.user)?
                             <TableRow
                                 key={idx}
                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
@@ -37,12 +39,13 @@ export class CardUserTable extends React.Component {
                                 </TableCell>
                                 <TableCell>{Boolean(row.date) ? row.date : null}</TableCell>
                                 <TableCell>{Boolean(row.user) ? row.user.fullName : null}</TableCell>
-                                {(Boolean(row.user) && row.user.emailAddress) ?
+                                {Boolean(row.user.emailAddress) ?
                                     <TableCell sx={{email:row.user.emailAddress}} className="clickable" onClick={this.sendEmail}>{Boolean(row.user) ? row.user.emailAddress : null}</TableCell> :
                                     <TableCell />}
                                 <TableCell>{Boolean(row.user) ? <img alt={"User Avatar"} src={row.user.avatar} /> : null}</TableCell>
                             </TableRow>
-                        ))}
+                            :null    
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
