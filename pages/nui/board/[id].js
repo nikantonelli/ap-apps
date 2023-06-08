@@ -4,10 +4,10 @@ import { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 
-import { HighlightOff, OpenInBrowser, OpenInNew, Settings } from "@mui/icons-material";
+import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 import React from "react";
-import { APHoverCard } from "../../../Components/APHoverCard";
 import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
+import { APcard } from "../../../Components/APcard";
 
 export class Board extends React.Component {
 	constructor(props) {
@@ -154,7 +154,7 @@ export class Board extends React.Component {
 					open={me.popUp === d.data.id}
 				>
 					<div>
-						<APHoverCard
+						<APcard
 							analysis={analysisData}
 							descendants={children}
 							parents={parents}
@@ -163,6 +163,7 @@ export class Board extends React.Component {
 							host={me.props.host} card={d.data}
 							context={me.state.context}
 							onClose={me.closePopUp}
+							readOnly
 						/>
 					</div>
 				</Drawer>

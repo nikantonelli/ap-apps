@@ -35,8 +35,8 @@ class ItemCache {
 	}
 
 	get(id) {
-		console.log("getting: ", id);
 		if (this.map.has(id)) {
+			console.log("got: ", id);
 			// remove elem from current position
 			let c = this.map.get(id);
 			c.prev.next = c.next;
@@ -54,11 +54,11 @@ class ItemCache {
 	}
 
 	put(id, item) {
-		console.log("adding: ", id);
-		if (this.get(id) === -1) {
-			// if key does not exist, update last element value
+		if (this.get(id) !== null) {
+			// if key does exist, update last element with new value
 			this.tail.prev.value = item;
 		} else {
+			console.log("adding: ", id);
 			// check if map size is at capacity
 			if (this.map.size === this.capacity) {
 				//delete item both from map and DLL

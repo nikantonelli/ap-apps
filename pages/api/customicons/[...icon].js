@@ -1,7 +1,7 @@
-import  DataProvider from "../../../utils/Server/DataProvider"
+import DataProvider from "../../../utils/Server/DataProvider"
 
 export default async function handler(req, res) {
-	
+
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = new DataProvider()
 	}
@@ -13,6 +13,16 @@ export default async function handler(req, res) {
 		type: 'image/png'
 	}
 
-	res.writeHead(200, {'Content-Type':"image/png"})
-	res.end(await globalThis.dataProvider.xfr(params))
+	var result = globalThis.dataProvider.inCache(params.url, 'png')
+	if (result === null) {
+		result = await globalThis.dataProvider.xfr(params)
+	}
+	if (result) {
+		globalThis.dataProvider.addToCacheWithId(params.url, result, 'png')
+		res.writeHead(200, { 'Content-Type': "image/png" })
+		res.end(result)
+	}
+	else {
+		res.status(400).end(`{error: true, message: Failed to fetch ${params.url}`)
+	}
 }

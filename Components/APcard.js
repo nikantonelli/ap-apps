@@ -1,4 +1,4 @@
-import { BarChart, CalendarToday, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { APBlocked } from "./AP-Fields/blocked";
@@ -42,6 +42,10 @@ export class APcard extends React.Component {
 		this.state[APcard.PROGRESS_PANEL_NAME] = false;
 
 		this.savedData = props.card;
+	}
+
+	closeAction = (e) => {
+		if (this.props.onClose) this.props.onClose(e)
 	}
 
 	updateDescription = (e) => {
@@ -194,52 +198,58 @@ export class APcard extends React.Component {
 								</Tooltip>
 							</CardActions>
 						</Grid>
-						{!this.props.readOnly ?
-							<Grid item xs={6}>
-								<CardActions style={{ backgroundColor: typeColour, justifyContent: 'right' }} >
-									<Tooltip title="Save Changes">
-										<IconButton
-											size='large'
-											className="options-button-icon"
-											aria-label='save card'
-											onClick={this.checkUpdates}
-											color={this.isChanged ? 'error' : 'default'}
-										>
-											<SaveAltOutlined />
-										</IconButton>
-									</Tooltip>
-									<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
-										<IconButton
-											size='large'
-											className="options-button-icon"
-											aria-label='save if needed, and close'
-											onClick={this.updateDataClose}
-											color={this.isChanged ? 'error' : 'default'}
-										>
-											<Logout />
-										</IconButton>
-									</Tooltip>
-									<Tooltip title="Cancel Changes">
-										<IconButton size='large' className="options-button-icon" aria-label='cancel changes' onClick={this.cancelChanges}>
-											<CancelPresentation />
-										</IconButton>
-									</Tooltip>
+						<Grid item xs={6}>
+							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'right' }} >
 
-									<Tooltip title="Send to Recycle Bin">
-										<IconButton size='large' className="options-button-icon" aria-label="send to recycle bin" onClick={this.deleteRecycle}>
-											<Delete />
-										</IconButton>
-									</Tooltip>
+								{!this.props.readOnly ?
+									<>
+										<Tooltip title="Save Changes">
+											<IconButton
+												size='large'
+												className="options-button-icon"
+												aria-label='save card'
+												onClick={this.checkUpdates}
+												color={this.isChanged ? 'error' : 'default'}
+											>
+												<SaveAltOutlined />
+											</IconButton>
+										</Tooltip>
+										<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
+											<IconButton
+												size='large'
+												className="options-button-icon"
+												aria-label='save if needed, and close'
+												onClick={this.updateDataClose}
+												color={this.isChanged ? 'error' : 'default'}
+											>
+												<Logout />
+											</IconButton>
+										</Tooltip>
+										<Tooltip title="Cancel Changes">
+											<IconButton size='large' className="options-button-icon" aria-label='cancel changes' onClick={this.cancelChanges}>
+												<CancelPresentation />
+											</IconButton>
+										</Tooltip>
 
-									<Tooltip title="Delete Forever">
-										<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.deleteForever} >
-											<DeleteForever />
-										</IconButton>
-									</Tooltip>
-								</CardActions>
-							</Grid>
-							: null}
+										<Tooltip title="Send to Recycle Bin">
+											<IconButton size='large' className="options-button-icon" aria-label="send to recycle bin" onClick={this.deleteRecycle}>
+												<Delete />
+											</IconButton>
+										</Tooltip>
+
+										<Tooltip title="Delete Forever">
+											<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.deleteForever} >
+												<DeleteForever />
+											</IconButton>
+										</Tooltip>
+									</>
+									: <IconButton onClick={this.closeAction}>
+										<CancelOutlined></CancelOutlined>
+									</IconButton>}
+							</CardActions>
+						</Grid>
 					</Grid>
+
 					<CardContent sx={{ backgroundColor: typeColour }}>
 						<Accordion expanded={this.state[APcard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="details-content" id={APcard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
@@ -338,12 +348,12 @@ export class APcard extends React.Component {
 									<Grid container direction="row">
 										<Grid item sx={cardDescriptionFieldStyle} >
 											<Paper square elevation={2} sx={titlePaperStyle}>
-												<Typography 
-													variant={fieldHeaderType} 
+												<Typography
+													variant={fieldHeaderType}
 													sx={titleFieldStyle}
-													color={(!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart))? "error":"text.primary"}
-													>
-														{"Percent Complete " + ((!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart))? "(Incomplete Planned Dates)":"")}
+													color={(!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart)) ? "error" : "text.primary"}
+												>
+													{"Percent Complete " + ((!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart)) ? "(Incomplete Planned Dates)" : "")}
 												</Typography>
 											</Paper>
 											<APChildStats
@@ -351,7 +361,6 @@ export class APcard extends React.Component {
 												showByPoints
 												showByCount
 												showProgress
-												showAsCircles
 												circleSize={80}
 											/>
 										</Grid>

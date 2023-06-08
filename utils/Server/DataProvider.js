@@ -5,14 +5,14 @@ class DataProvider {
 
 	CACHE_ITEM_COUNT = 200;
 	CACHE_AGE_TIMER = 30 * 1000;	//Check every 30 sec
-	//CACHE_AGE_LIMIT = 1 * 60 * 1000;	//Limit of 5 mins
+	//CACHE_AGE_LIMIT = 1 * 60 * 1000;	//Limit of 1 min
 	CACHE_AGE_LIMIT = 30 * 60 * 1000;	//Limit of 30 mins
 
 	constructor() {
 		//Choose your poison
 		this.provider = new AgilePlace();
 		this.cacheMap = new Map();
-		setInterval( this.ageCache, this.CACHE_AGE_TIMER)
+		setInterval(this.ageCache, this.CACHE_AGE_TIMER)
 	}
 
 	ageCache = () => {
@@ -39,7 +39,7 @@ class DataProvider {
 	}
 
 	getCache(realType) {
-		var type = Boolean(realType)?realType:"unknown"
+		var type = (Boolean(realType) && (typeof realType === "string")) ? realType : "unknown"
 		var cache = this.cacheMap.get(type)
 		if (!cache) {
 			cache = new ItemCache(this.CACHE_ITEM_COUNT)
@@ -49,8 +49,17 @@ class DataProvider {
 	}
 
 	addToCache(data, type) {
-		var cache = this.getCache(type)
+		var cache = this.getCache(type)	//Creates new one if not present
 		var id = this.provider.getIdentifierField(data, type);
+		let newEntry = {
+			date: Date.now(),
+			value: data
+		}
+		cache.put(id, newEntry);
+	}
+
+	addToCacheWithId(id, data, type) {
+		var cache = this.getCache(type)	//Creates new one if not present
 		let newEntry = {
 			date: Date.now(),
 			value: data
@@ -60,16 +69,13 @@ class DataProvider {
 
 	delFromCache(id, type) {
 		var cache = this.getCache(type)
-		cache.delete(id);
+		if (cache) cache.delete(id);
 	}
 
 	inCache(id, type) {
 		var cache = this.getCache(type)
-		var cacheEntry = cache.get(id);
-		if (cacheEntry) {
-			return cacheEntry.value;
-		}
-		else return null
+		var cacheEntry = null;
+		return (cache && (cacheEntry = cache.get(id)) && cacheEntry.value) || null
 	}
 
 	getHost() {

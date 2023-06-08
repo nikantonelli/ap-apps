@@ -42,7 +42,7 @@ export default class Item extends React.Component {
 		// 	var icons = await info.json()
 		// 	this.setState({ contextIcons: icons })
 		// })
-		
+
 
 	}
 
@@ -52,7 +52,7 @@ export default class Item extends React.Component {
 		if (this.props.card != null) {
 			return (
 				<APcard
-					cardProps={{margin:"10px"}}
+					cardProps={{ margin: "10px" }}
 					loadSource='card'
 					readOnly={false}
 					card={this.props.card}
@@ -72,11 +72,16 @@ export async function getServerSideProps({ req, params, query }) {
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = new DataProvider()
 	}
-	var cs = new CardService(req.headers.host);
-	var card = await cs.get(params.id)
-	if (card) {
+	var card = globalThis.dataProvider.inCache(params.id, 'card');
 
+	if (card === null) {
+		var cs = new CardService(req.headers.host);
+		card = await cs.get(params.id)
+	}
+	if (card) {
+		globalThis.dataProvider.addToCache(card, 'card')
 		return { props: { card: card, host: req.headers.host } }
 	}
+
 	return { props: { card: null, host: req.headers.host } }
 }
