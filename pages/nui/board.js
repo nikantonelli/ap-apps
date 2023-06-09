@@ -3,16 +3,15 @@ import BoardService from "../../services/BoardService";
 
 import { AccountTree, Brightness7, Cancel, Domain, OpenInNew, Search } from "@mui/icons-material";
 import { useState } from 'react';
+import { findBoards } from "../../utils/Client/Sdk";
 
 export default function Board({ host }) {
 
 	const [boards, setBoards] = useState([]);
 	const [filterText, setFilterText] = useState("");
 	const [timer, setTimer] = useState(null);
-	const [bsrv, setBsrv] = useState(null);
 	const [pending, setPending] = useState(false);
 
-	var bs = null;
 
 	function treeClicked(evt) {
 		document.open("/nui/board/" + evt.currentTarget.id + "?mode=tree", "", "noopener=true")
@@ -42,23 +41,17 @@ export default function Board({ host }) {
 
 	async function getList(fltr) {
 		if (fltr && (fltr.length == 0)) fltr = null;
-		var result = await bs.find({ search: fltr });
-		return result;
-	}
+		var result = await findBoards(host, { search: fltr });
+		var res = await result.json()
+		setBoards(res.boards);
 
-	if (bsrv == null) {
-		bs = new BoardService(host);
-		setBsrv(bs);
-	}
-	else {
-		bs = bsrv;
 	}
 
 	if (!pending) {
 		setPending(true);
 		var ft = filterText;
-		var result = getList(ft)
-		setBoards(result.boards);
+		 getList(ft)
+
 	}
 
 	function clearFilter() {

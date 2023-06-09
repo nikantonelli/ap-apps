@@ -298,8 +298,8 @@ export class Board extends React.Component {
 						//The '- 4' is due to the margin in the css
 						return `M ${ax - 4} ${ay - 4} L ${bx - 4} ${by} L ${cx} ${cy - 4} z`
 					})
-					.attr("fill", d => d.dateError? "red": d.dateWarning? "orange": "none")
-					.append("title").text(d => d.dateError? me.getSchedulingError(d) : d.dateWarning? me.getSchedulingWarning(d): "No Error")
+					.attr("fill", d => d.dateError ? "red" : d.dateWarning ? "orange" : "none")
+					.append("title").text(d => d.dateError ? me.getSchedulingError(d) : d.dateWarning ? me.getSchedulingWarning(d) : "No Error")
 
 				cell.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
@@ -408,6 +408,7 @@ export class Board extends React.Component {
 					.text(d => me.getLabel(d));
 
 				const parent = g.append("circle")
+					.attr("class", "parentNode")
 					.datum(this.state.rootNode)
 					.attr("r", (width / ringCount))
 					.attr("fill", "#888")
@@ -415,23 +416,27 @@ export class Board extends React.Component {
 					.on("click", me.nodeClicked)
 
 				const parentLabel = g.append("text")
+					.attr("class", "parentLabel")
 					.datum(this.state.rootNode)
 					.text(d => me.getLabel(d))
 					.attr("text-anchor", "middle");
 
 				const parentTitle = g.append("title")
+					.attr("class", "parentTitle")
 					.datum(this.state.rootNode)
 					.text(d => me.getTitle(d))
 
 				function arcClicked(event, p) {
 					if (!event.shiftKey) me.nodeClicked(event, p);
 
-					parent.datum(p.parent || me.state.rootNode);
+					me.focus = p.data.id;
 					parentLabel.datum(p).text(d =>
 						(d.data.id === "root" ? "" : d.data.id));
 					parentTitle.datum(p).text(d => {
 						return d.data.title + " : " + d.data.size;
 					})
+
+					parent.datum(p || me.state.rootNode);
 
 					me.state.rootNode.each(d => d.target = {
 						x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
@@ -727,7 +732,7 @@ export class Board extends React.Component {
 						<Grid item xs={2} sx={{ alignItems: 'center' }}>
 							<Grid container style={{ justifyContent: 'flex-end' }} >
 								{this.state.pending ?
-									<Chip label={"Queued: " + this.state.pending} />
+									<Chip color="warning" label={"Queued: " + this.state.pending} />
 									: <Chip label={"Total loaded: " + this.state.total}></Chip>}
 							</Grid>
 						</Grid>
@@ -774,7 +779,7 @@ export class Board extends React.Component {
 										<Grid sx={{ justifyContent: 'flex-end' }} container>
 
 											<Tooltip title='Close Settings'>
-												<HighlightOff  onClick={this.closeDrawer} />
+												<HighlightOff onClick={this.closeDrawer} />
 											</Tooltip>
 										</Grid>
 									</Grid>
@@ -843,7 +848,7 @@ export class Board extends React.Component {
 	}
 
 	childrenOf = (host, cards, depth) => {
-		this.setState({ rootNode: d3.hierarchy(this.root) })
+
 		forEach(cards, (card) => {
 			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
 			getCardChildren(host, card).then(async (result) => {
@@ -851,13 +856,20 @@ export class Board extends React.Component {
 				var children = await result.json()
 				if (children) {
 					card.children = children.cards
-					forEach(card.children, (cd) => cd.parent = card.id)
+					forEach(card.children, (cd) => {
+						//Remove from top list if they are a child of something
+						this.root.children = _.reject(this.root.children, function (rootChild) {
+							return rootChild.id === cd.id
+						})
+						cd.parent = card.id
+					})
 					if (depth < this.state.depth) this.childrenOf(host, card.children, depth + 1)
 					else this.setState({ rootNode: d3.hierarchy(this.root) })
 				}
 				this.clonedData = JSON.parse(JSON.stringify(this.root));
 			}, this)
 		})
+		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
 	componentDidMount = () => {
@@ -867,22 +879,22 @@ export class Board extends React.Component {
 		}
 	}
 
-	nodeClicked = (ev, d) => {
+	nodeClicked = (ev, p) => {
 		if (ev.ctrlKey) {
-			if (d.data.children && d.data.children.length) {
-				d.data.savedChildren = _.union(d.data.children, d.data.savedChildren)
-				d.data.children = [];
+			if (p.data.children && p.data.children.length) {
+				p.data.savedChildren = _.union(p.data.children, p.data.savedChildren)
+				p.data.children = [];
 			}
-			else if (d.data.savedChildren && d.data.savedChildren.length) {
-				d.data.children = d.data.savedChildren;
-				d.data.savedChildren = [];
+			else if (p.data.savedChildren && p.data.savedChildren.length) {
+				p.data.children = p.data.savedChildren;
+				p.data.savedChildren = [];
 			}
 			this.setState((prev) => {
 				return { rootNode: d3.hierarchy(this.root) }
 			})
 		}
 		else if (ev.altKey) {
-			document.open("/nui/card/" + d.data.id, "", "noopener=true")
+			document.open("/nui/card/" + p.data.id, "", "noopener=true")
 		}
 		else if (ev.shiftKey) {
 
@@ -902,31 +914,44 @@ export class Board extends React.Component {
 				}
 				return null;
 			}
-			var newRoot = searchTree(me.root, d.data.id);
+			var newRoot = searchTree(me.root, p.data.id);
 			var parent = searchTree(me.root, newRoot.parent);
-			if (parent.id !== "root") {
-				if (me.focus === d.data.id) {
-					me.focus = parent.id;
-					me.setState({
-						rootNode: d3.hierarchy(
-							{
-								id: 'root',
-								children: [parent]
-							}
-						)
-					});
+			if (parent) {
+				if (parent.id !== "root") {
+					if (me.focus === p.data.id) {
+						me.focus = parent.id;
+						me.setState({
+							rootNode: d3.hierarchy(
+								{
+									id: parent.id,
+									children: parent.children
+								}
+							)
+						});
 
+					} else {
+						me.focus = newRoot.id;
+						me.setState({
+							rootNode: d3.hierarchy(
+								{
+									id: newRoot.id,
+									children: newRoot.children
+								}
+							)
+						})
+					}
 				} else {
-					me.focus = newRoot.id;
-					me.setState({
-						rootNode: d3.hierarchy(
-							{
-								id: 'root',
-								children: [newRoot]
-							}
-						)
-					})
+					me.focus = null;
+					me.setState({ rootNode: d3.hierarchy(me.root) })
 				}
+
+				d3.select(".parentLabel").datum(p).text(d =>
+					(d.data.id === "root" ? "" : d.data.id));
+				d3.select(".parentTitle").datum(p).text(d => {
+					return d.data.title + " : " + d.data.size;
+				})
+
+				d3.select(".parentNode").datum(p || me.state.rootNode);
 
 			}
 			else {
@@ -935,8 +960,8 @@ export class Board extends React.Component {
 			}
 		}
 		else {
-			this.popUp = d.data.id
-			this.setState({ popUp: d.data.id })
+			this.popUp = p.data.id
+			this.setState({ popUp: p.data.id })
 		}
 	}
 

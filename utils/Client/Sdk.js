@@ -9,6 +9,18 @@ export const getCardChildren = async (host, card) => {
 	return await doRequest(params);
 }
 
+export const findBoards = async (host, options) => {
+	var params = {
+		url: "/board",
+		mode: "GET",
+		host: host
+	}
+	if (options && options.search) {
+		params.url += "?q=" + encodeURIComponent(options.search)
+	}
+	return await doRequest(params)
+	
+}
 export const getListOfCards = async (host, cardList) => {
 	var params = {
 		host: host,

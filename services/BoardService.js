@@ -1,3 +1,5 @@
+import DataProvider from "../utils/Server/DataProvider";
+
 class BoardService {
 
 	constructor(host) {
@@ -27,7 +29,7 @@ class BoardService {
 			mode: "GET"
 		}
 		if (globalThis.dataProvider)
-		return await this.getData(params);
+			return await this.getData(params);
 	}
 
 	async getCards(id, options) {
@@ -44,12 +46,12 @@ class BoardService {
 	}
 
 	async getData(params) {
-		console.log("bs: ",this.baseUrl + params.url, { method: params.mode })
-		if (globalThis.dataProvider) {
-			return await globalThis.dataProvider.xfr(params);
+		console.log("bs: ", this.baseUrl + params.url, { method: params.mode })
+		if (!globalThis.dataProvider) {
+			globalThis.dataProvider = new DataProvider();
 		}
-		return null;
-		
+		return await globalThis.dataProvider.xfr(params);
+
 	}
 }
 export default BoardService;
