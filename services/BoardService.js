@@ -26,6 +26,7 @@ class BoardService {
 			url: "/board/" + id,
 			mode: "GET"
 		}
+		if (globalThis.dataProvider)
 		return await this.getData(params);
 	}
 
@@ -44,10 +45,11 @@ class BoardService {
 
 	async getData(params) {
 		console.log("bs: ",this.baseUrl + params.url, { method: params.mode })
-		var req = new Request(this.baseUrl + params.url, { method: params.mode });
-		var response = await fetch(req, {next: {revalidate: 30}});
-		//Deal with paging here
-		return response;
+		if (globalThis.dataProvider) {
+			return await globalThis.dataProvider.xfr(params);
+		}
+		return null;
+		
 	}
 }
 export default BoardService;

@@ -57,10 +57,8 @@ export default function Board({ host }) {
 	if (!pending) {
 		setPending(true);
 		var ft = filterText;
-		getList(ft).then((result) => result.json())
-			.then((data) => {
-				setBoards(data.boards);
-			})
+		var result = getList(ft)
+		setBoards(result.boards);
 	}
 
 	function clearFilter() {

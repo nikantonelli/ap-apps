@@ -285,27 +285,26 @@ export class Board extends React.Component {
 					.style("cursor", "pointer")
 					.on("click", me.nodeClicked)
 
-				cell.filter(d => d.dateError).join("g")
+				cell.join("g")
 					.append("path")
 					.attr("d", d => {
-						return `M ${d.y1 - d.y0-4} ${d.x1 - d.x0-4} L ${d.y1 - d.y0-4} ${d.x1 - d.x0 - 24} L ${d.y1 - d.y0 - 24} ${d.x1 - d.x0-4} z`
+						var height = _.min([d.x1 - d.x0, d.y1 - d.y0, 20])
+						var ax = d.y1 - d.y0;  //a == far corner
+						var ay = d.x1 - d.x0;
+						var bx = ax;			//b is up from a
+						var by = ay - height;
+						var cx = ax - height;	//c is over to the left from a
+						var cy = ay;
+						//The '- 4' is due to the margin in the css
+						return `M ${ax - 4} ${ay - 4} L ${bx - 4} ${by} L ${cx} ${cy - 4} z`
 					})
-					.attr("fill", "red")
-					.append("title").text(d => me.getSchedulingError(d))
-
-				cell.filter(d => (d.dateWarning && !d.dateError))
-					.join("g")
-					.append("path")
-					.attr("d", d => {
-						return `M ${d.y1 - d.y0-4} ${d.x1 - d.x0-4} L ${d.y1 - d.y0-4} ${d.x1 - d.x0 - 24} L ${d.y1 - d.y0 - 24} ${d.x1 - d.x0-4} z`
-					})
-					.attr("fill", "orange")
-					.append("title").text(d => me.getSchedulingWarning(d))
+					.attr("fill", d => d.dateError? "red": d.dateWarning? "orange": "none")
+					.append("title").text(d => d.dateError? me.getSchedulingError(d) : d.dateWarning? me.getSchedulingWarning(d): "No Error")
 
 				cell.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
 					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
-					.attr("width", d => d.y1 - d.y0 - 1)
+					.attr("width", d => d.y1 - d.y0 - 5)
 					.attr("height", d => rectHeight(d))
 
 				const text = cell.append("text")
@@ -763,21 +762,20 @@ export class Board extends React.Component {
 							<Grid item>
 								<Grid container direction="row">
 									<Grid xs={6} item>
-										<Tooltip title='Close Settings'>
-											<HighlightOff color='primary' onClick={this.closeDrawer} />
-										</Tooltip>
+										<Button
+											aria-label="Open As New Tab"
+											onClick={this.openAsActive}
+											endIcon={<OpenInNew />}
+										>
+											Open In new Tab
+										</Button>
 									</Grid>
 									<Grid xs={6} item>
 										<Grid sx={{ justifyContent: 'flex-end' }} container>
-											<Button
-												aria-label="Open As New Tab"
-												color='primary'
-												onClick={this.openAsActive}
-												endIcon={<OpenInNew />}
-											>
-												Open In new Tab
-											</Button>
 
+											<Tooltip title='Close Settings'>
+												<HighlightOff  onClick={this.closeDrawer} />
+											</Tooltip>
 										</Grid>
 									</Grid>
 								</Grid>
@@ -1110,7 +1108,7 @@ export async function getServerSideProps({ req, params, query }) {
 		globalThis.dataProvider = new DataProvider()
 	}
 	var bs = new BoardService(req.headers.host);
-	var board = await bs.get(params.id).then((result) => result.json())
+	var board = await bs.get(params.id)
 	if (board) {
 		var active = null;
 		if (query.active) {
