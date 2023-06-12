@@ -10,8 +10,14 @@ import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
 
 export class Board extends React.Component {
+	
+	static DEFAULT_TREE_DEPTH = 4;
+
 	constructor(props) {
 		super(props)
+
+		var stateDepth = this.props.depth || 4;	//If not depth given, assume 4
+		if (stateDepth < 0) stateDepth = 99;	//If -1 passed it, then do as much as anyone stupid would want.
 		this.state = {
 			tileType: this.props.mode || 'sunburst',
 			anchorEl: null,
@@ -23,7 +29,7 @@ export class Board extends React.Component {
 			fetchActive: true,
 			active: props.active,
 			drawerWidth: 400,
-			depth: this.props.depth || 0,
+			depth: stateDepth,
 			pending: 0,
 			total: 0,
 			topLevelList: [],
@@ -80,6 +86,9 @@ export class Board extends React.Component {
 					case 'id': {
 						return dirFnc(Number(a.data.id), Number(b.data.id))
 					}
+					case 'context': {
+						return dirFnc(Number(a.data.board.id), Number(b.data.board.id))
+					}
 
 					default: {
 						return dirFnc(a.data.size, b.data.size)
@@ -121,6 +130,14 @@ export class Board extends React.Component {
 				if (d.dateWarning) d.parent.dateWarning = true;
 				if (d.dateIncomplete) d.parent.dateIncomplete = true;
 			}
+
+			if ( this.state.highlight ){
+				switch (this.state.highlight) {
+					case 'mine': {
+						break;
+					}
+				}
+			}
 		})
 	};
 
@@ -154,7 +171,7 @@ export class Board extends React.Component {
 							analysis={analysisData}
 							descendants={children}
 							parents={parents}
-							cardProps={{ maxWidth: 650 }}
+							cardProps={{ maxWidth: 700 }}
 							loadSource={d.depth < 2 ? 'board' : 'card'}
 							host={me.props.host} card={d.data}
 							context={me.state.context}
@@ -356,7 +373,7 @@ export class Board extends React.Component {
 				const g = svg.append("g")
 					.attr("transform", `translate(${width},${width})`);
 
-				var ringCount = 4;
+				var ringCount = _.min([(this.state.depth + 1), 6]); //Max can be five rings outside the root
 				var arc = d3.arc()
 					.startAngle(d => d.x0)
 					.endAngle(d => d.x1)
@@ -416,52 +433,6 @@ export class Board extends React.Component {
 					.attr("class", "parentTitle")
 					.datum(this.state.rootNode)
 					.text(d => me.getTitle(d))
-
-				function arcClicked(event, p) {
-					if (!event.shiftKey) me.nodeClicked(event, p);
-
-					me.focus = p.data.id;
-					parentLabel.datum(p).text(d =>
-						(d.data.id === "root" ? "" : d.data.id));
-					parentTitle.datum(p).text(d => {
-						return d.data.title + " : " + d.data.size;
-					})
-
-					parent.datum(p || me.state.rootNode);
-
-					me.state.rootNode.each(d => d.target = {
-						x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-						x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-						y0: Math.max(0, d.y0 - p.depth),
-						y1: Math.max(0, d.y1 - p.depth)
-					});
-
-					const t = g.transition().duration(750);
-
-					// Transition the data on all arcs, even the ones that aren’t visible,
-					// so that if this transition is interrupted, entering arcs will start
-					// the next transition from the desired position.
-					path.transition(t)
-						.tween("data", d => {
-							const i = d3.interpolate(d.current, d.target);
-							return t => d.current = i(t);
-						})
-						.filter(function (d) {
-							return +this.getAttribute("fill-opacity") || arcVisible(d.target);
-						})
-						.attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
-						.attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
-
-						.attrTween("d", d => () => arc(d.current));
-
-					label.filter(function (d) {
-						return +this.getAttribute("fill-opacity") || sbLabel(d, d.target);
-					}).transition(t)
-						.attr("fill-opacity", d => +sbLabel(d, d.target))
-						.attrTween("transform", d => () => labelTransform(d.current))
-						.attrTween("text-anchor", d => () => labelAnchor(d.current))
-
-				}
 
 				function arcVisible(d) {
 					return d.y1 <= ringCount && d.y0 >= 1 && d.x1 > d.x0;
@@ -700,7 +671,7 @@ export class Board extends React.Component {
 											{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 											<MenuItem value="score">Score Total</MenuItem>
 											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
-
+											<MenuItem value="context">Context</MenuItem>
 											<MenuItem value="id">ID#</MenuItem>
 										</Select>
 									</FormControl>
@@ -875,7 +846,7 @@ export class Board extends React.Component {
 		if (this.root) {
 			setChildIdx(this.root)
 		}
-		this.color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, this.root.children && this.root.children.length ? this.root.children.length + 1 : 1))
+		this.color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, this.root.children && this.root.children.length ? this.root.children.length : 1))
 		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
@@ -1166,7 +1137,7 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.depth) {
 			depth = query.depth;
 		}
-		else depth = 3	//Limit the exponential explosion of fetches as you go down the tree
+		else depth = Board.DEFAULT_TREE_DEPTH	//Limit the exponential explosion of fetches as you go down the tree
 
 		var mode = null;
 		if (query.mode) {

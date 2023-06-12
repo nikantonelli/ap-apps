@@ -11,17 +11,21 @@ export const optionsButtonIconStyle = {
 
 export const cardDescriptionFieldStyle = {
     minWidth: "600px",
-    margin: "5px"
+    margin: "5px",
 }
 
 export const titlePaperStyle = {
     marginBottom: "5px",
-    backgroundColor: "#ddd"
+    backgroundColor: "#ddd",
+	width: "100%",
+	minWidth: "600px",
 }
 
 export const titleFieldStyle = {
 	marginTop: "0px",
 	marginRight: "0px",
 	marginBottom: "0px",
-	marginLeft: "5px"
+	marginLeft: "5px",
+	width: "100%",
+	minWidth: "600px",
 }

@@ -3,7 +3,7 @@ import ItemCache from "./ItemCache";
 
 class DataProvider {
 
-	CACHE_ITEM_COUNT = 200;
+	CACHE_ITEM_COUNT = 2000;
 	CACHE_AGE_TIMER = 30 * 1000;	//Check every 30 sec
 	//CACHE_AGE_LIMIT = 1 * 60 * 1000;	//Limit of 1 min
 	CACHE_AGE_LIMIT = 30 * 60 * 1000;	//Limit of 30 mins
