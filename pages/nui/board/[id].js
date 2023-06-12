@@ -15,12 +15,7 @@ export class Board extends React.Component {
 		this.state = {
 			tileType: this.props.mode || 'sunburst',
 			anchorEl: null,
-			rootNode:
-			{
-				id: 'root',
-				children: null,
-				savedChildren: null
-			},
+			rootNode: {},
 			allData: null,
 			drawerOpen: false,
 			menuOpen: false,
@@ -46,6 +41,7 @@ export class Board extends React.Component {
 		id: 'root',
 		children: []
 	};
+	color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, 2))
 
 	closePopUp = () => {
 		this.popUp = null
@@ -231,7 +227,6 @@ export class Board extends React.Component {
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
 		this.calcTreeData(this.state.rootNode)
 
-		var color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, this.state.rootNode.children && this.state.rootNode.children.length ? this.state.rootNode.children.length + 1 : 2))
 		switch (this.state.tileType) {
 			case 'table': {
 				break;
@@ -251,10 +246,6 @@ export class Board extends React.Component {
 
 				this.addPortals(me, nodes);
 
-				var rootPairs = this.state.rootNode.links()
-				rootPairs.forEach((pair, idx) => {
-					pair.target.index = idx;
-				})
 
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
@@ -275,7 +266,9 @@ export class Board extends React.Component {
 					.attr("fill", d => {
 						if (!d.depth) return "#ccc";
 						while (d.depth > 1) d = d.parent;
-						return color(d.index + 1);
+						var mine = me.searchTree(me.root, d.data.id)
+						while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
+						return me.color((mine ? mine.colour : 1) + 1);
 					})
 					// .attr("class", d => {
 					// 	return d.data.lane.cardStatus === 'finished'? "card-status card-finished" :
@@ -350,10 +343,8 @@ export class Board extends React.Component {
 					(this.state.rootNode);
 
 				this.state.rootNode.each(d => d.current = d);
-				var rootPairs = this.state.rootNode.links()
-				rootPairs.forEach((pair, idx) => {
-					pair.target.index = idx;
-				})
+
+
 
 				var width = _.min([window.innerWidth / 2, (window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) / 2])
 
@@ -378,16 +369,16 @@ export class Board extends React.Component {
 					.data(this.state.rootNode.descendants().slice(1))
 					.join("path")
 					.attr("fill", d => {
-						while (d.depth > 1)
-							d = d.parent;
-						return color(d.index);
+						var mine = me.searchTree(me.root, d.data.id)
+						while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
+						return me.color((mine ? mine.colour : 1) + 1);
 					})
 					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
 					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
 
 					.attr("d", d => arc(d.current))
 					.style("cursor", "pointer")
-					.on("click", arcClicked);
+					.on("click", me.nodeClicked);
 
 				path.append("title")
 					.text(d => me.getTitle(d))
@@ -836,9 +827,11 @@ export class Board extends React.Component {
 					var cResult = await cResponse.json()
 					cResult.parent = this.root.id;
 					this.root.children.push(cResult)
-					this.clonedData = JSON.parse(JSON.stringify(this.root))
+
 					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
-					else this.setState({ rootNode: d3.hierarchy(this.root) })
+					else {
+						this.setDatat();
+					}
 				})
 			}
 		} catch (error) {
@@ -864,19 +857,49 @@ export class Board extends React.Component {
 						cd.parent = card.id
 					})
 					if (depth < this.state.depth) this.childrenOf(host, card.children, depth + 1)
-					else this.setState({ rootNode: d3.hierarchy(this.root) })
 				}
-				this.clonedData = JSON.parse(JSON.stringify(this.root));
+				this.setData()
 			}, this)
 		})
+		this.setData()
+	}
+
+	setData = () => {
+		function setChildIdx(item) {
+			item.children && item.children.forEach((child, idx) => {
+				child.parent = item;
+				child.colour = idx;
+				setChildIdx(child);
+			})
+		}
+		if (this.root) {
+			setChildIdx(this.root)
+		}
+		this.color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, this.root.children && this.root.children.length ? this.root.children.length + 1 : 1))
 		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
+
 	componentDidMount = () => {
 		if (this.state.fetchActive) {
-			this.setState({ fetchActive: false })
 			this.getTopLevel();
+			this.setState({ fetchActive: false })
 		}
+	}
+
+	searchTree = (element, id) => {
+		if (element.id === id) {
+			return element;
+		}
+		else if (Boolean(element.children)) {
+			var i;
+			var result = null;
+			for (i = 0; result == null && i < element.children.length; i++) {
+				result = this.searchTree(element.children[i], id);
+			}
+			return result;
+		}
+		return null;
 	}
 
 	nodeClicked = (ev, p) => {
@@ -900,64 +923,64 @@ export class Board extends React.Component {
 
 			var me = this;
 
-			function searchTree(element, id) {
-				if (element.id === id) {
-					return element;
-				}
-				else if (Boolean(element.children)) {
-					var i;
-					var result = null;
-					for (i = 0; result == null && i < element.children.length; i++) {
-						result = searchTree(element.children[i], id);
-					}
-					return result;
-				}
-				return null;
-			}
-			var newRoot = searchTree(me.root, p.data.id);
-			var parent = searchTree(me.root, newRoot.parent);
-			if (parent) {
-				if (parent.id !== "root") {
-					if (me.focus === p.data.id) {
+
+			if (p.data.id != 'root') {
+				var newRoot = this.searchTree(me.root, p.data.id);
+				var parent = this.searchTree(me.root, newRoot.parent.id);
+				if (me.focus === p.data.id) {
+					if (parent && (parent.id !== 'root')) {
 						me.focus = parent.id;
 						me.setState({
 							rootNode: d3.hierarchy(
 								{
-									id: parent.id,
-									children: parent.children
+									id: 'root',
+									children: [parent]
 								}
 							)
 						});
-
 					} else {
-						me.focus = newRoot.id;
+						me.focus = null;
 						me.setState({
 							rootNode: d3.hierarchy(
 								{
-									id: newRoot.id,
-									children: newRoot.children
+									id: 'root',
+									children: me.root.children
 								}
 							)
 						})
 					}
+
 				} else {
-					me.focus = null;
-					me.setState({ rootNode: d3.hierarchy(me.root) })
+					me.focus = newRoot.id;
+					me.setState({
+						rootNode: d3.hierarchy(
+							{
+								id: 'root',
+								children: [newRoot]
+							}
+						)
+					})
 				}
-
-				d3.select(".parentLabel").datum(p).text(d =>
-					(d.data.id === "root" ? "" : d.data.id));
-				d3.select(".parentTitle").datum(p).text(d => {
-					return d.data.title + " : " + d.data.size;
-				})
-
-				d3.select(".parentNode").datum(p || me.state.rootNode);
-
-			}
-			else {
+			} else {
 				me.focus = null;
-				me.setState({ rootNode: d3.hierarchy(me.root) })
+				me.setState({
+					rootNode: d3.hierarchy(
+						{
+							id: 'root',
+							children: me.root.children
+						}
+					)
+				})
 			}
+
+			d3.select(".parentLabel").datum(p).text(d =>
+				(d.data.id === "root" ? "" : d.data.id));
+			d3.select(".parentTitle").datum(p).text(d => {
+				return d.data.title + " : " + d.data.size;
+			})
+
+			d3.select(".parentNode").datum(p || me.state.rootNode);
+
 		}
 		else {
 			this.popUp = p.data.id
