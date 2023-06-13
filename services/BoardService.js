@@ -28,8 +28,15 @@ class BoardService {
 			url: "/board/" + id,
 			mode: "GET"
 		}
-		if (globalThis.dataProvider)
-			return await this.getData(params);
+		var board = null;
+		if (globalThis.dataProvider) {
+			board = globalThis.dataProvider.inCache(id, 'board')
+		}
+		if (!board)	{
+			board = await this.getData(params);
+			if (board) globalThis.dataProvider.addToCacheWithId(id, board,'board')
+		}
+		return board;
 	}
 
 	async getCards(id, options) {

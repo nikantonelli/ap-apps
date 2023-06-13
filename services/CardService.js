@@ -22,7 +22,15 @@ class CardService {
 			url: "/card/" + id,
 			mode: "GET"
 		}
-		return await this.getData(params);
+		var card = null;
+		if (globalThis.dataProvider) {
+			board = globalThis.dataProvider.inCache(id, 'card')
+		}
+		if (!card)	{
+			card = await this.getData(params);
+			if (card) globalThis.dataProvider.addToCacheWithId(id, card,'card')
+		}
+		return card;
 	}
 
 	async getChildren(id, options) {

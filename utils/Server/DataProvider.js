@@ -42,7 +42,7 @@ class DataProvider {
 		var type = (Boolean(realType) && (typeof realType === "string")) ? realType : "unknown"
 		var cache = this.cacheMap.get(type)
 		if (!cache) {
-			cache = new ItemCache(this.CACHE_ITEM_COUNT)
+			cache = new ItemCache(this.CACHE_ITEM_COUNT, this.CACHE_AGE_LIMIT)
 			this.cacheMap.set(type, cache)
 		}
 		return cache;
@@ -59,6 +59,7 @@ class DataProvider {
 	}
 
 	addToCacheWithId(id, data, type) {
+		
 		var cache = this.getCache(type)	//Creates new one if not present
 		let newEntry = {
 			date: Date.now(),

@@ -1,6 +1,6 @@
 import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
-import { forEach } from "lodash";
+import _, { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 
@@ -10,7 +10,7 @@ import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
 
 export class Board extends React.Component {
-	
+
 	static DEFAULT_TREE_DEPTH = 4;
 
 	constructor(props) {
@@ -37,8 +37,10 @@ export class Board extends React.Component {
 			tileType: this.props.mode || 'tree',
 			sortType: this.props.sort || ((this.props.mode === 'partition') ? 'count' : 'size'),
 			sortDirection: this.props.dir || 'ascending',
-			clickCount: 0
+			clickCount: 0,
+			colouring: this.props.colour || 'cool'
 		}
+		this.setColouring({ type: this.state.colouring })
 	}
 
 	popUp = null
@@ -47,7 +49,99 @@ export class Board extends React.Component {
 		id: 'root',
 		children: []
 	};
-	color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, 2))
+	assignedUserList = [];
+	createdUserList = [];
+	contextList = [];
+
+	/**
+	 * Two stage colour fetching:
+	 * 1. Optional: Set up a function to convert a value to a colour
+	 * 2. Call a function (that could call that previous function) with the 'd' parameter
+	 * 	that converts d to a value.
+	 * 
+	 * You could, of course, only have one function that converts 'd' to a colour
+	 */
+
+	colourFnc = null
+	colour = null;
+
+	tempColouring = (d) => {
+		var mine = this.searchTree(this.root, d.data.id)
+		while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
+		return this.colourFnc((mine ? mine.colour : 1) + 1);
+	}
+
+	typeColouring = (d) => {
+		if (d.data) return d.data.type.cardColor
+		else return "#ccc"
+	}
+
+	//Get first assigned user only
+	aUserColouring = (d) => {
+		var user = null;
+		//Assinged users is always returned and empty if there are none
+		if (d.data.assignedUsers.length) {
+			user = d.data.assignedUsers[0];
+			var index = _.findIndex(this.assignedUserList, function (assignee) {
+				return user.id === assignee.id;
+			})
+			if (index > 0) return this.colourFnc(index);
+		}
+		return this.colourFnc(0);
+	}
+
+	contextColouring = (d) => {
+		var boardid = d.data.board.id
+		var index = _.findIndex(this.contextList, function (context) {
+			return boardid === context;
+		})
+		if (index > 0) return this.colourFnc(index);
+
+		return this.colourFnc(0);
+	}
+
+
+	/**
+	 * 
+	 * @param {
+	 * 	type: string
+	 * 	method: function
+	 * 	config: object
+	 * 
+	 * } params 
+	 */
+	setColouring = (params) => {
+		switch (params.type) {
+			case 'cool': {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (params.config && params.config.length) ? params.config.length : 2))
+				this.colour = this.tempColouring;
+				break;
+			}
+			case 'warm': {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (params.config && params.config.length) ? params.config.length : 2))
+				this.colour = this.tempColouring;
+				break;
+			}
+			case 'context': {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length))
+				this.colour = this.contextColouring;
+				break;
+			}
+			case 'type': {
+				this.colour = this.typeColouring;
+				break;
+			}
+			case 'a_user': {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length))
+				this.colour = this.aUserColouring;
+				break;
+			}
+			default: {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, 2))
+			}
+		}
+
+	}
 
 	closePopUp = () => {
 		this.popUp = null
@@ -130,14 +224,18 @@ export class Board extends React.Component {
 				if (d.dateWarning) d.parent.dateWarning = true;
 				if (d.dateIncomplete) d.parent.dateIncomplete = true;
 			}
+		})
 
-			if ( this.state.highlight ){
-				switch (this.state.highlight) {
-					case 'mine': {
-						break;
-					}
-				}
+		rootNode.each((d) => {
+			if (d.data.assignedUsers && d.data.assignedUsers.length) {
+				_.forEach(d.data.assignedUsers, (user) => {
+					this.assignedUserList = _.unionWith(this.assignedUserList, [user], function(a,b) { return b.id === a.id})
+				})
 			}
+			if (d.data.createdBy) {
+				this.assignedUserList = _.unionWith(this.createdUserList, [d.data.createdBy], function(a,b) { return b.is === a.id})
+			}
+			if (d.data.id != 'root') this.contextList = _.union(this.contextList, [d.data.board.id])
 		})
 	};
 
@@ -279,13 +377,9 @@ export class Board extends React.Component {
 					.attr("id", (d, idx) => "rect_" + idx)
 					.attr("width", d => d.y1 - d.y0 - 4)
 					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", d => (d.children ? 0.6 : 0.3))
+					.attr("fill-opacity", d => (d.children ? 1 : 0.6))
 					.attr("fill", d => {
-						if (!d.depth) return "#ccc";
-						while (d.depth > 1) d = d.parent;
-						var mine = me.searchTree(me.root, d.data.id)
-						while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
-						return me.color((mine ? mine.colour : 1) + 1);
+						return me.colour(d);
 					})
 					// .attr("class", d => {
 					// 	return d.data.lane.cardStatus === 'finished'? "card-status card-finished" :
@@ -298,7 +392,7 @@ export class Board extends React.Component {
 				cell.join("g")
 					.append("path")
 					.attr("d", d => {
-						var height = _.min([d.x1 - d.x0, d.y1 - d.y0, 20])
+						var height = _.min([d.x1 - d.x0, d.y1 - d.y0, 15])
 						var ax = d.y1 - d.y0;  //a == far corner
 						var ay = d.x1 - d.x0;
 						var bx = ax;			//b is up from a
@@ -386,11 +480,9 @@ export class Board extends React.Component {
 					.data(this.state.rootNode.descendants().slice(1))
 					.join("path")
 					.attr("fill", d => {
-						var mine = me.searchTree(me.root, d.data.id)
-						while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
-						return me.color((mine ? mine.colour : 1) + 1);
+						return me.colour(d);
 					})
-					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 1 : 0.6) : 0)
 					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
 
 					.attr("d", d => arc(d.current))
@@ -621,9 +713,16 @@ export class Board extends React.Component {
 	sortChange = (e) => {
 		this.setState({ sortType: e.target.value });
 	}
+
 	sortDirChange = (e) => {
 		this.setState({ sortDirection: e.target.value });
 	}
+
+	colourChange = (e) => {
+		this.setColouring({ type: e.target.value })
+		this.setState({ colouring: e.target.value });
+	}
+
 	render() {
 		if (!this.state.fetchActive) {
 			this.update()
@@ -634,61 +733,18 @@ export class Board extends React.Component {
 						<Grid xs={10} item>
 							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
 								<Grid item>
-									<Settings onClick={this.openDrawer} />
+									<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
 								</Grid>
 								<Grid item>
 									<TextField
-										variant="filled"
+										variant="standard"
 										sx={{ m: 1, minWidth: 400 }}
 										size="small"
 										defaultValue={this.state.board.title}
-										label="Root Context"
+										label="Context"
 										InputProps={{ readOnly: true }} />
 								</Grid>
-								<Grid item>
-									<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-										<InputLabel>Mode</InputLabel>
-										<Select
-											value={this.state.tileType}
-											onChange={this.modeChange}
-											label="Mode"
-										>
-											<MenuItem value="tree">Tree</MenuItem>
-											<MenuItem value="sunburst">Sunburst</MenuItem>
-											<MenuItem value="partition">Partition</MenuItem>
-										</Select>
-									</FormControl>
-								</Grid>
-								<Grid item>
-									<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-										<InputLabel>Sort By</InputLabel>
-										<Select
-											value={this.state.sortType}
-											onChange={this.sortChange}
-											label="Sort By"
-										>
-											<MenuItem value="size">Size</MenuItem>
-											{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
-											<MenuItem value="score">Score Total</MenuItem>
-											{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
-											<MenuItem value="context">Context</MenuItem>
-											<MenuItem value="id">ID#</MenuItem>
-										</Select>
-									</FormControl>
-								</Grid>
-								<Grid item >
-									<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-										<InputLabel>Sort Direction</InputLabel>
-										<Select
-											value={this.state.sortDirection}
-											onChange={this.sortDirChange}
-											label="Sort Direction"
-										>
-											<MenuItem value="ascending">Ascending</MenuItem>
-											<MenuItem value="descending">Descending</MenuItem>
-										</Select>
-									</FormControl>
-								</Grid>
+
 							</Grid>
 						</Grid>
 						<Grid item xs={2} sx={{ alignItems: 'center' }}>
@@ -750,6 +806,71 @@ export class Board extends React.Component {
 							<Grid item>
 								{this.topLevelList()}
 							</Grid>
+							<Grid item>
+								<Grid container>
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Mode</InputLabel>
+											<Select
+												value={this.state.tileType}
+												onChange={this.modeChange}
+												label="Mode"
+											>
+												<MenuItem value="tree">Tree</MenuItem>
+												<MenuItem value="sunburst">Sunburst</MenuItem>
+												<MenuItem value="partition">Partition</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Sort By</InputLabel>
+											<Select
+												value={this.state.sortType}
+												onChange={this.sortChange}
+												label="Sort By"
+											>
+												<MenuItem value="size">Size</MenuItem>
+												{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
+												<MenuItem value="score">Score Total</MenuItem>
+												{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
+
+												<MenuItem value="id">ID#</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item >
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Sort Direction</InputLabel>
+											<Select
+												value={this.state.sortDirection}
+												onChange={this.sortDirChange}
+												label="Sort Direction"
+											>
+												<MenuItem value="ascending">Ascending</MenuItem>
+												<MenuItem value="descending">Descending</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Colours</InputLabel>
+											<Select
+												value={this.state.colouring}
+												onChange={this.colourChange}
+												label="Colours"
+											>
+												<MenuItem value="cool">Cool</MenuItem>
+												<MenuItem value="warm">Warm</MenuItem>
+												<MenuItem value="type">Card Type</MenuItem>
+												<MenuItem value="a_user">First Assignee</MenuItem>
+												<MenuItem value="context">Context</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+								</Grid>
+							</Grid>
+
 						</Grid>
 					</Drawer>
 				</Stack >
@@ -765,7 +886,10 @@ export class Board extends React.Component {
 			mode: "POST",
 			url: "/card/list",
 			type: "application/json",
-			body: JSON.stringify({ "board": this.state.board.id, "only": ["id"] })
+			body: JSON.stringify({
+				"board": this.state.board.id, "only": ["id"],
+				"lane_class_types": ["active", "backlog"]
+			})
 		}
 
 		try {
@@ -846,7 +970,8 @@ export class Board extends React.Component {
 		if (this.root) {
 			setChildIdx(this.root)
 		}
-		this.color = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, this.root.children && this.root.children.length ? this.root.children.length : 1))
+		//If colouring is set to cool, we need to provide a length
+		this.setColouring({ type: this.state.colouring, config: { length: (this.root.children && this.root.children.length) ? this.root.children.length : 1 } })
 		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
@@ -1041,6 +1166,7 @@ export class Board extends React.Component {
 		as += "sort=" + this.state.sortType
 		as += "&mode=" + this.state.tileType
 		as += "&dir=" + this.state.sortDirection
+		as += "&colour=" + this.state.colouring
 
 		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
 	}
@@ -1143,6 +1269,10 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.mode) {
 			mode = query.mode;
 		}
+		var colour = null;
+		if (query.colour) {
+			colour = query.colour;
+		}
 		var sort = null;
 		if (query.sort) {
 			sort = query.sort;
@@ -1151,8 +1281,8 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.dir) {
 			dir = query.dir;
 		}
-		return { props: { board: board, active: active, depth: depth, mode: mode, sort: sort, dir: dir, host: req.headers.host } }
+		return { props: { board: board, active: active, depth: depth, colour: colour, mode: mode, sort: sort, dir: dir, host: req.headers.host } }
 	}
-	return { props: { board: null, active: null, depth: null, mode: null, sort: null, dir: null, host: req.headers.host } }
+	return { props: { board: null, active: null, depth: null, colour: null, mode: null, sort: null, dir: null, host: req.headers.host } }
 }
 export default Board

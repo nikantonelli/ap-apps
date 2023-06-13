@@ -3,8 +3,9 @@
  * and not for the browser client
  */
 class ItemCache {
-	constructor(size) {
+	constructor(size, period) {
 		this.size = size;
+		this.period = period;
 		this.map = new Map();
 		this.head = {};
 		this.tail = {};
@@ -19,7 +20,7 @@ class ItemCache {
 
 		while(Boolean(head.next)){
 			var node = head.next;
-			if ((now - node.date) > (5 * 60 * 1000)) {
+			if ((now - node.date) > this.period) {
 				this.removeNode(node)
 			}
 			head = node;
@@ -57,6 +58,7 @@ class ItemCache {
 		if (this.get(id) !== null) {
 			// if key does exist, update last element with new value
 			this.tail.prev.value = item;
+			this.tail.prev.date = Date.now()
 		} else {
 			console.log("adding: ", id);
 			// check if map size is at capacity
