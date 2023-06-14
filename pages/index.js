@@ -5,7 +5,7 @@ export default function Home() {
    
 
           <p>
-            Get started by editing&nbsp;
+            Get started by getting a list of boards from <a href="http://localhost:3000/nui/board">here</a>
           </p>
  
   )

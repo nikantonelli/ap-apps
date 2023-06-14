@@ -16,7 +16,7 @@ export class Board extends React.Component {
 	constructor(props) {
 		super(props)
 
-		var stateDepth = this.props.depth || 4;	//If not depth given, assume 4
+		var stateDepth = this.props.depth || 3;	//If not depth given, assume 3
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed it, then do as much as anyone stupid would want.
 		this.state = {
 			tileType: this.props.mode || 'sunburst',
@@ -38,9 +38,11 @@ export class Board extends React.Component {
 			sortType: this.props.sort || ((this.props.mode === 'partition') ? 'count' : 'size'),
 			sortDirection: this.props.dir || 'ascending',
 			clickCount: 0,
-			colouring: this.props.colour || 'cool'
+			colouring: this.props.colour || 'cool',
+			
 		}
 		this.setColouring({ type: this.state.colouring })
+	
 	}
 
 	popUp = null
@@ -61,23 +63,26 @@ export class Board extends React.Component {
 	 * 
 	 * You could, of course, only have one function that converts 'd' to a colour
 	 */
-
-	colourFnc = null
+	opacityDrop = true;
+	colourFnc = null;
 	colour = null;
 
 	tempColouring = (d) => {
+		this.opacityDrop = true;
 		var mine = this.searchTree(this.root, d.data.id)
 		while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
 		return this.colourFnc((mine ? mine.colour : 1) + 1);
 	}
 
 	typeColouring = (d) => {
+		this.opacityDrop = false;
 		if (d.data) return d.data.type.cardColor
 		else return "#ccc"
 	}
 
 	//Get first assigned user only
 	aUserColouring = (d) => {
+		this.opacityDrop = false;
 		var user = null;
 		//Assinged users is always returned and empty if there are none
 		if (d.data.assignedUsers.length) {
@@ -91,6 +96,7 @@ export class Board extends React.Component {
 	}
 
 	contextColouring = (d) => {
+		this.opacityDrop = false;
 		var boardid = d.data.board.id
 		var index = _.findIndex(this.contextList, function (context) {
 			return boardid === context;
@@ -113,12 +119,12 @@ export class Board extends React.Component {
 	setColouring = (params) => {
 		switch (params.type) {
 			case 'cool': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (params.config && params.config.length) ? params.config.length : 2))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool,  (this.root.children && this.root.children.length) ? this.root.children.length : 1 ))
 				this.colour = this.tempColouring;
 				break;
 			}
 			case 'warm': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (params.config && params.config.length) ? params.config.length : 2))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm,  (this.root.children && this.root.children.length) ? this.root.children.length : 1 ))
 				this.colour = this.tempColouring;
 				break;
 			}
@@ -377,7 +383,7 @@ export class Board extends React.Component {
 					.attr("id", (d, idx) => "rect_" + idx)
 					.attr("width", d => d.y1 - d.y0 - 4)
 					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", d => (d.children ? 1 : 0.6))
+					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? 1 : 0.6))
 					.attr("fill", d => {
 						return me.colour(d);
 					})
@@ -482,7 +488,7 @@ export class Board extends React.Component {
 					.attr("fill", d => {
 						return me.colour(d);
 					})
-					.attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 1 : 0.6) : 0)
+					.attr("fill-opacity", d => arcVisible(d.current) ? ((d.children && me.opacityDrop) ? 1 : 0.6) : 0)
 					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
 
 					.attr("d", d => arc(d.current))
@@ -565,13 +571,14 @@ export class Board extends React.Component {
 
 				svg.attr('width', viewBoxSize[0])
 				svg.attr("height", viewBoxSize[1])
-				svg.attr('viewBox', colWidth + ' 0 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
+				//Text size is too big, so offset by a few.....
+				svg.attr('viewBox', (colWidth - 4)  + ' -4 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
 				rootEl.setAttribute('width', viewBoxSize[0]);
 				rootEl.setAttribute('height', viewBoxSize[1]);
 				svg.attr('preserveAspectRatio', 'none');
 				svg.attr('class', 'rootSurface')
 				var tree = d3.tree()
-					.size([viewBoxSize[1], viewBoxSize[0]])
+					.size([viewBoxSize[1] - 8, viewBoxSize[0] - 8])
 					.separation(function (a, b) {
 						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
 					}
@@ -769,9 +776,13 @@ export class Board extends React.Component {
 						{(this.state.active && this.state.active.length) ?
 							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
 							: null}
-					</Menu><div id={"surface_" + this.state.board.id}>
+					</Menu>
+
+					<div id={"surface_" + this.state.board.id}>
 						<svg id={"svg_" + this.state.board.id} />
-					</div><Drawer
+					</div>
+					
+					<Drawer
 						variant='persistent'
 						open={Boolean(this.state.drawerOpen)}
 						anchor='left'
@@ -971,7 +982,7 @@ export class Board extends React.Component {
 			setChildIdx(this.root)
 		}
 		//If colouring is set to cool, we need to provide a length
-		this.setColouring({ type: this.state.colouring, config: { length: (this.root.children && this.root.children.length) ? this.root.children.length : 1 } })
+		this.setColouring({ type: this.state.colouring})
 		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
@@ -1167,6 +1178,7 @@ export class Board extends React.Component {
 		as += "&mode=" + this.state.tileType
 		as += "&dir=" + this.state.sortDirection
 		as += "&colour=" + this.state.colouring
+		as += "&depth=" + this.state.depth
 
 		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
 	}

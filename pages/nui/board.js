@@ -81,18 +81,18 @@ export default function Board({ host }) {
 			}}
 		/>
 		{(boards && boards.length) ?
-			<Grid container>
+			<Grid className='board-grid' container >
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							sx={{ minWidth: 300, maxWidth: 600, cursor: 'pointer' }}
+							sx={{ cursor: 'pointer' }}
 							className="card"
 							variant="standard"
 							raised
 						>
 							<CardHeader
 								title={brd.title}
-								style={{ textAlign: 'center' }}
+								sx={{ textAlign: 'center'}}
 							/>
 							<CardActions>
 								<IconButton

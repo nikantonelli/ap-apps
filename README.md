@@ -1,38 +1,34 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
-
 ## Getting Started
 
-First, run the development server:
+Download the complete repo to a new folder on your system.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
+In the root directory, run the 'npm install' command in a shell/cmd
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The AgilePlace host needs to be identified and stored in the environment variables so that the NextJs system can find it.
+As I am using a Windows PC, I put the two required variables into my users setup. This means that if it is me logged in, then I can set it to use my credentials
+It is possible to put the variables into the system environment, but then ANY user that logs into the PC will make use of the same credentials - which may be an issue for auditing purposes
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+Two variables are needed:
+1. "AGILEPLACE" - The URL of the AgilePlace instance you are using, e.g. "https://nacl.leankit.com"
+2. "AGILEKEY" - The API token that you generate from AgilePlace to give access. See the AgilePlace docs on how to do that
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+Once you have everything configured, you can run the 'npm run dev' command to get things going. It can be a little slow because this is the development environment version and will want to compile everything the first time out.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+Open a browser window to access "http://localhost:3000". Notice that it is http not https. We are only going locally, so security is not needed (and you would need to have a certificate configured!)
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+The browser accesses the locally running server which fetches data as required by accessing the AgilePlace instance. The local server does not give the browser access to AgilePlace, but you can still do that from your browser in another tab.
 
-## Learn More
+The 'home' page is rudimentary as I haven't got around to doing that yet.
 
-To learn more about Next.js, take a look at the following resources:
+Each tile that gets shown has three icons on it. Click on one of them for a tree, partition map, or sunburst representation of the cards on that boards AND all their children (regardless of which board that they reside on). This should open another tab.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+On that tab, the board title is shown as an uneditable textfield and there is a settings menu available through clicking on the gear on the left.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+In the settings, you can change the conditions for the layout and, if you so wish, click on the "Open In New Tab" link to get a tab with those settings encoded into the URL. This is handy for saving in your 'favourites' or 'bookmarks'
 
-## Deploy on Vercel
+Clicking on things in the various layouts can get you:
+1. Click to see summary pop-up of the item (flies in from the left - escape, click outside or click on 'x' to close)
+2. Shift-Click to focus on that item (shift-click again on it to go to parent of item. In sunburst, the centre takes you back to the top items)
+3. Alt-Click to open item in new tab (similar to pop-up from #1)
+4. Ctrl-Click to minimise that item (adds ** to end of name to indicate)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
