@@ -565,7 +565,7 @@ export class Board extends React.Component {
 
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight ]
+				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
 				var colWidth = (viewBoxSize[0] / (this.state.rootNode.height || 1))
 
 
@@ -619,7 +619,7 @@ export class Board extends React.Component {
 						return "text_" + d.data.id
 					})
 					.style("text-anchor", "start")
-					.attr("x", function (d) { return d.y + (d.rowHeight/16)})
+					.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
 					.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
 					.style('cursor', 'pointer')
 
@@ -669,7 +669,7 @@ export class Board extends React.Component {
 				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
 				.attr("x1", function (d) {
-					return d.y 
+					return d.y
 				})
 				.attr("y1", function (d) {
 					return d.x
@@ -678,8 +678,11 @@ export class Board extends React.Component {
 					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
 					var tEl = document.getElementById("text_" + d.data.id)
 
-					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-					return (d.y + (d.children ? (d.colWidth) : width)) 
+					var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+						d3.min([tEl.attributes["width"], rEl.attributes["width"]]) :
+						d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+
+					return (d.y + (d.children ? (d.colWidth) : width))
 				})
 				.attr("y2", function (d) {
 					return d.x
@@ -705,13 +708,12 @@ export class Board extends React.Component {
 					"M", start.x, start.y,
 					"A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
 				].join(" ");
-				console.log(d)
 				return d;
 			}
 			links.append("path")
 				.attr("d", function (d) {
-					return describeArc(d.y 
-					, d.x, d.rowHeight / 4, 180, 0)
+					return describeArc(d.y
+						, d.x, d.rowHeight / 4, 180, 0)
 
 				})
 				.attr("opacity", 0.3)
@@ -722,7 +724,10 @@ export class Board extends React.Component {
 					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
 					var tEl = document.getElementById("text_" + d.data.id)
 
-					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+					var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+						d3.min([tEl.attributes["width"], rEl.attributes["width"]]) :
+						d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+
 					var endpoint = (d.y + (d.children ? (d.colWidth) : width))
 					return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
 
@@ -737,12 +742,14 @@ export class Board extends React.Component {
 				.attr("class", function (d) { return "local--link"; })
 				.attr("d", function (d) {
 					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-					var width = tEl.getClientRects()[0].width
-					var startPointH = d.parent.y + width + (d.rowHeight/4);
+					var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+						tEl.attributes["width"] :
+						tEl.getClientRects()[0].width
+					var startPointH = d.parent.y + width + (d.rowHeight / 4);
 					var startApex = (d.y - (d.parent.y + width)) / 2
-					var startPointV = d.parent.x ;
-					var endPointH = d.y - (d.rowHeight/4);
-					var endPointV = d.x ;
+					var startPointV = d.parent.x;
+					var endPointH = d.y - (d.rowHeight / 4);
+					var endPointV = d.x;
 
 					var string = "M" + startPointH + "," + startPointV +
 						"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
