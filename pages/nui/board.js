@@ -50,7 +50,7 @@ export default function Board({ host }) {
 	if (!pending) {
 		setPending(true);
 		var ft = filterText;
-		 getList(ft)
+		getList(ft)
 
 	}
 
@@ -85,29 +85,31 @@ export default function Board({ host }) {
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							sx={{ cursor: 'pointer' }}
-							className="card"
+							sx={{ minWidth: "300px", backgroundColor: "darkgrey", color: "white" }}
 							variant="standard"
 							raised
 						>
 							<CardHeader
 								title={brd.title}
-								sx={{ textAlign: 'center'}}
+								sx={{ textAlign: 'center' }}
 							/>
 							<CardActions>
 								<IconButton
+									sx={{ cursor: 'pointer' }}
 									onClick={treeClicked}
 									id={brd.id}
 								>
 									<AccountTree />
 								</IconButton>
 								<IconButton
+									sx={{ cursor: 'pointer' }}
 									onClick={partClicked}
 									id={brd.id}
 								>
 									< Domain />
 								</IconButton>
 								<IconButton
+									sx={{ cursor: 'pointer' }}
 									onClick={sunClicked}
 									id={brd.id}
 								>

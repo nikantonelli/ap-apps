@@ -29,9 +29,8 @@ text {
 
 .invisible--link {
 	fill: none;
-	stroke: #ddd;
 	stroke-opacity: 0.0;
-	stroke-width: 1.5px;
+
 }
 
 .rootSurface {
@@ -59,7 +58,7 @@ text {
 	margin-bottom: 3px;
 }
 
-.card {
+card {
 	color: white;
 	background-color: darkgrey;
 }

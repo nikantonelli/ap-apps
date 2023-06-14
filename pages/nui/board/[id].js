@@ -39,10 +39,10 @@ export class Board extends React.Component {
 			sortDirection: this.props.dir || 'ascending',
 			clickCount: 0,
 			colouring: this.props.colour || 'cool',
-			
+
 		}
 		this.setColouring({ type: this.state.colouring })
-	
+
 	}
 
 	popUp = null
@@ -119,12 +119,12 @@ export class Board extends React.Component {
 	setColouring = (params) => {
 		switch (params.type) {
 			case 'cool': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool,  (this.root.children && this.root.children.length) ? this.root.children.length : 1 ))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length : 1))
 				this.colour = this.tempColouring;
 				break;
 			}
 			case 'warm': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm,  (this.root.children && this.root.children.length) ? this.root.children.length : 1 ))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length : 1))
 				this.colour = this.tempColouring;
 				break;
 			}
@@ -235,11 +235,11 @@ export class Board extends React.Component {
 		rootNode.each((d) => {
 			if (d.data.assignedUsers && d.data.assignedUsers.length) {
 				_.forEach(d.data.assignedUsers, (user) => {
-					this.assignedUserList = _.unionWith(this.assignedUserList, [user], function(a,b) { return b.id === a.id})
+					this.assignedUserList = _.unionWith(this.assignedUserList, [user], function (a, b) { return b.id === a.id })
 				})
 			}
 			if (d.data.createdBy) {
-				this.assignedUserList = _.unionWith(this.createdUserList, [d.data.createdBy], function(a,b) { return b.is === a.id})
+				this.assignedUserList = _.unionWith(this.createdUserList, [d.data.createdBy], function (a, b) { return b.is === a.id })
 			}
 			if (d.data.id != 'root') this.contextList = _.union(this.contextList, [d.data.board.id])
 		})
@@ -342,7 +342,7 @@ export class Board extends React.Component {
 
 		var levelWidth = [1];
 
-		var rowHeight = 80;
+		var rowHeight = 30;
 		this.childCount(levelWidth, 0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
@@ -565,14 +565,14 @@ export class Board extends React.Component {
 
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight / 3]
+				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight ]
 				var colWidth = (viewBoxSize[0] / (this.state.rootNode.height || 1))
 
 
 				svg.attr('width', viewBoxSize[0])
 				svg.attr("height", viewBoxSize[1])
 				//Text size is too big, so offset by a few.....
-				svg.attr('viewBox', (colWidth - 4)  + ' -4 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
+				svg.attr('viewBox', (colWidth - 4) + ' -4 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
 				rootEl.setAttribute('width', viewBoxSize[0]);
 				rootEl.setAttribute('height', viewBoxSize[1]);
 				svg.attr('preserveAspectRatio', 'none');
@@ -614,14 +614,13 @@ export class Board extends React.Component {
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
 					.text(d => me.getLabel(d))
 					.on('click', me.nodeClicked)
-					.attr('class', "idText")
-					.attr("height", rowHeight - 10)
+					.attr("height", rowHeight - 12)
 					.attr("id", function (d) {
 						return "text_" + d.data.id
 					})
 					.style("text-anchor", "start")
-					.attr("x", function (d) { return d.y })
-					.attr("y", function (d) { return d.x })
+					.attr("x", function (d) { return d.y + (d.rowHeight/16)})
+					.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
 					.style('cursor', 'pointer')
 
 				nodes.append("title")
@@ -657,30 +656,80 @@ export class Board extends React.Component {
 	}
 
 	paths = (svg, nodes) => {
+		var me = this;
 		nodes.each(node => {
 			var links = svg.selectAll(".link")
 				.data(node)
 				.enter()
 			links.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
+				.attr("stroke-width", d => d.rowHeight / 2)
+				.attr("stroke", d => me.colour(d))
+				.attr("opacity", 0.3)
+				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
 				.attr("x1", function (d) {
-					return d.y
+					return d.y 
 				})
 				.attr("y1", function (d) {
-					return d.x + 2
+					return d.x
 				})
 				.attr("x2", function (d) {
 					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
 					var tEl = document.getElementById("text_" + d.data.id)
 
 					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-					return d.y + (d.children ? (d.colWidth) : width)
+					return (d.y + (d.children ? (d.colWidth) : width)) 
 				})
 				.attr("y2", function (d) {
-					return d.x + 2
+					return d.x
 				})
+
+			function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+				var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+				return {
+					x: centerX + (radius * Math.cos(angleInRadians)),
+					y: centerY + (radius * Math.sin(angleInRadians))
+				};
+			}
+
+			function describeArc(x, y, radius, startAngle, endAngle) {
+
+				var start = polarToCartesian(x, y, radius, endAngle);
+				var end = polarToCartesian(x, y, radius, startAngle);
+
+				var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+				var d = [
+					"M", start.x, start.y,
+					"A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+				].join(" ");
+				console.log(d)
+				return d;
+			}
+			links.append("path")
+				.attr("d", function (d) {
+					return describeArc(d.y 
+					, d.x, d.rowHeight / 4, 180, 0)
+
+				})
+				.attr("opacity", 0.3)
+				.attr("fill", d => me.colour(d))
+
+			links.append("path")
+				.attr("d", function (d) {
+					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+					var tEl = document.getElementById("text_" + d.data.id)
+
+					var width = d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+					var endpoint = (d.y + (d.children ? (d.colWidth) : width))
+					return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
+
+				})
+				.attr("opacity", 0.3)
+				.attr("fill", d => me.colour(d))
+
 			if (node.parent.data.id == "root") return;
 
 			links.append("path")
@@ -689,11 +738,11 @@ export class Board extends React.Component {
 				.attr("d", function (d) {
 					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
 					var width = tEl.getClientRects()[0].width
-					var startPointH = d.parent.y + width;
+					var startPointH = d.parent.y + width + (d.rowHeight/4);
 					var startApex = (d.y - (d.parent.y + width)) / 2
-					var startPointV = d.parent.x + 2;
-					var endPointH = d.y;
-					var endPointV = d.x + 2;
+					var startPointV = d.parent.x ;
+					var endPointH = d.y - (d.rowHeight/4);
+					var endPointV = d.x ;
 
 					var string = "M" + startPointH + "," + startPointV +
 						"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
@@ -781,7 +830,7 @@ export class Board extends React.Component {
 					<div id={"surface_" + this.state.board.id}>
 						<svg id={"svg_" + this.state.board.id} />
 					</div>
-					
+
 					<Drawer
 						variant='persistent'
 						open={Boolean(this.state.drawerOpen)}
@@ -982,7 +1031,7 @@ export class Board extends React.Component {
 			setChildIdx(this.root)
 		}
 		//If colouring is set to cool, we need to provide a length
-		this.setColouring({ type: this.state.colouring})
+		this.setColouring({ type: this.state.colouring })
 		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
