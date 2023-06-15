@@ -17,7 +17,7 @@ export class Board extends React.Component {
 		super(props)
 
 		var stateDepth = this.props.depth || 3;	//If not depth given, assume 3
-		if (stateDepth < 0) stateDepth = 99;	//If -1 passed it, then do as much as anyone stupid would want.
+		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			tileType: this.props.mode || 'sunburst',
 			anchorEl: null,
@@ -35,10 +35,13 @@ export class Board extends React.Component {
 			topLevelList: [],
 			popUp: null,
 			tileType: this.props.mode || 'tree',
-			sortType: this.props.sort || ((this.props.mode === 'partition') ? 'count' : 'size'),
+			sortType: this.props.sort || (
+				((this.props.mode === 'partition') ||
+					(this.props.mode === 'timeline')) ? 'count' : 'size'),
 			sortDirection: this.props.dir || 'ascending',
 			clickCount: 0,
 			colouring: this.props.colour || 'cool',
+			grouping: this.props.group || 'level',
 
 		}
 		this.setColouring({ type: this.state.colouring })
@@ -124,12 +127,12 @@ export class Board extends React.Component {
 	setColouring = (params) => {
 		switch (params.type) {
 			case 'cool': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length : 1))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 1))
 				this.colour = this.tempColouring;
 				break;
 			}
 			case 'warm': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length : 1))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 1))
 				this.colour = this.tempColouring;
 				break;
 			}
@@ -187,6 +190,13 @@ export class Board extends React.Component {
 
 					case 'score': {
 						return dirFnc(a.data.scoring.scoreTotal, b.data.scoring.scoreTotal)
+					}
+					//Dates need to be backwards to be more useful: ascending means from now until later
+					case 'plannedStart': {
+						return dirFnc(new Date(b.data.plannedStart), new Date(a.data.plannedStart))
+					}
+					case 'plannedFinish': {
+						return dirFnc(new Date(b.data.plannedFinish), new Date(a.data.plannedFinish))
 					}
 					case 'id': {
 						return dirFnc(Number(a.data.id), Number(b.data.id))
@@ -350,7 +360,10 @@ export class Board extends React.Component {
 		var rowHeight = 30;
 		this.childCount(levelWidth, 0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-		treeBoxHeight = _.max([(window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height), treeBoxHeight])
+
+		var rootEl = document.getElementById("surface_" + this.state.board.id)
+		var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+
 		this.calcTreeData(this.state.rootNode)
 
 		switch (this.state.tileType) {
@@ -360,7 +373,6 @@ export class Board extends React.Component {
 			case 'partition': {
 
 				var me = this;
-				var viewBox = [window.innerWidth, treeBoxHeight]
 
 				d3.partition()
 					.size([viewBox[1], viewBox[0]])
@@ -371,7 +383,6 @@ export class Board extends React.Component {
 					.enter()
 
 				this.addPortals(me, nodes);
-
 
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
@@ -418,12 +429,12 @@ export class Board extends React.Component {
 
 				cell.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
-					.append("rect").attr("id", function (d) { return "rect_" + d.depth+ '_' + d.data.id })
+					.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
 					.attr("width", d => d.y1 - d.y0 - 5)
 					.attr("height", d => rectHeight(d))
 
 				const text = cell.append("text")
-					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth+ "_" + d.data.id + '_' + idx + ")" })
+					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth + "_" + d.data.id + '_' + idx + ")" })
 					.style("user-select", "none")
 					.attr("pointer-events", "none")
 					.attr("x", 4)
@@ -450,6 +461,72 @@ export class Board extends React.Component {
 
 
 			case 'timeline': {
+
+				var rootEl = document.getElementById("surface_" + this.state.board.id)
+
+				var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+				var colWidth = (viewBox[0] / (this.state.rootNode.height || 1))
+				var colMargin = 100
+
+
+				svg.attr('width', viewBox[0])
+				svg.attr("height", viewBox[1])
+				//Text size is too big, so offset by a few.....
+				svg.attr('viewBox', colWidth + ' 0 ' + (viewBox[0]) + ' ' + viewBox[1])
+				rootEl.setAttribute('width', viewBox[0]);
+				rootEl.setAttribute('height', viewBox[1]);
+				svg.attr('preserveAspectRatio', 'none');
+				svg.attr('class', 'rootSurface')
+				var rowGap = 6;
+
+				var dateToSize = d3.interpolate(this.state.rootNode.earliest, this.state.rootNode.latest)
+
+				d3.partition()
+					.size([viewBox[1], viewBox[0]])
+					(this.state.rootNode)
+
+				//Calculate some modals
+				var nodes = d3.selectAll(".node")
+					.data(this.state.rootNode.descendants())
+					.enter()
+				this.addPortals(me, nodes);
+
+				//Append groupings to the root surface
+				const cell = svg
+					.selectAll("g")
+					.data(this.state.rootNode.descendants().slice(1))
+					.join("g")
+					.attr("x", 0)
+					.attr("y",0)
+					
+
+				const rect = cell.append("rect")
+					.attr("id", (d, idx) => "rect_" + idx)
+					.attr("width", d => dateToSize(new Date(d.data.plannedStart).getTime()) * viewBox[0])
+					.attr("height", d => (rowHeight * (d.data.children?d.data.children.length:1)))
+					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? 1 : 0.6))
+					.attr("fill", d => {
+						return me.colour(d);
+					})
+
+
+
+
+				// cell.append("clipPath")
+				// 	.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
+				// 	.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
+				// 	.attr("width", d => (d.y1 - d.y0))
+				// 	.attr("height", d => (d.x1 - d.x0))
+
+				// const text = cell.append('text')
+				// 	.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth + "_" + d.data.id + '_' + idx + ")" })
+				// 	.style("user-select", "none")
+				// 	.attr("pointer-events", "none")
+				// 	.attr("x", 60)
+				// 	.attr("y", 15)
+
+				// 	text.append("tspan")
+				// 	.text(d => me.getLabel(d))
 				break;
 			}
 			case 'sunburst': {
@@ -570,21 +647,21 @@ export class Board extends React.Component {
 
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				var colWidth = (viewBoxSize[0] / (this.state.rootNode.height || 1))
+				var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+				var colWidth = (viewBox[0] / (this.state.rootNode.height || 1))
 				var colMargin = 100
 
 
-				svg.attr('width', viewBoxSize[0])
-				svg.attr("height", viewBoxSize[1])
+				svg.attr('width', viewBox[0])
+				svg.attr("height", viewBox[1])
 				//Text size is too big, so offset by a few.....
-				svg.attr('viewBox', (colWidth - 4) + ' -4 ' + (viewBoxSize[0]) + ' ' + viewBoxSize[1])
-				rootEl.setAttribute('width', viewBoxSize[0]);
-				rootEl.setAttribute('height', viewBoxSize[1]);
+				svg.attr('viewBox', colWidth + ' 0 ' + (viewBox[0]) + ' ' + viewBox[1])
+				rootEl.setAttribute('width', viewBox[0]);
+				rootEl.setAttribute('height', viewBox[1]);
 				svg.attr('preserveAspectRatio', 'none');
 				svg.attr('class', 'rootSurface')
 				var tree = d3.tree()
-					.size([viewBoxSize[1] - 8, viewBoxSize[0] - 8])
+					.size([viewBox[1] - 8, viewBox[0] - 8])
 					.separation(function (a, b) {
 						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
 					}
@@ -616,23 +693,40 @@ export class Board extends React.Component {
 					.attr("width", function (d) { return d.colWidth })
 					.attr("height", d => d.rowHeight)
 
+				//Draw the first time so that we can get the sizes of things.
+				//THe paths routine needs this info, but the side effect is that the bar that is
+				//drawn obliterates the text. We redraw below......
 				nodes.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
 					.text(d => me.getLabel(d))
-					.on('click', me.nodeClicked)
 					.attr("height", rowHeight - 12)
 					.attr("id", function (d) {
 						return "text_" + d.depth + '_' + d.data.id
 					})
-					.style("text-anchor", "start")
 					.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
 					.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
-					.style('cursor', 'pointer')
+
 
 				nodes.append("title")
 					.text(d => me.getTitle(d));
 
+				this.bars(nodes)
 				this.paths(nodes)
+
+				//Draw it twice so we can put it on top of the line
+				nodes.each(function (p, idx, nodeArray) {
+					var node = d3.select(this);
+					node.append("text")
+						.text(d => me.getLabel(d))
+						.attr("height", rowHeight - 12)
+						.attr("id", function (d) {
+							return "text_" + d.depth + '_' + d.data.id
+						})
+						.style("text-anchor", "start")
+						.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
+						.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
+						.style('cursor', 'pointer')
+				})
 				break;
 			}
 		}
@@ -647,6 +741,7 @@ export class Board extends React.Component {
 
 			default:
 			case 'tree':
+			case 'timeline':
 			case 'partition': {
 				return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
 			}
@@ -661,8 +756,9 @@ export class Board extends React.Component {
 		}
 	}
 
-	paths = (nodes) => {
+	bars = (nodes) => {
 		var me = this;
+
 
 		function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
 			var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
@@ -689,7 +785,7 @@ export class Board extends React.Component {
 
 		nodes.each(function (d, idx, nodeArray) {
 			var node = d3.select(this);
-			var opacity = 0.5;
+			var opacity = 0.8;
 			var colour = me.colour(d);
 
 			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
@@ -698,14 +794,6 @@ export class Board extends React.Component {
 			var myWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
 				d3.min([d.colWidth, Number(rEl.attributes["width"].value)]) :
 				d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-
-			var pEl = document.getElementById("rect_" + d.parent.depth + '_' + d.parent.data.id);
-
-			var pWidth = 0;
-			
-			if (Boolean(pEl)) pWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-				Number(pEl.attributes["width"].value) :
-				pEl.getClientRects()[0].width
 
 			node.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
@@ -747,6 +835,18 @@ export class Board extends React.Component {
 				})
 				.attr("opacity", opacity)
 				.attr("fill", colour)
+		})
+	}
+
+	paths = (nodes) => {
+		nodes.each(function (d, idx, nodeArray) {
+			var node = d3.select(this);
+			var pWidth = 0;
+
+			var pEl = document.getElementById("rect_" + d.parent.depth + '_' + d.parent.data.id);
+			if (Boolean(pEl)) pWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+				Number(pEl.attributes["width"].value) :
+				pEl.getClientRects()[0].width
 
 			node.append("path")
 				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
@@ -770,6 +870,9 @@ export class Board extends React.Component {
 	modeChange = (e) => {
 		var newMode = e.target.value;
 		this.setState((prev) => {
+			if (newMode === 'timeline') {
+				return { tileType: newMode, sortType: 'count' }
+			}
 			if ((prev.sortType === "title") && (newMode === 'sunburst')) {
 				return { tileType: newMode, sortType: 'count' }
 			}
@@ -892,6 +995,7 @@ export class Board extends React.Component {
 												<MenuItem value="tree">Tree</MenuItem>
 												<MenuItem value="sunburst">Sunburst</MenuItem>
 												<MenuItem value="partition">Partition</MenuItem>
+												<MenuItem value="timeline">Timeline</MenuItem>
 											</Select>
 										</FormControl>
 									</Grid>
@@ -903,6 +1007,8 @@ export class Board extends React.Component {
 												onChange={this.sortChange}
 												label="Sort By"
 											>
+												<MenuItem value="plannedStart">Start Date</MenuItem>
+												<MenuItem value="plannedFinish">End Date</MenuItem>
 												<MenuItem value="size">Size</MenuItem>
 												{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 												<MenuItem value="score">Score Total</MenuItem>
@@ -941,6 +1047,22 @@ export class Board extends React.Component {
 											</Select>
 										</FormControl>
 									</Grid>
+									{this.state.tileType === 'timeline' ? (
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Group By</InputLabel>
+												<Select
+													value={this.state.grouping}
+													onChange={this.groupChange}
+													label="Grouping"
+												>
+													<MenuItem value="level">Level</MenuItem>
+													<MenuItem value="context">Context</MenuItem>
+													<MenuItem value="type">Card Type</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+									) : null}
 								</Grid>
 							</Grid>
 

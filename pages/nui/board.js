@@ -1,7 +1,7 @@
 import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
 import BoardService from "../../services/BoardService";
 
-import { AccountTree, Brightness7, Cancel, Domain, OpenInNew, Search } from "@mui/icons-material";
+import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, OpenInNew, Search } from "@mui/icons-material";
 import { useState } from 'react';
 import { findBoards } from "../../utils/Client/Sdk";
 
@@ -24,6 +24,9 @@ export default function Board({ host }) {
 	function partClicked(evt) {
 		document.open("/nui/board/" + evt.currentTarget.id + "?mode=partition", "", "noopener=true")
 	}
+	function timeClicked(evt) {
+		document.open("/nui/board/" + evt.currentTarget.id + "?mode=timeline", "", "noopener=true")
+	}
 
 	function filterChange(e) {
 		if (timer) {
@@ -42,8 +45,10 @@ export default function Board({ host }) {
 	async function getList(fltr) {
 		if (fltr && (fltr.length == 0)) fltr = null;
 		var result = await findBoards(host, { search: fltr });
-		var res = await result.json()
-		setBoards(res.boards);
+		if (result) {
+			var res = await result.json()
+			if (res) setBoards(res.boards);
+		}
 
 	}
 
@@ -114,6 +119,13 @@ export default function Board({ host }) {
 									id={brd.id}
 								>
 									<Brightness7 />
+								</IconButton>
+								<IconButton
+									sx={{ cursor: 'pointer' }}
+									onClick={timeClicked}
+									id={brd.id}
+								>
+									<CalendarMonth />
 								</IconButton>
 							</CardActions>
 						</Card>

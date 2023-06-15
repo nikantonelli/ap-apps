@@ -9,8 +9,11 @@ As I am using a Windows PC, I put the two required variables into my users setup
 It is possible to put the variables into the system environment, but then ANY user that logs into the PC will make use of the same credentials - which may be an issue for auditing purposes
 
 Two variables are needed:
-1. "AGILEPLACE" - The URL of the AgilePlace instance you are using, e.g. "https://nacl.leankit.com"
-2. "AGILEKEY" - The API token that you generate from AgilePlace to give access. See the AgilePlace docs on how to do that
+1. "AGILEPLACE_HOST" - The URL of the AgilePlace instance you are using, e.g. "https://nacl.leankit.com"
+2. "AGILEPLACE_KEY" - The API token that you generate from AgilePlace to give access. See the AgilePlace docs on how to do that
+(If you don't want to use an APIKEY, then provide AGILEPLACE_USER and AGILEPLACE_PWD)
+
+Another variable you can set is AGILEPLACE_CACHE_AGE_LIMIT. This sets the timeout for the LRU cache to a number of minutes. The defaults to 30min if you do not set it. As it is an LRU cache, this means the more you use an item to display it, the more likely it is to get out of sync with the AP host if you set it too high. There is no mechanism to invalidate the cache just yet. The only solution is to kill the app and then restart it.
 
 Once you have everything configured, you can run the 'npm run dev' command to get things going. It can be a little slow because this is the development environment version and will want to compile everything the first time out.
 
