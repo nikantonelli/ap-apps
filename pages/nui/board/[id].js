@@ -42,7 +42,12 @@ export class Board extends React.Component {
 
 		}
 		this.setColouring({ type: this.state.colouring })
+		window.addEventListener('resize', this.resize);
 
+	}
+
+	resize = () => {
+		this.setState((prev) => {return {clickCount: prev.clickCount + 1}})
 	}
 
 	popUp = null
@@ -588,7 +593,7 @@ export class Board extends React.Component {
 
 				var nodes = svg.selectAll("g")
 					.data(this.state.rootNode.descendants().slice(1))
-					.join("g")
+					.enter()
 
 				var me = this;
 
@@ -626,7 +631,7 @@ export class Board extends React.Component {
 				nodes.append("title")
 					.text(d => me.getTitle(d));
 
-				this.paths(svg, nodes)
+				this.paths(nodes)
 				break;
 			}
 		}
@@ -655,110 +660,104 @@ export class Board extends React.Component {
 		}
 	}
 
-	paths = (svg, nodes) => {
+	paths = (nodes) => {
 		var me = this;
-		nodes.each(node => {
-			var links = svg.selectAll(".link")
-				.data(node)
-				.enter()
-			links.append("line")
-				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("stroke-width", d => d.rowHeight / 2)
-				.attr("stroke", d => me.colour(d))
-				.attr("opacity", 0.3)
-				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
-				.attr("x1", function (d) {
-					return d.y
-				})
-				.attr("y1", function (d) {
-					return d.x
-				})
-				.attr("x2", function (d) {
-					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-					var tEl = document.getElementById("text_" + d.data.id)
+		nodes.append("line")
+			.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
+			.attr("stroke-width", d => d.rowHeight / 2)
+			.attr("stroke", d => me.colour(d))
+			.attr("opacity", 0.5)
+			//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
-					var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-						d3.min([tEl.attributes["width"], rEl.attributes["width"]]) :
-						d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+			.on('click', me.nodeClicked)
+			.attr("x1", function (d) {
+				return d.y
+			})
+			.attr("y1", function (d) {
+				return d.x
+			})
+			.attr("x2", function (d) {
+				var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+				var tEl = document.getElementById("text_" + d.data.id)
 
-					return (d.y + (d.children ? (d.colWidth) : width))
-				})
-				.attr("y2", function (d) {
-					return d.x
-				})
+				var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+					d3.min([d.colWidth, rEl.attributes["width"].value]) :
+					d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
 
-			function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-				var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+				return (d.y + (d.children ? (d.colWidth) : width))
+			})
+			.attr("y2", function (d) {
+				return d.x
+			})
 
-				return {
-					x: centerX + (radius * Math.cos(angleInRadians)),
-					y: centerY + (radius * Math.sin(angleInRadians))
-				};
-			}
+		function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+			var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
 
-			function describeArc(x, y, radius, startAngle, endAngle) {
+			return {
+				x: centerX + (radius * Math.cos(angleInRadians)),
+				y: centerY + (radius * Math.sin(angleInRadians))
+			};
+		}
 
-				var start = polarToCartesian(x, y, radius, endAngle);
-				var end = polarToCartesian(x, y, radius, startAngle);
+		function describeArc(x, y, radius, startAngle, endAngle) {
 
-				var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+			var start = polarToCartesian(x, y, radius, endAngle);
+			var end = polarToCartesian(x, y, radius, startAngle);
 
-				var d = [
-					"M", start.x, start.y,
-					"A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-				].join(" ");
-				return d;
-			}
-			links.append("path")
-				.attr("d", function (d) {
-					return describeArc(d.y
-						, d.x, d.rowHeight / 4, 180, 0)
+			var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
-				})
-				.attr("opacity", 0.3)
-				.attr("fill", d => me.colour(d))
+			var d = [
+				"M", start.x, start.y,
+				"A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+			].join(" ");
+			return d;
+		}
+		nodes.append("path")
+			.attr("d", function (d) {
+				return describeArc(d.y
+					, d.x, d.rowHeight / 4, 180, 0)
 
-			links.append("path")
-				.attr("d", function (d) {
-					var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-					var tEl = document.getElementById("text_" + d.data.id)
+			})
+			.attr("opacity", 0.5)
+			.attr("fill", d => me.colour(d))
 
-					var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-						d3.min([tEl.attributes["width"], rEl.attributes["width"]]) :
-						d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+		nodes.append("path")
+			.attr("d", function (d) {
+				var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+				var tEl = document.getElementById("text_" + d.data.id)
 
-					var endpoint = (d.y + (d.children ? (d.colWidth) : width))
-					return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
+				var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+					d3.min([d.colWidth, rEl.attributes["width"].value]) :
+					d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
 
-				})
-				.attr("opacity", 0.3)
-				.attr("fill", d => me.colour(d))
+				var endpoint = (d.y + (d.children ? (d.colWidth) : width))
+				return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
 
-			if (node.parent.data.id == "root") return;
+			})
+			.attr("opacity", 0.5)
+			.attr("fill", d => me.colour(d))
 
-			links.append("path")
-				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
-				.attr("class", function (d) { return "local--link"; })
-				.attr("d", function (d) {
-					var tEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-					var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-						tEl.attributes["width"] :
-						tEl.getClientRects()[0].width
-					var startPointH = d.parent.y + width + (d.rowHeight / 4);
-					var startApex = (d.y - (d.parent.y + width)) / 2
-					var startPointV = d.parent.x;
-					var endPointH = d.y - (d.rowHeight / 4);
-					var endPointV = d.x;
+		nodes.append("path")
+			.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
+			.attr("class", function (d) { return "local--link"; })
+			.attr("d", function (d) {
+				var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
+				var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+					d3.min([d.colWidth, rEl.attributes["width"].value]):
+					rEl.getClientRects()[0].width
+				var startPointH = d.parent.y + width + (d.rowHeight / 4);
+				var startApex = (d.y - (d.parent.y + width)) / 2
+				var startPointV = d.parent.x;
+				var endPointH = d.y - (d.rowHeight / 4);
+				var endPointV = d.x;
 
-					var string = "M" + startPointH + "," + startPointV +
-						"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
-						(endPointH - (startApex)) + "," + endPointV + " " +
-						endPointH + "," + endPointV;
-					return string
-				});
-
-		})
+				var string = "M" + startPointH + "," + startPointV +
+					"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
+					(endPointH - (startApex)) + "," + endPointV + " " +
+					endPointH + "," + endPointV;
+				return string
+			});
 	}
 
 	modeChange = (e) => {
