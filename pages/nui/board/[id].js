@@ -42,12 +42,12 @@ export class Board extends React.Component {
 
 		}
 		this.setColouring({ type: this.state.colouring })
-		window.addEventListener('resize', this.resize);
+
 
 	}
 
 	resize = () => {
-		this.setState((prev) => {return {clickCount: prev.clickCount + 1}})
+		this.setState((prev) => { return { clickCount: prev.clickCount + 1 } })
 	}
 
 	popUp = null
@@ -417,13 +417,13 @@ export class Board extends React.Component {
 					.append("title").text(d => d.dateError ? me.getSchedulingError(d) : d.dateWarning ? me.getSchedulingWarning(d) : "No Error")
 
 				cell.append("clipPath")
-					.attr("id", function (d, idx) { return "clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx })
-					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
+					.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
+					.append("rect").attr("id", function (d) { return "rect_" + d.depth+ '_' + d.data.id })
 					.attr("width", d => d.y1 - d.y0 - 5)
 					.attr("height", d => rectHeight(d))
 
 				const text = cell.append("text")
-					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.parent.data.id + "_" + d.data.id + '_' + idx + ")" })
+					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth+ "_" + d.data.id + '_' + idx + ")" })
 					.style("user-select", "none")
 					.attr("pointer-events", "none")
 					.attr("x", 4)
@@ -572,6 +572,7 @@ export class Board extends React.Component {
 
 				var viewBoxSize = [rootEl.getBoundingClientRect().width, treeBoxHeight]
 				var colWidth = (viewBoxSize[0] / (this.state.rootNode.height || 1))
+				var colMargin = 100
 
 
 				svg.attr('width', viewBoxSize[0])
@@ -598,8 +599,8 @@ export class Board extends React.Component {
 				var me = this;
 
 				nodes.each(function (d) {
-					d.colMargin = 80;
-					d.colWidth = colWidth - d.colMargin;
+					d.colMargin = colMargin;
+					d.colWidth = colWidth - colMargin;
 					d.rowHeight = rowHeight;
 
 
@@ -609,7 +610,7 @@ export class Board extends React.Component {
 
 				nodes.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + idx })
-					.append("rect").attr("id", function (d) { return "rect_" + d.parent.data.id + '_' + d.data.id })
+					.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
 					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
 					.attr("x", function (d) { return d.y })
 					.attr("width", function (d) { return d.colWidth })
@@ -621,7 +622,7 @@ export class Board extends React.Component {
 					.on('click', me.nodeClicked)
 					.attr("height", rowHeight - 12)
 					.attr("id", function (d) {
-						return "text_" + d.data.id
+						return "text_" + d.depth + '_' + d.data.id
 					})
 					.style("text-anchor", "start")
 					.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
@@ -663,34 +664,6 @@ export class Board extends React.Component {
 	paths = (nodes) => {
 		var me = this;
 
-		nodes.append("line")
-			.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-			.attr("stroke-width", d => d.rowHeight / 2)
-			.attr("stroke", d => me.colour(d))
-			.attr("opacity", 0.5)
-			//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
-
-			.on('click', me.nodeClicked)
-			.attr("x1", function (d) {
-				return d.y
-			})
-			.attr("y1", function (d) {
-				return d.x
-			})
-			.attr("x2", function (d) {
-				var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-				var tEl = document.getElementById("text_" + d.data.id)
-
-				var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-					d3.min([d.colWidth, rEl.attributes["width"].value]) :
-					d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-
-				return (d.y + (d.children ? (d.colWidth) : width))
-			})
-			.attr("y2", function (d) {
-				return d.x
-			})
-
 		function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
 			var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
 
@@ -713,51 +686,85 @@ export class Board extends React.Component {
 			].join(" ");
 			return d;
 		}
-		nodes.append("path")
-			.attr("d", function (d) {
-				return describeArc(d.y
-					, d.x, d.rowHeight / 4, 180, 0)
 
-			})
-			.attr("opacity", 0.5)
-			.attr("fill", d => me.colour(d))
+		nodes.each(function (d, idx, nodeArray) {
+			var node = d3.select(this);
+			var opacity = 0.5;
+			var colour = me.colour(d);
 
-		nodes.append("path")
-			.attr("d", function (d) {
-				var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-				var tEl = document.getElementById("text_" + d.data.id)
+			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
+			var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
 
-				var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-					d3.min([d.colWidth, rEl.attributes["width"].value]) :
-					d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+			var myWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+				d3.min([d.colWidth, Number(rEl.attributes["width"].value)]) :
+				d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
 
-				var endpoint = (d.y + (d.children ? (d.colWidth) : width))
-				return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
+			var pEl = document.getElementById("rect_" + d.parent.depth + '_' + d.parent.data.id);
 
-			})
-			.attr("opacity", 0.5)
-			.attr("fill", d => me.colour(d))
+			var pWidth = 0;
+			
+			if (Boolean(pEl)) pWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
+				Number(pEl.attributes["width"].value) :
+				pEl.getClientRects()[0].width
 
-		nodes.append("path")
-			.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
-			.attr("class", function (d) { return "local--link"; })
-			.attr("d", function (d) {
-				var rEl = document.getElementById("rect_" + d.parent.data.id + '_' + d.data.id)
-				var width = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-					d3.min([d.colWidth, rEl.attributes["width"].value]):
-					rEl.getClientRects()[0].width
-				var startPointH = d.parent.y + width + (d.rowHeight / 4);
-				var startApex = (d.y - (d.parent.y + width)) / 2
-				var startPointV = d.parent.x;
-				var endPointH = d.y - (d.rowHeight / 4);
-				var endPointV = d.x;
+			node.append("line")
+				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
+				.attr("stroke-width", d => d.rowHeight / 2)
+				.attr("stroke", colour)
+				.attr("opacity", opacity)
+				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
-				var string = "M" + startPointH + "," + startPointV +
-					"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
-					(endPointH - (startApex)) + "," + endPointV + " " +
-					endPointH + "," + endPointV;
-				return string
-			});
+				.on('click', me.nodeClicked)
+				.attr("x1", function (d) {
+					return d.y
+				})
+				.attr("y1", function (d) {
+					return d.x
+				})
+				.attr("x2", function (d) {
+					return (d.y + (d.children ? (d.colWidth) : myWidth))
+				})
+				.attr("y2", function (d) {
+					return d.x
+				})
+
+			//Start semi-circle
+			node.append("path")
+				.attr("d", function (d) {
+					return describeArc(d.y
+						, d.x, d.rowHeight / 4, 180, 0)
+
+				})
+				.attr("opacity", opacity)
+				.attr("fill", colour)
+
+			//End semi-circle
+			node.append("path")
+				.attr("d", function (d) {
+					var endpoint = (d.y + (d.children ? (d.colWidth) : myWidth))
+					return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
+
+				})
+				.attr("opacity", opacity)
+				.attr("fill", colour)
+
+			node.append("path")
+				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
+				.attr("class", function (d) { return "local--link"; })
+				.attr("d", function (d) {
+					var startPointH = d.parent.y + pWidth + (d.rowHeight / 4);
+					var startApex = (d.y - (d.parent.y + pWidth)) / 2
+					var startPointV = d.parent.x;
+					var endPointH = d.y - (d.rowHeight / 4);
+					var endPointV = d.x;
+
+					var string = "M" + startPointH + "," + startPointV +
+						"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
+						(endPointH - (startApex)) + "," + endPointV + " " +
+						endPointH + "," + endPointV;
+					return string
+				});
+		})
 	}
 
 	modeChange = (e) => {
@@ -1047,6 +1054,7 @@ export class Board extends React.Component {
 			this.getTopLevel();
 			this.setState({ fetchActive: false })
 		}
+		window.addEventListener('resize', this.resize);
 	}
 
 	searchTree = (element, id) => {
