@@ -21,5 +21,7 @@ export default async function handler(req, res) {
 	}
 
 	var result = await globalThis.dataProvider.getContextByString(queryField, queryStr)
-	res.status(200).json({ boards: result.boards })
+	
+	if (result)	res.status(200).json({ boards: result.boards })
+	else res.status(400).json({error: true, message:"Can't fetch board"})
 }

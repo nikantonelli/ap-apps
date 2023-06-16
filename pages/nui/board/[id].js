@@ -12,6 +12,9 @@ import { APcard } from "../../../Components/APcard";
 export class Board extends React.Component {
 
 	static DEFAULT_TREE_DEPTH = 4;
+	static OPACITY_HIGH = 1.0;
+	static OPACITY_MEDIUM = 0.7;
+	static OPACITY_LOW = 0.3;
 
 	constructor(props) {
 		super(props)
@@ -216,34 +219,7 @@ export class Board extends React.Component {
 			//If we are the leaves, then check if our dates are outside the parent's
 			if (d.parent && (d.parent.id !== "root")) {
 
-				//Compare dates
-				var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
-				var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
-				var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
-				var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-				var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
-				var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
-
-				if ((pf == null) || (ps == null)) {
-					d.dateIncomplete = true;
-				}
-
-				if ((pf > pPF) || (ps >= pPF)) {
-					d.dateError = true;
-				}
-
-				if (ps < pPS) {
-					d.dateWarning = true;
-				}
-
-				d.parent.earliest = earliest;
-				d.parent.latest = latest;
-
-				//Cascade up the tree
-				if (d.dateError) d.parent.dateError = true;
-				if (d.dateWarning) d.parent.dateWarning = true;
-				if (d.dateIncomplete) d.parent.dateIncomplete = true;
 			}
 		})
 
@@ -316,34 +292,62 @@ export class Board extends React.Component {
 		}
 	}
 
-	getSchedulingError = (d) => {
+	getErrorColour = (d) => {
+		var colour = ""
+		//Compare dates
+		var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
+		var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
+		var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
+		var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-		var txt = "Scheduling:\n";
-		if (d.earliest < (new Date(d.data.plannedStart).getTime())) {
-			txt += "   Child starts ealier\n"
+		var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
+		var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+
+		if ((pf == null) || (ps == null)) {
+			colour = "red"
+		} else {
+			if ((pf > pPF) || (ps >= pPF)) {
+				colour = "red"
+			}
+			else if (ps < pPS) {
+				colour = "orange"
+			}
 		}
-		if (d.latest > (new Date(d.data.plannedFinish).getTime())) {
-			txt += "   Child starts later\n"
-		}
-		if (d.dateIncomplete) {
-			txt += "   Imcomplete schedule information in hierarchy\n"
-		}
-		return txt;
+
+		d.parent.earliest = earliest;
+		d.parent.latest = latest;
+
+		return colour;
 	}
 
-	getSchedulingWarning = (d) => {
+	getErrorMessage = (d) => {
+		var msg = "";
+		//Compare dates
+		var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
+		var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
+		var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
+		var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-		var txt = "Scheduling:\n";
-		if (d.earliest < (new Date(d.data.plannedStart).getTime())) {
-			txt += "   Child starts ealier\n"
+		var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
+		var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+
+		if ((pf == null) || (ps == null)) {
+			msg += "Incomplete schedule information in hierarchy\n"
 		}
-		if (d.latest > (new Date(d.data.plannedFinish).getTime())) {
-			txt += "   Child starts later\n"
+		else {
+			if ((pf > pPF) || (ps >= pPF)) {
+				msg += "This child starts later\n"
+			}
+			if (ps < pPS) {
+				msg += "This child starts ealier\n"
+			}
 		}
-		if (d.dateIncomplete) {
-			txt += "   Imcomplete schedule information in this item\n"
-		}
-		return txt;
+
+		d.parent.earliest = earliest;
+		d.parent.latest = latest;
+
+
+		return msg;
 	}
 
 	update = () => {
@@ -360,9 +364,10 @@ export class Board extends React.Component {
 		var rowHeight = 30;
 		this.childCount(levelWidth, 0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-
+		var hEl = document.getElementById("header-box")
+		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight])
 		var rootEl = document.getElementById("surface_" + this.state.board.id)
-		var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+		var viewBox = [rootEl.getBoundingClientRect().width, (treeBoxHeight - hEl.getBoundingClientRect().height)]
 
 		this.calcTreeData(this.state.rootNode)
 
@@ -399,7 +404,7 @@ export class Board extends React.Component {
 					.attr("id", (d, idx) => "rect_" + idx)
 					.attr("width", d => d.y1 - d.y0 - 4)
 					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? 1 : 0.6))
+					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM))
 					.attr("fill", d => {
 						return me.colour(d);
 					})
@@ -424,8 +429,11 @@ export class Board extends React.Component {
 						//The '- 4' is due to the margin in the css
 						return `M ${ax - 4} ${ay - 4} L ${bx - 4} ${by} L ${cx} ${cy - 4} z`
 					})
-					.attr("fill", d => d.dateError ? "red" : d.dateWarning ? "orange" : "none")
-					.append("title").text(d => d.dateError ? me.getSchedulingError(d) : d.dateWarning ? me.getSchedulingWarning(d) : "No Error")
+					.attr("fill", d => {
+						var eColour = me.getErrorColour(d)
+						return eColour.length ? eColour : me.colour(d)
+					})
+					.append("title").text(d => me.getErrorMessage(d))
 
 				cell.append("clipPath")
 					.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
@@ -462,24 +470,14 @@ export class Board extends React.Component {
 
 			case 'timeline': {
 
-				var rootEl = document.getElementById("surface_" + this.state.board.id)
-
-				var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-				var colWidth = (viewBox[0] / (this.state.rootNode.height || 1))
-				var colMargin = 100
-
-
 				svg.attr('width', viewBox[0])
 				svg.attr("height", viewBox[1])
-				//Text size is too big, so offset by a few.....
-				svg.attr('viewBox', colWidth + ' 0 ' + (viewBox[0]) + ' ' + viewBox[1])
-				rootEl.setAttribute('width', viewBox[0]);
-				rootEl.setAttribute('height', viewBox[1]);
-				svg.attr('preserveAspectRatio', 'none');
+				svg.attr('viewBox', ' 0 0 ' + (viewBox[0]) + ' ' + viewBox[1])
 				svg.attr('class', 'rootSurface')
-				var rowGap = 6;
 
-				var dateToSize = d3.interpolate(this.state.rootNode.earliest, this.state.rootNode.latest)
+				var dateToSize = d3.scaleLinear()
+					.domain([this.state.rootNode.earliest, this.state.rootNode.latest])
+					.range([0, viewBox[0]])
 
 				d3.partition()
 					.size([viewBox[1], viewBox[0]])
@@ -496,37 +494,39 @@ export class Board extends React.Component {
 					.selectAll("g")
 					.data(this.state.rootNode.descendants().slice(1))
 					.join("g")
-					.attr("x", 0)
-					.attr("y",0)
-					
 
 				const rect = cell.append("rect")
 					.attr("id", (d, idx) => "rect_" + idx)
-					.attr("width", d => dateToSize(new Date(d.data.plannedStart).getTime()) * viewBox[0])
-					.attr("height", d => (rowHeight * (d.data.children?d.data.children.length:1)))
-					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? 1 : 0.6))
+					.attr("width", d => {
+						var startPos = dateToSize(new Date(d.data.plannedStart).getTime())
+						var endPos = dateToSize(new Date(d.data.plannedFinish).getTime())
+						d.width = endPos - startPos;
+						return (d.width)
+					})
+					.attr("y", d => dateToSize(new Date(d.data.plannedStart).getTime()))
+					.attr("height", d => (rowHeight * (d.data.children ? d.data.children.length : 1)))
+					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? Board.OPACITY_MEDIUM : Board.OPACITY_LOW))
 					.attr("fill", d => {
 						return me.colour(d);
 					})
 
+				cell.append("clipPath")
+					.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
+					.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
+					.attr("width", d => d.width)
+					.attr("x", 60)
+					.attr("y", d => d.x0)
+					.attr("height", rowHeight)
 
+				const text = cell.append('text')
+					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth + "_" + d.data.id + '_' + idx + ")" })
+					.style("user-select", "none")
+					.attr("pointer-events", "none")
+					.attr("x", 60)
+					.attr("y", d => d.x0 + 15)
 
-
-				// cell.append("clipPath")
-				// 	.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
-				// 	.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
-				// 	.attr("width", d => (d.y1 - d.y0))
-				// 	.attr("height", d => (d.x1 - d.x0))
-
-				// const text = cell.append('text')
-				// 	.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth + "_" + d.data.id + '_' + idx + ")" })
-				// 	.style("user-select", "none")
-				// 	.attr("pointer-events", "none")
-				// 	.attr("x", 60)
-				// 	.attr("y", 15)
-
-				// 	text.append("tspan")
-				// 	.text(d => me.getLabel(d))
+				text.append("tspan")
+					.text(d => me.getLabel(d))
 				break;
 			}
 			case 'sunburst': {
@@ -570,7 +570,7 @@ export class Board extends React.Component {
 					.attr("fill", d => {
 						return me.colour(d);
 					})
-					.attr("fill-opacity", d => arcVisible(d.current) ? ((d.children && me.opacityDrop) ? 1 : 0.6) : 0)
+					.attr("fill-opacity", d => arcVisible(d.current) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
 					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
 
 					.attr("d", d => arc(d.current))
@@ -686,12 +686,12 @@ export class Board extends React.Component {
 				this.addPortals(me, nodes);
 
 				nodes.append("clipPath")
-					.attr("id", function (d, idx) { return "clip_" + idx })
+					.attr("id", function (d, idx) { d.idx = idx; return "clip_" + idx })
 					.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
-					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
 					.attr("x", function (d) { return d.y })
+					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
 					.attr("width", function (d) { return d.colWidth })
-					.attr("height", d => d.rowHeight)
+					.attr("height", rowHeight)
 
 				//Draw the first time so that we can get the sizes of things.
 				//THe paths routine needs this info, but the side effect is that the bar that is
@@ -713,15 +713,19 @@ export class Board extends React.Component {
 				this.bars(nodes)
 				this.paths(nodes)
 
+
 				//Draw it twice so we can put it on top of the line
+				nodes.selectAll("text").remove()
 				nodes.each(function (p, idx, nodeArray) {
 					var node = d3.select(this);
 					node.append("text")
+						.attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
 						.text(d => me.getLabel(d))
 						.attr("height", rowHeight - 12)
 						.attr("id", function (d) {
 							return "text_" + d.depth + '_' + d.data.id
 						})
+						.on('click', me.nodeClicked)
 						.style("text-anchor", "start")
 						.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
 						.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
@@ -785,7 +789,7 @@ export class Board extends React.Component {
 
 		nodes.each(function (d, idx, nodeArray) {
 			var node = d3.select(this);
-			var opacity = 0.8;
+			var opacity = me.state.opacityDrop ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM;
 			var colour = me.colour(d);
 
 			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
@@ -827,6 +831,7 @@ export class Board extends React.Component {
 				.attr("fill", colour)
 
 			//End semi-circle
+			var eColour = me.getErrorColour(d);
 			node.append("path")
 				.attr("d", function (d) {
 					var endpoint = (d.y + (d.children ? (d.colWidth) : myWidth))
@@ -834,7 +839,8 @@ export class Board extends React.Component {
 
 				})
 				.attr("opacity", opacity)
-				.attr("fill", colour)
+				.attr("fill", eColour.length ? eColour : colour)
+				.append("title").text(d => me.getErrorMessage(d))
 		})
 	}
 
