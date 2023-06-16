@@ -45,6 +45,7 @@ export class Board extends React.Component {
 			clickCount: 0,
 			colouring: this.props.colour || 'cool',
 			grouping: this.props.group || 'level',
+			showErrors: this.props.eb || 'on'
 
 		}
 		this.setColouring({ type: this.state.colouring })
@@ -294,29 +295,31 @@ export class Board extends React.Component {
 
 	getErrorColour = (d) => {
 		var colour = ""
-		//Compare dates
-		var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
-		var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
-		var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
-		var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-		var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
-		var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+		if (this.state.showErrors === 'on') {
+			//Compare dates
+			var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
+			var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
+			var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
+			var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-		if ((pf == null) || (ps == null)) {
-			colour = "red"
-		} else {
-			if ((pf > pPF) || (ps >= pPF)) {
+			var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
+			var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+
+			if ((pf == null) || (ps == null)) {
 				colour = "red"
+			} else {
+				if ((pf > pPF) || (ps >= pPF)) {
+					colour = "red"
+				}
+				else if (ps < pPS) {
+					colour = "orange"
+				}
 			}
-			else if (ps < pPS) {
-				colour = "orange"
-			}
+
+			d.parent.earliest = earliest;
+			d.parent.latest = latest;
 		}
-
-		d.parent.earliest = earliest;
-		d.parent.latest = latest;
-
 		return colour;
 	}
 
@@ -540,11 +543,6 @@ export class Board extends React.Component {
 				d3.partition()
 					.size([2 * Math.PI, this.state.rootNode.height + 1])
 					(this.state.rootNode);
-
-				this.state.rootNode.each(d => d.current = d);
-
-
-
 				var width = _.min([window.innerWidth / 2, (window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) / 2])
 
 				svg.attr("width", width * 2)
@@ -555,7 +553,7 @@ export class Board extends React.Component {
 				const g = svg.append("g")
 					.attr("transform", `translate(${width},${width})`);
 
-				var ringCount = _.min([(this.state.depth + 1), 6]); //Max can be five rings outside the root
+				var ringCount = _.min([(this.state.depth), 5]); //Max can be four rings including the root due to the text length
 				var arc = d3.arc()
 					.startAngle(d => d.x0)
 					.endAngle(d => d.x1)
@@ -563,6 +561,15 @@ export class Board extends React.Component {
 					.padRadius((width / ringCount) * 1.5)
 					.innerRadius(d => d.y0 * (width / ringCount))
 					.outerRadius(d => Math.max(d.y0 * (width / ringCount), d.y1 * (width / ringCount) - 1))
+
+				var eArc = d3.arc()
+					.startAngle(d => d.x0)
+					.endAngle(d => d.x1)
+					.padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+					.padRadius((width / ringCount) * 1.5)
+					.innerRadius(d => Math.max(d.y1 * (width / ringCount) - 3, d.y0 * (width / ringCount)))
+					.outerRadius(d => d.y1 * (width / ringCount) - 1)
+
 				var path = g.append("g")
 					.selectAll("path")
 					.data(this.state.rootNode.descendants().slice(1))
@@ -570,16 +577,33 @@ export class Board extends React.Component {
 					.attr("fill", d => {
 						return me.colour(d);
 					})
-					.attr("fill-opacity", d => arcVisible(d.current) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
-					.attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
+					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
 
-					.attr("d", d => arc(d.current))
+					.attr("d", d => arc(d))
 					.style("cursor", "pointer")
 					.on("click", me.nodeClicked);
 
 				path.append("title")
 					.text(d => me.getTitle(d))
 					;
+
+				var ePath = g.append("g")
+					.selectAll("path")
+					.data(this.state.rootNode.descendants().slice(1))
+					.join("path")
+					.attr("fill", d => {
+						var eColour = me.getErrorColour(d);
+						return eColour.length ? eColour : me.colour(d);
+					})
+					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
+					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
+					.attr("d", d => eArc(d))
+					.append("title")
+					.text(d => me.getErrorMessage(d))
+
+				ePath.append("title").text(d => me.getErrorMessage(d))
+
 
 				const label = g.append("g")
 					.attr("pointer-events", "none")
@@ -589,10 +613,10 @@ export class Board extends React.Component {
 					.join("text")
 					.attr("dy", "0.35em")
 					//					.attr("fill-opacity", 1)
-					.attr("fill-opacity", d => +sbLabel(d, d.current))
-					.attr("transform", d => labelTransform(d.current))
+					.attr("fill-opacity", d => +sbLabel(d, d))
+					.attr("transform", d => labelTransform(d))
 
-					.attr("text-anchor", d => labelAnchor(d.current))
+					.attr("text-anchor", d => labelAnchor(d))
 					.text(d => me.getLabel(d));
 
 				const parent = g.append("circle")
@@ -706,10 +730,6 @@ export class Board extends React.Component {
 					.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
 					.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
 
-
-				nodes.append("title")
-					.text(d => me.getTitle(d));
-
 				this.bars(nodes)
 				this.paths(nodes)
 
@@ -730,6 +750,8 @@ export class Board extends React.Component {
 						.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
 						.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
 						.style('cursor', 'pointer')
+						.append("title")
+						.text(d => me.getTitle(d));
 				})
 				break;
 			}
@@ -896,6 +918,13 @@ export class Board extends React.Component {
 		this.setState({ sortDirection: e.target.value });
 	}
 
+	errorChange = (e) => {
+		this.setState({ showErrors: e.target.value });
+	}
+
+	groupChange = (e) => {
+		this.setState({ grouping: e.target.value });
+	}
 	colourChange = (e) => {
 		this.setColouring({ type: e.target.value })
 		this.setState({ colouring: e.target.value });
@@ -1069,6 +1098,19 @@ export class Board extends React.Component {
 											</FormControl>
 										</Grid>
 									) : null}
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Error Bars</InputLabel>
+											<Select
+												value={this.state.showErrors}
+												onChange={this.errorChange}
+												label="Errors"
+											>
+												<MenuItem value="on">On</MenuItem>
+												<MenuItem value="off">Off</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
 								</Grid>
 							</Grid>
 
@@ -1370,6 +1412,7 @@ export class Board extends React.Component {
 		as += "&dir=" + this.state.sortDirection
 		as += "&colour=" + this.state.colouring
 		as += "&depth=" + this.state.depth
+		as += "&eb=" + this.state.showErrors
 
 		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
 	}
@@ -1480,12 +1523,17 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.sort) {
 			sort = query.sort;
 		}
+		var eb = null;
+		if (query.eb) {
+			eb = query.eb;
+		}
+
 		var dir = null;
 		if (query.dir) {
 			dir = query.dir;
 		}
-		return { props: { board: board, active: active, depth: depth, colour: colour, mode: mode, sort: sort, dir: dir, host: req.headers.host } }
+		return { props: { board: board, active: active, depth: depth, colour: colour, mode: mode, sort: sort, eb: eb, dir: dir, host: req.headers.host } }
 	}
-	return { props: { board: null, active: null, depth: null, colour: null, mode: null, sort: null, dir: null, host: req.headers.host } }
+	return { props: { board: null, active: null, depth: null, colour: null, mode: null, sort: null, eb: null, dir: null, host: req.headers.host } }
 }
 export default Board
