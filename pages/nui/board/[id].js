@@ -368,9 +368,9 @@ export class Board extends React.Component {
 		this.childCount(levelWidth, 0, this.state.rootNode);
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		var hEl = document.getElementById("header-box")
-		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight])
+		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
 		var rootEl = document.getElementById("surface_" + this.state.board.id)
-		var viewBox = [rootEl.getBoundingClientRect().width, (treeBoxHeight - hEl.getBoundingClientRect().height)]
+		var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight ]
 
 		this.calcTreeData(this.state.rootNode)
 
