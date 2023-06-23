@@ -7,7 +7,7 @@ import DataProvider from "../../../utils/Server/DataProvider";
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
 import React from "react";
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 
 import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
@@ -29,7 +29,7 @@ export class Board extends React.Component {
 		this.state = {
 			tileType: this.props.mode || 'sunburst',
 			anchorEl: null,
-			rootNode: {},
+			rootNode: null,
 			allData: null,
 			drawerOpen: false,
 			menuOpen: false,
@@ -50,7 +50,7 @@ export class Board extends React.Component {
 			clickCount: 0,
 			colouring: this.props.colour || 'cool',
 			grouping: this.props.group || 'level',
-			showErrors: this.props.eb || 'on'
+			showErrors: this.props.eb || 'off'
 
 		}
 		this.setColouring({ type: this.state.colouring })
@@ -479,38 +479,24 @@ export class Board extends React.Component {
 
 			case 'timeline': {
 
-				var dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
-				var dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
+				this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
+				this.dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
 
 				if (this.state.rootNode.earliest) {
-					dateRangeStart = this.state.rootNode.earliest;
+					this.dateRangeStart = this.state.rootNode.earliest;
 					if (!this.state.rootNode.latest) {
-						dateRangeEnd = dateRangeStart + (1000 * 60 * 60 * 24 * 28)	//Go for 28 days onwards
+						this.dateRangeEnd = this.dateRangeStart + (1000 * 60 * 60 * 24 * 28)	//Go for 28 days onwards
 					}
 					else {
-						dateRangeEnd = this.state.rootNode.latest
+						this.dateRangeEnd = this.state.rootNode.latest
 					}
 
 				}
-				var dateToSize = d3.scaleLinear()
-					.domain([dateRangeStart, dateRangeEnd])
-					.range([0, viewBox[0]])
 
 				var rootSurface = document.getElementById("surface_" + this.state.board.id)
 
 				//Calculate some modals
 				this.addPortals(me, this.state.rootNode);
-
-				var reactRoot = createRoot(rootSurface);
-
-				//Build the timeline
-				reactRoot.render(
-					<TimeLineApp
-						end={dateRangeEnd}
-						start={dateRangeStart}
-						data={this.state.rootNode}
-					/>
-				)
 
 				break;
 			}
@@ -957,9 +943,18 @@ export class Board extends React.Component {
 							: null}
 					</Menu>
 
+
 					<div id={"surface_" + this.state.board.id}>
+						{this.state.tileType === 'timeline' ?
+							<TimeLineApp
+								data={this.state.rootNode?this.state.rootNode.descendants().slice(1):[]}
+								end={this.dateRangeEnd}
+								start={this.dateRangeStart}
+								onClick={this.nodeClicked}
+							/> : null}
 						<svg id={"svg_" + this.state.board.id} />
 					</div>
+
 
 					<Drawer
 						variant='persistent'

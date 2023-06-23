@@ -38,10 +38,6 @@ text {
 	font-size: 12px;
 }
 
-.chipNspider {
-	vertical-align: middle;
-}
-
 .hover-card-popup {
 	min-width: 400px;
 	min-height: 100px;
@@ -845,6 +841,14 @@ i.chevron-down {
 	top: 0;
 	bottom: 0;
 	cursor: pointer;
+}
+
+.timeline-text {
+	text-decoration: none;
+	display: block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .link-editor .link-input a {
