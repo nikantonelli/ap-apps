@@ -5,13 +5,9 @@ import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
-
 import React from "react";
-import { createRoot } from 'react-dom/client';
-
 import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
-import { TimeLineApp } from "../../../Components/TimeLineApp";
 
 export class Board extends React.Component {
 
@@ -250,7 +246,6 @@ export class Board extends React.Component {
 
 	addPortals = (me, nodes) => {
 		nodes.each(function (d, idx) {
-			if (!d.parent) return;
 			var parents = d.parent && (d.parent.depth > 0) ? [d.parent.data] : null
 			var children = []
 
@@ -479,6 +474,11 @@ export class Board extends React.Component {
 
 			case 'timeline': {
 
+				svg.attr('width', viewBox[0])
+				svg.attr("height", viewBox[1])
+				svg.attr('viewBox', ' 0 0 ' + (viewBox[0]) + ' ' + viewBox[1])
+				svg.attr('class', 'rootSurface')
+
 				var dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
 				var dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
 
@@ -496,22 +496,70 @@ export class Board extends React.Component {
 					.domain([dateRangeStart, dateRangeEnd])
 					.range([0, viewBox[0]])
 
-				var rootSurface = document.getElementById("surface_" + this.state.board.id)
+				d3.partition()
+					.size([viewBox[1], viewBox[0]])
+					(this.state.rootNode)
 
 				//Calculate some modals
-				this.addPortals(me, this.state.rootNode);
+				var nodes = d3.selectAll(".node")
+					.data(this.state.rootNode.descendants())
+					.enter()
+				this.addPortals(me, nodes);
 
-				var reactRoot = createRoot(rootSurface);
+				//Append groupings to the root surface
+				const cell = svg
+					.selectAll("g")
+					.data(this.state.rootNode.descendants().slice(1))
+					.enter()
+					.each(function (d, idx, nodeArray) {
+						var groupStr = groupString(d)
 
-				//Build the timeline
-				reactRoot.render(
-					<TimeLineApp
-						end={dateRangeEnd}
-						start={dateRangeStart}
-						data={this.state.rootNode}
-					/>
-				)
+						var myGroup = d3.select("#" + groupStr)
+						if (myGroup.empty()) {
+							if (d.parent.data.id !== 'root') {
+								var parentNode = d3.select("#" + groupString(d.parent))
+								myGroup = parentNode.append("g")
+									.datum(d)
+									.attr("id", groupStr)
 
+								var rect = myGroup.append("rect")
+								rect.attr("id", (p, idx) => "rect_" + idx)
+									.attr("width", function (p) {
+										var startPos = p.data.plannedStart ? dateToSize(new Date(p.data.plannedStart).getTime()) : (viewBox[0] / 2) - 50
+										var endPos = p.data.plannedFinish ? dateToSize(new Date(p.data.plannedFinish).getTime()) : (viewBox[0] / 2) + 50
+										p.width = endPos - startPos;
+										return (p.width)
+									})
+									.attr("x", p => p.data.plannedStart ? dateToSize(new Date(p.data.plannedStart).getTime()) : (viewBox[0] / 2) - 50)
+									.attr("y", p => p.x0)
+									.attr("height", p => p.x1 - p.x0)
+									.attr("fill-opacity", p => ((p.children && me.opacityDrop) ? Board.OPACITY_VERY_LOW : Board.OPACITY_LOW))
+									.attr("fill", p => {
+										return me.colour(p);
+									})
+									.attr("stroke", "black")
+									.attr("Stroke-width", 1)
+
+								const text = myGroup.append('text')
+									.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth + "_" + d.data.id + '_' + idx + ")" })
+									.style("user-select", "none")
+									.attr("pointer-events", "none")
+									.attr("x", d => d.depth * 20)
+									.attr("y", d => d.x1 - 3)
+								
+								text.append("tspan")
+									.text(d => me.getLabel(d))
+							}
+							else {
+								svg.append("g").attr("id", groupStr)
+							}
+						}
+
+					})
+				function groupString(d) {
+					return "g_" + _.map(d.ancestors(), d => d.data.id).join("_")
+				}
+		
 				break;
 			}
 			case 'sunburst': {
