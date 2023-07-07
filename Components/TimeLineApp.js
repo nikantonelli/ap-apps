@@ -2,16 +2,27 @@ import React from "react";
 import Grid from "@mui/material/Unstable_Grid2";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { scaleLinear } from 'd3';
+import { DragHandle, IceSkatingOutlined, ImportContacts, SubdirectoryArrowRight } from "@mui/icons-material";
+import { forEach } from "lodash";
 export class TimeLineApp extends React.Component {
 
 	constructor(props) {
 		super(props);
 	}
 
+	depthOrder = (tree) => {
+		var nodeArray = [];
+		var me = this;
+		forEach(tree.children, function (child) {
+			nodeArray.push(child)
+			nodeArray = _.union(nodeArray, me.depthOrder(child))
+		})
+		return nodeArray
+	}
 	render() {
 		//When the start and end are correct, we assume we have been given the correct data source
 		if (this.props.start && this.props.end) {
-			var nodes = this.props.data
+			var nodes = this.depthOrder(this.props.data)
 
 
 			var dateToPosn = scaleLinear()
@@ -30,7 +41,7 @@ export class TimeLineApp extends React.Component {
 				<Box key={0} sx={{ width: "95%" }}>
 					<Grid container direction='row'>
 						<Grid sx={{ width: "20%", maxWidth: 400 }}>
-							
+
 						</Grid>
 						<Grid sx={{ margin: "2px 0px 0px 0px", width: "80%" }}>
 							<Grid id="timelineRow" container direction='row'>
@@ -50,6 +61,21 @@ export class TimeLineApp extends React.Component {
 					</Grid>
 				</Box>
 
+			function treeSymbols(depth) {
+				var boxList = []
+
+				for (var i = 2; i < depth; i++) {
+					boxList.push(<Grid  key={i} >
+						<DragHandle sx={{ opacity: 0 }} />
+					</Grid>)
+				}
+				if (depth > 1) {
+					boxList.push(<Grid  key={i}>
+						<SubdirectoryArrowRight sx={{ opacity: 0 }} />
+					</Grid>)
+				}
+				return boxList;
+			}
 
 			var blg = nodes.map((node, idx) => {
 				//dateToPosn returns undefined if date is outside the range
@@ -88,14 +114,18 @@ export class TimeLineApp extends React.Component {
 				return (
 					<Box key={idx + 1} sx={{ width: "95%" }}>
 						<Grid container direction='row'>
-							<Grid sx={{ borderTop: "3px double #aaaaaa", width: "20%", maxWidth: 400, height: barHeight }}>
-								<Box >
+							<Grid container sx={{ borderTop: "3px double #aaaaaa", width: "20%", maxWidth: 400, height: barHeight }}>
+								{
+									treeSymbols(node.depth)
+								}
+								<Grid xs>
 									<Tooltip title={node.data.title}>
-										<Typography key={idx} variant="body2" className="timeline-text" sx={{ textAlign: "center", cursor: 'pointer' }} onClick={this.props.onClick}>
+										<Typography key={idx} variant="body2" className="timeline-text" sx={{ textAlign: "left", cursor: 'pointer' }} onClick={this.props.onClick}>
 											{node.data.title}
 										</Typography>
 									</Tooltip>
-								</Box>
+								</Grid>
+
 							</Grid>
 							<Grid sx={{ borderTop: "3px double #aaaaaa", width: "80%", height: barHeight }}>
 								{((plannedStartPC !== undefined) && (plannedEndPC !== undefined)) ?

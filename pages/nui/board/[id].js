@@ -136,17 +136,17 @@ export class Board extends React.Component {
 	setColouring = (params) => {
 		switch (params.type) {
 			case 'cool': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 1))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
 				this.colour = this.tempColouring;
 				break;
 			}
 			case 'warm': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 1))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
 				this.colour = this.tempColouring;
 				break;
 			}
 			case 'context': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length? this.contextList.length+1: 2))
 				this.colour = this.contextColouring;
 				break;
 			}
@@ -155,7 +155,7 @@ export class Board extends React.Component {
 				break;
 			}
 			case 'a_user': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length? this.assignedUserList.length+1: 2))
 				this.colour = this.aUserColouring;
 				break;
 			}
@@ -493,8 +493,6 @@ export class Board extends React.Component {
 
 				}
 
-				var rootSurface = document.getElementById("surface_" + this.state.board.id)
-
 				//Calculate some modals
 				this.addPortals(me, this.state.rootNode);
 
@@ -827,6 +825,7 @@ export class Board extends React.Component {
 				})
 				.attr("opacity", opacity)
 				.attr("fill", eColour.length ? eColour : colour)
+				.attr("class", eColour.length ? "pulseRight" : "")
 				.append("title").text(d => me.getErrorMessage(d))
 		})
 	}
@@ -947,7 +946,7 @@ export class Board extends React.Component {
 					<div id={"surface_" + this.state.board.id}>
 						{this.state.tileType === 'timeline' ?
 							<TimeLineApp
-								data={this.state.rootNode?this.state.rootNode.descendants().slice(1):[]}
+								data={this.state.rootNode?this.state.rootNode:[]}
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
 								colourise={this.colour}
