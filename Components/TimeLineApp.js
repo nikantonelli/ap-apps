@@ -18,19 +18,60 @@ export class TimeLineApp extends React.Component {
 				.domain([this.props.start, this.props.end])
 				.range([0, 100])
 
+				var sizeToDate = scaleLinear()
+				.domain([0, 100])
+				.range([this.props.start, this.props.end])
+
 			var barHeight = "30px";
 
-			var tlg = nodes.map((node, idx) => {
-				var startPercent = node.data.plannedStart?dateToSize(new Date(node.data.plannedStart).getTime()):0
-				var endPercent = node.data.plannedFinish?dateToSize(new Date(node.data.plannedFinish).getTime()):0
-				
+			var dateTicks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
+
+			var tlg = <Box key={0} sx={{ width: "100%" }}>
+				<Grid container direction='row'>
+					<Grid sx={{ width: "20%", maxWidth: 400 }}>
+						<Grid container direction="row">
+						<Box sx={{ height: barHeight }}>
+								<Typography sx={{ textAlign: "left", cursor: 'pointer' }}>
+									Item Title
+								</Typography>
+						</Box>
+						<Box sx={{ height: barHeight }}>
+								<Typography sx={{ textAlign: "right", cursor: 'pointer' }}>
+									Date:
+								</Typography>
+						</Box>
+						</Grid>
+					</Grid>
+					<Grid sx={{ margin: "2px 0px 0px 0px", width: "80%" }}>
+						<Grid id="timelineRow" container direction='row'>
+							{dateTicks.map((width, idx) => {
+								return <Grid sx={{ width: "10%" }}>
+									<Box sx={{ height: barHeight, width: '100%'}}>
+										<Typography sx={{fontSize:"8px"}}>
+											{new Date(sizeToDate(width)).toDateString()}
+										</Typography>
+										<Box sx={{ height:"50%", width: "1px", backgroundColor: "black"}} />
+									</Box>
+								</Grid>
+							})
+							}
+						</Grid>
+					</Grid>
+				</Grid>
+			</Box>
+
+
+			var blg = nodes.map((node, idx) => {
+				var startPercent = node.data.plannedStart ? dateToSize(new Date(node.data.plannedStart).getTime()) : 0
+				var endPercent = node.data.plannedFinish ? dateToSize(new Date(node.data.plannedFinish).getTime()) : 0
+
 				return (
-					<Box sx={{ width: "100%" }}>
+					<Box key={idx+1} sx={{ width: "100%" }}>
 						<Grid container direction='row'>
 							<Grid sx={{ width: "20%", maxWidth: 400 }}>
 								<Box sx={{ height: barHeight }}>
 									<Tooltip title={node.data.title}>
-										<Typography key={idx} className="timeline-text" sx={{cursor:'pointer'}} onClick={this.props.onClick}>
+										<Typography key={idx} variant="body2" className="timeline-text" sx={{ textAlign: "center", cursor: 'pointer' }} onClick={this.props.onClick}>
 											{node.data.title}
 										</Typography>
 									</Tooltip>
@@ -38,14 +79,14 @@ export class TimeLineApp extends React.Component {
 							</Grid>
 							<Grid sx={{ margin: "2px 0px 0px 0px", width: "80%" }}>
 								<Grid id="timelineRow" container direction='row'>
-									<Grid sx={{ width: startPercent.toFixed(1).toString()+"%"}}>
-										<Box sx={{ borderRadius: "5px", height: barHeight, width: '100%', backgroundColor: 'lightgrey' }} />
+									<Grid sx={{ width: startPercent.toFixed(1).toString() + "%" }}>
+										<Box sx={{ zIndex: 999, borderRadius: "5px", height: barHeight, width: '100%', backgroundColor: 'lightgrey' }} />
 									</Grid>
-									<Grid sx={{ width: (endPercent - startPercent).toFixed(1).toString()+"%"}}>
-										<Box sx={{  borderRadius: "5px", height: barHeight, width: '100%', backgroundColor: 'blue' }} />
+									<Grid sx={{ width: (endPercent - startPercent).toFixed(1).toString() + "%" }}>
+										<Box sx={{ margin: "0px 1px 0px 0px", border: "solid 1px black", borderRadius: "5px", height: barHeight, width: '100%', backgroundColor: this.props.colourise(node) }} />
 									</Grid>
-									<Grid sx={{ width: (100.0 - endPercent).toFixed(1).toString()+"%"}}>
-										<Box sx={{  borderRadius: "5px", height: barHeight, width: '100%', backgroundColor: 'lightgrey' }} />
+									<Grid sx={{ width: (100.0 - endPercent).toFixed(1).toString() + "%" }}>
+										<Box sx={{ zIndex: 999, borderRadius: "5px", height: barHeight, width: '100%', backgroundColor: 'lightgrey' }} />
 									</Grid>
 								</Grid>
 							</Grid>
@@ -56,6 +97,7 @@ export class TimeLineApp extends React.Component {
 			return (
 				<>
 					{tlg}
+					{blg}
 				</>
 			)
 		} else {

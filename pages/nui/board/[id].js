@@ -950,7 +950,7 @@ export class Board extends React.Component {
 								data={this.state.rootNode?this.state.rootNode.descendants().slice(1):[]}
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
-								onClick={this.nodeClicked}
+								colourise={this.colour}
 							/> : null}
 						<svg id={"svg_" + this.state.board.id} />
 					</div>
