@@ -183,7 +183,7 @@ export class Board extends React.Component {
 						return 1;
 					}
 					case 'size': {
-						return Boolean(d.size) ? d.size : 1
+						return me.state.tileType !== 'tree'?d.size:0;
 					}
 				}
 			})
@@ -305,6 +305,19 @@ export class Board extends React.Component {
 		}
 	}
 
+	
+	childSize = (levelWidth, level, n) => {
+		var me = this;
+		if (levelWidth.length <= level) levelWidth.push(0);
+		levelWidth[level] += (Boolean(n.value)? n.value : 1);
+
+		if (n.children && n.children.length > 0) {	
+			n.children.forEach(function (d) {
+				me.childSize(levelWidth, level + 1, d);
+			});
+		} 
+	}
+
 	getErrorColour = (d) => {
 		var colour = ""
 
@@ -359,26 +372,34 @@ export class Board extends React.Component {
 		return msg;
 	}
 
+	setViewBox = (treeData, rowHeight) => {
+		
+		var levelWidth = [0];
+		if (this.state.sortType === 'size'){
+			this.childSize(levelWidth, 0, treeData);
+		} else {
+			this.childCount(levelWidth, 0, treeData);
+		}
+		console.log(levelWidth)
+		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+		var hEl = document.getElementById("header-box")
+		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
+		var rootEl = document.getElementById("surface_" + this.state.board.id)
+		return [rootEl.getBoundingClientRect().width, treeBoxHeight]
+	}
+
 	update = () => {
 		this.portals = [];
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		if (!Boolean(svgEl)) return;
 		var svg = d3.select(svgEl);
 		svgEl.replaceChildren()
-
 		var me = this;
-
-		var levelWidth = [1];
-
-		var rowHeight = 30;
-		this.childCount(levelWidth, 0, this.state.rootNode);
-		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-		var hEl = document.getElementById("header-box")
-		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
-		var rootEl = document.getElementById("surface_" + this.state.board.id)
-		var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
-
+		var rowHeight = 20;
+		
 		this.calcTreeData(this.state.rootNode)
+		var viewBox = this.setViewBox(this.state.rootNode, rowHeight)
+
 
 		switch (this.state.tileType) {
 			case 'table': {
@@ -634,7 +655,7 @@ export class Board extends React.Component {
 
 				var rootEl = document.getElementById("surface_" + this.state.board.id)
 
-				var viewBox = [rootEl.getBoundingClientRect().width, treeBoxHeight]
+				var viewBox = this.setViewBox(this.state.rootNode, rowHeight)
 				var colWidth = (viewBox[0] / (this.state.rootNode.height || 1))
 				var colMargin = 100
 
@@ -786,7 +807,7 @@ export class Board extends React.Component {
 
 			node.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("stroke-width", d => d.rowHeight / 2)
+				.attr("stroke-width", d => d.rowHeight)
 				.attr("stroke", colour)
 				.attr("opacity", opacity)
 				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
@@ -809,7 +830,7 @@ export class Board extends React.Component {
 			node.append("path")
 				.attr("d", function (d) {
 					return describeArc(d.y
-						, d.x, d.rowHeight / 4, 180, 0)
+						, d.x, d.rowHeight / 2, 180, 0)
 
 				})
 				.attr("opacity", opacity)
@@ -820,7 +841,7 @@ export class Board extends React.Component {
 			node.append("path")
 				.attr("d", function (d) {
 					var endpoint = (d.y + (d.children ? (d.colWidth) : myWidth))
-					return describeArc(endpoint, d.x, d.rowHeight / 4, 0, 180)
+					return describeArc(endpoint, d.x, d.rowHeight / 2, 0, 180)
 
 				})
 				.attr("opacity", opacity)
@@ -844,10 +865,10 @@ export class Board extends React.Component {
 				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
 				.attr("class", function (d) { return "local--link"; })
 				.attr("d", function (d) {
-					var startPointH = d.parent.y + pWidth + (d.rowHeight / 4);
+					var startPointH = d.parent.y + pWidth + (d.rowHeight / 2);
 					var startApex = (d.y - (d.parent.y + pWidth)) / 2
 					var startPointV = d.parent.x;
-					var endPointH = d.y - (d.rowHeight / 4);
+					var endPointH = d.y - (d.rowHeight / 2);
 					var endPointV = d.x;
 
 					var string = "M" + startPointH + "," + startPointV +
@@ -1141,7 +1162,7 @@ export class Board extends React.Component {
 
 					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], 1)
 					else {
-						this.setDatat();
+						this.setData();
 					}
 				})
 			}
