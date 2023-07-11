@@ -183,7 +183,7 @@ export class Board extends React.Component {
 						return 1;
 					}
 					case 'size': {
-						return me.state.tileType !== 'tree'?d.size:0;
+						return me.state.tileType !== 'tree'?(d.size?d.size:1):0;
 					}
 				}
 			})
@@ -298,7 +298,9 @@ export class Board extends React.Component {
 		var me = this;
 		if (n.children && n.children.length > 0) {
 			if (levelWidth.length <= level + 1) levelWidth.push(0);
-			levelWidth[level + 1] += n.children.length;
+			for (var lv = level + 1; lv >0; --lv) {
+				levelWidth[level + 1] += n.children.length;
+			}
 			n.children.forEach(function (d) {
 				me.childCount(levelWidth, level + 1, d);
 			});

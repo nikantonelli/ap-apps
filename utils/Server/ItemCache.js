@@ -3,7 +3,8 @@
  * and not for the browser client
  */
 class ItemCache {
-	constructor(size, period) {
+	constructor(type, size, period) {
+		this.type = type;
 		this.size = size;
 		this.period = period;
 		this.map = new Map();
@@ -37,7 +38,7 @@ class ItemCache {
 
 	get(id) {
 		if (this.map.has(id)) {
-			console.log("got: ", id);
+			console.log(`got ${this.type}: ${id}`);
 			// remove elem from current position
 			let c = this.map.get(id);
 			c.prev.next = c.next;
@@ -60,7 +61,7 @@ class ItemCache {
 			this.tail.prev.value = item;
 			this.tail.prev.date = Date.now()
 		} else {
-			console.log("adding: ", id);
+			console.log(`adding ${this.type}: ${id}`);
 			// check if map size is at capacity
 			if (this.map.size === this.capacity) {
 				//delete item both from map and DLL
