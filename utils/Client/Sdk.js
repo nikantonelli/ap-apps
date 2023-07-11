@@ -9,6 +9,19 @@ export const getCardChildren = async (host, card) => {
 	return await doRequest(params);
 }
 
+/** 
+ * Coded like this because we usually have to 'refetch' the REAL version 
+ * of a nonsense one back from a different api call.
+*/
+export const getCard = async (host, card) => {
+	var params = {
+		host: host,
+		mode: "GET",
+		url: "/card/" + card.id,
+	}
+	return await doRequest(params);
+}
+
 export const findBoards = async (host, options) => {
 	var params = {
 		url: "/board",

@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
+import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip, menuClasses } from "@mui/material";
 import * as d3 from 'd3';
 import _, { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
@@ -9,9 +9,10 @@ import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 import React from "react";
 import { createRoot, hydrateRoot } from 'react-dom/client';
 
-import { doRequest, getCardChildren } from "../../../utils/Client/Sdk";
+import { doRequest, getCard, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
 import { TimeLineApp } from "../../../Components/TimeLineApp";
+import { shortDate } from "../../../utils/Client/Helpers";
 
 export class Board extends React.Component {
 
@@ -146,7 +147,7 @@ export class Board extends React.Component {
 				break;
 			}
 			case 'context': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length? this.contextList.length+1: 2))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length ? this.contextList.length + 1 : 2))
 				this.colour = this.contextColouring;
 				break;
 			}
@@ -155,7 +156,7 @@ export class Board extends React.Component {
 				break;
 			}
 			case 'a_user': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length? this.assignedUserList.length+1: 2))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length ? this.assignedUserList.length + 1 : 2))
 				this.colour = this.aUserColouring;
 				break;
 			}
@@ -183,7 +184,7 @@ export class Board extends React.Component {
 						return 1;
 					}
 					case 'size': {
-						return me.state.tileType !== 'tree'?(d.size?d.size:1):0;
+						return me.state.tileType !== 'tree' ? (d.size ? d.size : 1) : 0;
 					}
 				}
 			})
@@ -249,9 +250,20 @@ export class Board extends React.Component {
 	};
 
 	addPortals = (me, nodes) => {
+		var allNodes = [...nodes];
+		var finder = d3.bisector((d) =>
+			d.__data__.data.id
+		);
+
 		nodes.each(function (d, idx) {
 			if (!d.parent) return;
-			var parents = d.parent && (d.parent.depth > 0) ? [d.parent.data] : null
+			var parents = []
+			if ((d.data.parentCards && d.data.parentCards.length)) {
+				_.each(d.data.parentCards, (card) => {
+					var index = finder.right(allNodes, card.cardId);
+					if (allNodes[index]) parents.push(allNodes[index].__data__.data)
+				})
+			}
 			var children = []
 
 			//Get child data ready to pass to APCard
@@ -298,7 +310,7 @@ export class Board extends React.Component {
 		var me = this;
 		if (n.children && n.children.length > 0) {
 			if (levelWidth.length <= level + 1) levelWidth.push(0);
-			for (var lv = level + 1; lv >0; --lv) {
+			for (var lv = level + 1; lv > 0; --lv) {
 				levelWidth[level + 1] += n.children.length;
 			}
 			n.children.forEach(function (d) {
@@ -307,17 +319,17 @@ export class Board extends React.Component {
 		}
 	}
 
-	
+
 	childSize = (levelWidth, level, n) => {
 		var me = this;
 		if (levelWidth.length <= level) levelWidth.push(0);
-		levelWidth[level] += (Boolean(n.value)? n.value : 1);
+		levelWidth[level] += (Boolean(n.value) ? n.value : 1);
 
-		if (n.children && n.children.length > 0) {	
+		if (n.children && n.children.length > 0) {
 			n.children.forEach(function (d) {
 				me.childSize(levelWidth, level + 1, d);
 			});
-		} 
+		}
 	}
 
 	getErrorColour = (d) => {
@@ -375,9 +387,9 @@ export class Board extends React.Component {
 	}
 
 	setViewBox = (treeData, rowHeight) => {
-		
+
 		var levelWidth = [0];
-		if (this.state.sortType === 'size'){
+		if ((this.state.sortType === 'size') && (this.state.tileType !== 'tree')) {
 			this.childSize(levelWidth, 0, treeData);
 		} else {
 			this.childCount(levelWidth, 0, treeData);
@@ -398,7 +410,7 @@ export class Board extends React.Component {
 		svgEl.replaceChildren()
 		var me = this;
 		var rowHeight = 20;
-		
+
 		this.calcTreeData(this.state.rootNode)
 		var viewBox = this.setViewBox(this.state.rootNode, rowHeight)
 
@@ -416,7 +428,7 @@ export class Board extends React.Component {
 					(this.state.rootNode)
 
 				var nodes = d3.selectAll(".node")
-					.data(this.state.rootNode.descendants())
+					.data(this.state.rootNode.descendants().slice(1))
 					.enter()
 
 				this.addPortals(me, nodes);
@@ -516,8 +528,11 @@ export class Board extends React.Component {
 
 				}
 
-				//Calculate some modals
-				this.addPortals(me, this.state.rootNode);
+				var nodes = d3.selectAll(".node")
+					.data(this.state.rootNode.descendants().slice(1))
+					.enter()
+
+				this.addPortals(me, nodes);
 
 				break;
 			}
@@ -665,13 +680,13 @@ export class Board extends React.Component {
 				svg.attr('width', viewBox[0])
 				svg.attr("height", viewBox[1])
 				//Text size is too big, so offset by a few.....
-				svg.attr('viewBox', colWidth + ' 0 ' + (viewBox[0]) + ' ' + viewBox[1])
+				svg.attr('viewBox', (colWidth - (rowHeight / 2)) + ' 0 ' + (viewBox[0]) + ' ' + viewBox[1])
 				rootEl.setAttribute('width', viewBox[0]);
 				rootEl.setAttribute('height', viewBox[1]);
 				svg.attr('preserveAspectRatio', 'none');
 				svg.attr('class', 'rootSurface')
 				var tree = d3.tree()
-					.size([viewBox[1] - 8, viewBox[0] - 8])
+					.size([viewBox[1], viewBox[0]])
 					.separation(function (a, b) {
 						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
 					}
@@ -748,22 +763,37 @@ export class Board extends React.Component {
 	getLabel = (d) => {
 		switch (this.state.tileType) {
 			case 'sunburst': {
-				return d.data.id === "root" ? "" : d.data.id + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+				return d.data.id === "root" ? "" : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
 			}
 
 			default:
 			case 'tree':
 			case 'timeline':
 			case 'partition': {
-				return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "")
+				return d.data.id === "root" ? "" : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.title
 			}
 		}
 	}
 
 	getTitle = (d) => {
-		switch (this.state.tileType) {
+		switch (this.state.sortType) {
+			case 'plannedStart': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + shortDate(d.data.plannedStart) + ")")
+			}
+			case 'plannedStart': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + shortDate(d.data.plannedFinish) + ")")
+			}
+			case 'score': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.scoring.scoreTotal + ")")
+			}
+			case 'context': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
+			}
+			case 'a_user': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + (d.data.assignedUsers && d.data.assignedUsers.length ? d.data.assignedUsers[0].fullName : "No User") + ")")
+			}
 			default: {
-				return d.data.id === "root" ? "" : d.data.title + ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : " (" + d.data.size + "/" + d.value + ")")
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
 			}
 		}
 	}
@@ -809,7 +839,7 @@ export class Board extends React.Component {
 
 			node.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("stroke-width", d => d.rowHeight)
+				.attr("stroke-width", d => d.rowHeight - 2)
 				.attr("stroke", colour)
 				.attr("opacity", opacity)
 				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
@@ -832,7 +862,7 @@ export class Board extends React.Component {
 			node.append("path")
 				.attr("d", function (d) {
 					return describeArc(d.y
-						, d.x, d.rowHeight / 2, 180, 0)
+						, d.x, (d.rowHeight - 2) / 2, 180, 0)
 
 				})
 				.attr("opacity", opacity)
@@ -843,7 +873,7 @@ export class Board extends React.Component {
 			node.append("path")
 				.attr("d", function (d) {
 					var endpoint = (d.y + (d.children ? (d.colWidth) : myWidth))
-					return describeArc(endpoint, d.x, d.rowHeight / 2, 0, 180)
+					return describeArc(endpoint, d.x, (d.rowHeight - 2) / 2, 0, 180)
 
 				})
 				.attr("opacity", opacity)
@@ -969,7 +999,7 @@ export class Board extends React.Component {
 					<div id={"surface_" + this.state.board.id}>
 						{this.state.tileType === 'timeline' ?
 							<TimeLineApp
-								data={this.state.rootNode?this.state.rootNode:[]}
+								data={this.state.rootNode ? this.state.rootNode : []}
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
 								colourise={this.colour}
@@ -1176,21 +1206,40 @@ export class Board extends React.Component {
 
 	childrenOf = (host, cards, depth) => {
 
+		var me = this;
 		forEach(cards, (card) => {
-			this.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
+			me.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
 			getCardChildren(host, card).then(async (result) => {
-				this.setState((prev) => { return { pending: prev.pending - 1 } })
+				me.setState((prev) => { return { pending: prev.pending - 1 } })
 				var children = await result.json()
 				if (children) {
-					card.children = children.cards
-					forEach(card.children, (cd) => {
+					if (!Boolean(card.children)) card.children = [];
+					forEach(children.cards, (cd) => {
 						//Remove from top list if they are a child of something
-						this.root.children = _.reject(this.root.children, function (rootChild) {
+						me.root.children = _.reject(me.root.children, function (rootChild) {
 							return rootChild.id === cd.id
 						})
-						cd.parent = card.id
+						//Tag a single parent for the 'tree'
+						me.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
+						getCard(host, cd).then(async (realResult) => {
+							var realCard = await realResult.json();
+							if (realCard) {
+								me.setState((prev) => { return { pending: prev.pending - 1 } })
+								realCard.parent = card.id
+								card.children.push(realCard);
+								me.setData();
+								if (depth < this.state.depth) this.childrenOf(host, [realCard], depth + 1)
+							}
+						})
+
 					})
-					if (depth < this.state.depth) this.childrenOf(host, card.children, depth + 1)
+					/**
+					 * We REALLY should get the FULL card details by fetching every card again!
+					 * This is because the getchildren call only returns part info.
+					 */
+
+
+					
 				}
 				this.setData()
 			}, this)
