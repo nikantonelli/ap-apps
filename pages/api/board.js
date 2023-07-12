@@ -15,13 +15,14 @@ import DataProvider from "../../utils/Server/DataProvider"
 export default async function handler(req, res) {
 	const queryField = req.query['fld'];
 	const queryStr = req.query['q'];
+	const offset = req.query['offset'];
 	
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = new DataProvider()
 	}
 
-	var result = await globalThis.dataProvider.getContextByString(queryField, queryStr)
+	var result = await globalThis.dataProvider.getContextByString(queryField, queryStr, offset)
 	
-	if (result)	res.status(200).json({ boards: result.boards })
-	else res.status(400).json({error: true, message:"Can't fetch board"})
+	if (result)	res.status(200).json({ pageMeta: result.pageMeta, boards: result.boards })
+	else res.status(400).json({error: true, message:"Can't fetch boards"})
 }

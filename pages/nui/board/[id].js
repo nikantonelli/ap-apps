@@ -404,6 +404,11 @@ export class Board extends React.Component {
 
 	update = () => {
 		this.portals = [];
+		/**
+		 * If a network error has occurred that is unrecoverable, then we may still come here but without a board
+		 */
+		if (!this.state.board) return;
+
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		if (!Boolean(svgEl)) return;
 		var svg = d3.select(svgEl);

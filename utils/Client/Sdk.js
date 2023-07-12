@@ -29,10 +29,13 @@ export const findBoards = async (host, options) => {
 		host: host
 	}
 	if (options && options.search) {
-		params.url += "?q=" + encodeURIComponent(options.search)
+		params.search = "q=" + encodeURIComponent(options.search)
 	}
-	return await doRequest(params)
-	
+	var result = await doMultiRequest(params, "boards")
+	if (result)
+		return  result
+		else	return null
+
 }
 export const getListOfCards = async (host, cardList) => {
 	var params = {
@@ -73,6 +76,45 @@ export const doRequest = async (params) => {
 	//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
 	var req = new Request("http://" + params.host + "/api" + params.url, ps);
 	var res = await fetch(req, { next: { revalidate: 30 } })
+	return res
+}
+
+/**
+ *  Get all the pages of data available
+ * @param {*} params 
+ * @returns 
+ */
+export const doMultiRequest = async (params, itemType) => {
+	var ps = { method: params.mode }
+	if (params.body) {
+		ps.body = params.body
+	}
+	if (params.type) {
+		var headers = new Headers();
+		headers.append("Content-Type", params.type)
+		ps.headers = headers
+	}
+	var moreItems = true;
+	var data = [];
+	var currentItem = 0;
+	var extras = "";
+
+	if (params.search) extras += "&" + params.search
+
+	while (moreItems) {
+		//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
+		var response = await fetch(new Request("http://" + params.host + "/api" + params.url + "?offset=" + currentItem + extras, ps))
+		var res = await response.json();
+		if (res) {
+			currentItem = res.pageMeta.endRow
+			if (res.pageMeta.totalRecords <= currentItem) moreItems = false;
+			res[itemType].forEach(d => data.push(d));
+		}
+		else
+			return null;
+	}
+	res[itemType] = data;
+	res.pageMeta.startRow = 1;
 	return res
 }
 

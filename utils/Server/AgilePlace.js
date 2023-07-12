@@ -37,7 +37,7 @@ class AgilePlace {
 		var ps =  { headers: headers, method: params.mode }
 		if (params.body) ps.body = params.body;
 		var req = new Request(params.baseUrl + params.url,ps);
-		const res = await fetch(req, { next: { revalidate: 30 } }).then(
+		const res = await fetch(req).then(
 			async (response) => {
 				if (!response.ok) {
 					var statusCode = response.status;
@@ -125,7 +125,7 @@ class AgilePlace {
 	async getContextById(id) {
 
 	}
-	async getContextByString(queryField, queryStr) {
+	async getContextByString(queryField, queryStr, offset) {
 		var standardFilter = true;
 
 		/**
@@ -138,11 +138,11 @@ class AgilePlace {
 			}
 		}
 
-	
+		if (!Boolean(offset)) offset = 0;
+		var searchTxt = "?offset=" + offset;
 		var result = []
 		if (standardFilter) {
-			var searchTxt = "";
-			if (queryStr) searchTxt = "?search=" + queryStr;
+			if (queryStr) searchTxt += "&search=" + queryStr;
 			var params = {
 				url: "/board" + searchTxt
 			}

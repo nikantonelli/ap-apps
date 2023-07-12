@@ -30,8 +30,8 @@ class DataProvider {
 		})
 	}
 
-	getContextByString(param1, param2) {
-		return this.provider.getContextByString(param1, param2);
+	getContextByString(param1, param2, param3) {
+		return this.provider.getContextByString(param1, param2, param3);
 	}
 
 	xfr(param) {

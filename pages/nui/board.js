@@ -46,8 +46,7 @@ export default function Board({ host }) {
 		if (fltr && (fltr.length == 0)) fltr = null;
 		var result = await findBoards(host, { search: fltr });
 		if (result) {
-			var res = await result.json()
-			if (res) setBoards(res.boards);
+			setBoards(result.boards);
 		}
 
 	}
