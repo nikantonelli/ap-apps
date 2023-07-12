@@ -43,13 +43,12 @@ export class Board extends React.Component {
 			total: 0,
 			topLevelList: [],
 			popUp: null,
-			tileType: this.props.mode || 'tree',
 			sortType: this.props.sort || (
 				((this.props.mode === 'partition') ||
 					(this.props.mode === 'timeline')) ? 'count' : 'size'),
 			sortDirection: this.props.dir || 'ascending',
 			clickCount: 0,
-			colouring: this.props.colour || 'cool',
+			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off'
 
@@ -394,7 +393,6 @@ export class Board extends React.Component {
 		} else {
 			this.childCount(levelWidth, 0, treeData);
 		}
-		console.log(levelWidth)
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
 		var hEl = document.getElementById("header-box")
 		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
@@ -1194,6 +1192,7 @@ export class Board extends React.Component {
 					}
 					var cResponse = await doRequest(cParams)
 					var cResult = await cResponse.json()
+					//Tag a single parent for the 'hierarchy'
 					cResult.parent = this.root.id;
 					this.root.children.push(cResult)
 
@@ -1224,12 +1223,12 @@ export class Board extends React.Component {
 						me.root.children = _.reject(me.root.children, function (rootChild) {
 							return rootChild.id === cd.id
 						})
-						//Tag a single parent for the 'tree'
 						me.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
 						getCard(host, cd).then(async (realResult) => {
 							var realCard = await realResult.json();
 							if (realCard) {
 								me.setState((prev) => { return { pending: prev.pending - 1 } })
+								//Tag a single parent for the 'hierarchy'
 								realCard.parent = card.id
 								card.children.push(realCard);
 								me.setData();
@@ -1238,13 +1237,7 @@ export class Board extends React.Component {
 						})
 
 					})
-					/**
-					 * We REALLY should get the FULL card details by fetching every card again!
-					 * This is because the getchildren call only returns part info.
-					 */
 
-
-					
 				}
 				this.setData()
 			}, this)

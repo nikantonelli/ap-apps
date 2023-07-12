@@ -9,7 +9,6 @@ export class CardUserTable extends React.Component {
     }
     render = () => {
         var users = [];
-if (this.props.card.id=="31512106097022") console.log(this.props.card);
 
         users.push({ type: "Last Edit", user: this.props.card.updatedBy, date: Boolean(this.props.card.updatedOn) ? new Date(this.props.card.updatedOn).toString() : null })
         users.push({ type: "Last Move", user: this.props.card.movedBy, date: Boolean(this.props.card.movedOn) ? new Date(this.props.card.movedOn).toString() : null })

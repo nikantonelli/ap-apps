@@ -28,17 +28,9 @@ export default function Board({ host }) {
 		document.open("/nui/board/" + evt.currentTarget.id + "?mode=timeline", "", "noopener=true")
 	}
 
-	function filterChange(e) {
-		if (timer) {
-			clearTimeout(timer)
-		}
-		setTimer(setTimeout(function () {
-			updateList(e.target.value)
-		}, 1000))
-	}
-
-	function updateList(txt) {
-		setFilterText(txt);
+	function updateList() {
+		var fld = document.getElementById("filter-field");
+		setFilterText(fld.value);
 		setPending(false);
 	}
 
@@ -71,15 +63,15 @@ export default function Board({ host }) {
 			label="Filter"
 			helperText="Case insensitive search on title and header"
 			variant="standard"
-			onChange={filterChange}
 			InputProps={{
 				startAdornment: (
 					<InputAdornment position="start">
 						{filterText.length != 0 ?
-							<IconButton onClick={clearFilter}>
+							<IconButton onClick={clearFilter} sx={{cursor:'pointer'}}>
 								<Cancel />
 							</IconButton>
-							: <Search />}
+							: null }
+							<Search onClick={updateList} sx={{cursor:'pointer'}}/>
 					</InputAdornment>
 				),
 			}}
