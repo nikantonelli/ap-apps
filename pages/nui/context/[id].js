@@ -358,30 +358,6 @@ export class Board extends React.Component {
 		return msg;
 	}
 
-
-	childCount = (levelWidth, level, n) => {
-		var me = this;
-		if (n.children && n.children.length > 0) {
-			if (levelWidth.length <= level + 1) levelWidth.push(0);
-			n.children.forEach(function (d) {
-				me.childCount(levelWidth, level + 1, d);
-			});
-			for (var lv = level; lv > 0; --lv) {
-				levelWidth[level] += n.children.length;
-			}
-		}
-	}
-
-	setTreeView = (rowHeight) => {
-		var levelWidth = [1];
-		this.childCount(levelWidth, 0, this.state.rootNode)
-		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
-		var hEl = document.getElementById("header-box")
-		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
-		var rootEl = document.getElementById("surface_" + this.state.board.id)
-		return [rootEl.getBoundingClientRect().width, treeBoxHeight]
-	}
-
 	setPartitionView = (rowHeight) => {
 
 		var treeBoxHeight = this.state.rootNode.value * rowHeight;
@@ -445,11 +421,6 @@ export class Board extends React.Component {
 					.attr("fill", d => {
 						return me.colour(d);
 					})
-					// .attr("class", d => {
-					// 	return d.data.lane.cardStatus === 'finished'? "card-status card-finished" :
-					// 		d.data.lane.cardStatus === 'started'? "card-status card-started" :
-					// 			"card-status card-not-started"
-					// })
 					.style("cursor", "pointer")
 					.on("click", me.nodeClicked)
 
