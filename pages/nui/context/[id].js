@@ -123,6 +123,14 @@ export class Board extends React.Component {
 		return this.colourFnc(0);
 	}
 
+	stateColouring = (d) => {
+		this.opacityDrop = false;
+		switch (d.data.lane.cardStatus) {
+			case 'notStarted': return '#4989e4';
+			case 'started': return '#27a444';
+			case 'finished': return '#444444'
+		}
+	}
 
 	/**
 	 * 
@@ -152,6 +160,10 @@ export class Board extends React.Component {
 			}
 			case 'type': {
 				this.colour = this.typeColouring;
+				break;
+			}
+			case 'state': {
+				this.colour = this.stateColouring;
 				break;
 			}
 			case 'a_user': {
@@ -321,7 +333,7 @@ export class Board extends React.Component {
 					colour = "red"
 				}
 				else if (ps < pPS) {
-					colour = "orange"
+					colour = "#e69500"
 				}
 			}
 		}
@@ -640,9 +652,9 @@ export class Board extends React.Component {
 				var colMargin = 100
 
 				var tree = d3.tree()
-					.nodeSize([rowHeight, colWidth])
+					.nodeSize([rowHeight+2, colWidth])
 					.separation(function (a, b) {
-						return (a.parent === b.parent ? 1 : 2); 
+						return (a.parent === b.parent ? 1 : 2);
 					}
 					);
 
@@ -650,19 +662,19 @@ export class Board extends React.Component {
 
 				var smallestY = 0;
 				var biggestY = 0;
-				this.state.rootNode.descendants().slice(1).forEach( (d) => {
+				this.state.rootNode.descendants().slice(1).forEach((d) => {
 					if (d.x < smallestY) smallestY = d.x
 					if (d.x > biggestY) biggestY = d.x
 				})
 				var viewBox = [viewWidth, (biggestY - smallestY) + rowHeight]
 				svg.attr('width', viewBox[0])
 				svg.attr("height", viewBox[1])
-				svg.attr('viewBox', (colWidth - (rowHeight/2)).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
+				svg.attr('viewBox', (colWidth - (rowHeight / 2)).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
 				rootEl.setAttribute('width', viewBox[0]);
 				rootEl.setAttribute('height', viewBox[1]);
 				svg.attr('preserveAspectRatio', 'none');
 				svg.attr('class', 'rootSurface')
-				
+
 				var nodes = svg.selectAll("g")
 					.data(this.state.rootNode.descendants().slice(1))
 					.enter()
@@ -760,9 +772,17 @@ export class Board extends React.Component {
 				return d.data.id === "root" ? "" : (d.data.title + " (" + (d.data.assignedUsers && d.data.assignedUsers.length ? d.data.assignedUsers[0].fullName : "No User") + ")")
 			}
 			default: {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
+				//Fall out and try something else
 			}
 		}
+
+		/** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
+		switch (this.state.colouring) {
+			case 'state': {
+				return (d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) : (d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) : "Not Started"
+			}
+		}
+		return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
 	}
 
 	bars = (nodes) => {
@@ -803,8 +823,12 @@ export class Board extends React.Component {
 			var myWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
 				d3.min([d.colWidth, Number(rEl.attributes["width"].value)]) :
 				d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+			
+			var eColour = me.getErrorColour(d);
+			
+			var g = node.append("g")
 
-			node.append("line")
+			g.append("line")
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
 				.attr("stroke-width", d => d.rowHeight - 2)
 				.attr("stroke", colour)
@@ -825,8 +849,30 @@ export class Board extends React.Component {
 					return d.x
 				})
 
+			if (eColour.length) {
+				g.append("line")
+					.attr("stroke-width", 3)
+					.attr("stroke", eColour)
+					.attr("opacity", opacity)
+					//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
+
+					.on('click', me.nodeClicked)
+					.attr("x1", function (d) {
+						return d.y
+					})
+					.attr("y1", function (d) {
+						return d.x +(d.rowHeight/2)
+					})
+					.attr("x2", function (d) {
+						return (d.y + (d.children ? (d.colWidth) : myWidth))
+					})
+					.attr("y2", function (d) {
+						return d.x +(d.rowHeight/2)
+					})
+			}
+
 			//Start semi-circle
-			node.append("path")
+			g.append("path")
 				.attr("d", function (d) {
 					return describeArc(d.y
 						, d.x, (d.rowHeight - 2) / 2, 180, 0)
@@ -836,16 +882,15 @@ export class Board extends React.Component {
 				.attr("fill", colour)
 
 			//End semi-circle
-			var eColour = me.getErrorColour(d);
-			node.append("path")
+
+			g.append("path")
 				.attr("d", function (d) {
 					var endpoint = (d.y + (d.children ? (d.colWidth) : myWidth))
 					return describeArc(endpoint, d.x, (d.rowHeight - 2) / 2, 0, 180)
 
 				})
 				.attr("opacity", opacity)
-				.attr("fill", eColour.length ? eColour : colour)
-				.attr("class", eColour.length ? "pulseRight" : "")
+				.attr("fill", colour)
 				.append("title").text(d => me.getErrorMessage(d))
 		})
 	}
@@ -1035,8 +1080,8 @@ export class Board extends React.Component {
 												onChange={this.sortChange}
 												label="Sort By"
 											>
-												<MenuItem value="plannedStart">Start Date</MenuItem>
-												<MenuItem value="plannedFinish">End Date</MenuItem>
+												<MenuItem value="plannedStart">Planned Start</MenuItem>
+												<MenuItem value="plannedFinish">Planned End</MenuItem>
 												<MenuItem value="size">Size</MenuItem>
 												{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 												<MenuItem value="score">Score Total</MenuItem>
@@ -1070,6 +1115,7 @@ export class Board extends React.Component {
 												<MenuItem value="cool">Cool</MenuItem>
 												<MenuItem value="warm">Warm</MenuItem>
 												<MenuItem value="type">Card Type</MenuItem>
+												<MenuItem value="state">Card State</MenuItem>
 												<MenuItem value="a_user">First Assignee</MenuItem>
 												<MenuItem value="context">Context</MenuItem>
 											</Select>
