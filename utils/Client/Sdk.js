@@ -29,7 +29,8 @@ export const findBoards = async (host, options) => {
 		host: host
 	}
 	if (options && options.search) {
-		params.search = "q=" + encodeURIComponent(options.search)
+		//Extra params are uri encoded at the lower level.
+		params.search = "q=" + options.search
 	}
 	var result = await doMultiRequest(params, "boards")
 	if (result)

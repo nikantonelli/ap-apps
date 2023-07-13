@@ -14,18 +14,18 @@ export default function Board({ host }) {
 
 
 	function treeClicked(evt) {
-		document.open("/nui/board/" + evt.currentTarget.id + "?mode=tree", "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id + "?mode=tree", "", "noopener=true")
 	}
 
 	function sunClicked(evt) {
-		document.open("/nui/board/" + evt.currentTarget.id + "?mode=sunburst", "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id + "?mode=sunburst", "", "noopener=true")
 	}
 
 	function partClicked(evt) {
-		document.open("/nui/board/" + evt.currentTarget.id + "?mode=partition", "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id + "?mode=partition", "", "noopener=true")
 	}
 	function timeClicked(evt) {
-		document.open("/nui/board/" + evt.currentTarget.id + "?mode=timeline", "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id + "?mode=timeline", "", "noopener=true")
 	}
 
 	function updateList() {

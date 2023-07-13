@@ -183,7 +183,7 @@ export class Board extends React.Component {
 						return 1;
 					}
 					case 'size': {
-						return me.state.tileType !== 'tree' ? (d.size ? d.size : 1) : 0;
+						return d.size ? d.size : 1;
 					}
 				}
 			})
@@ -304,33 +304,6 @@ export class Board extends React.Component {
 		})
 	}
 
-
-	childCount = (levelWidth, level, n) => {
-		var me = this;
-		if (n.children && n.children.length > 0) {
-			if (levelWidth.length <= level + 1) levelWidth.push(0);
-			for (var lv = level + 1; lv > 0; --lv) {
-				levelWidth[level + 1] += n.children.length;
-			}
-			n.children.forEach(function (d) {
-				me.childCount(levelWidth, level + 1, d);
-			});
-		}
-	}
-
-
-	childSize = (levelWidth, level, n) => {
-		var me = this;
-		if (levelWidth.length <= level) levelWidth.push(0);
-		levelWidth[level] += (Boolean(n.value) ? n.value : 1);
-
-		if (n.children && n.children.length > 0) {
-			n.children.forEach(function (d) {
-				me.childSize(levelWidth, level + 1, d);
-			});
-		}
-	}
-
 	getErrorColour = (d) => {
 		var colour = ""
 
@@ -385,15 +358,33 @@ export class Board extends React.Component {
 		return msg;
 	}
 
-	setViewBox = (treeData, rowHeight) => {
 
-		var levelWidth = [0];
-		if ((this.state.sortType === 'size') && (this.state.tileType !== 'tree')) {
-			this.childSize(levelWidth, 0, treeData);
-		} else {
-			this.childCount(levelWidth, 0, treeData);
+	childCount = (levelWidth, level, n) => {
+		var me = this;
+		if (n.children && n.children.length > 0) {
+			if (levelWidth.length <= level + 1) levelWidth.push(0);
+			n.children.forEach(function (d) {
+				me.childCount(levelWidth, level + 1, d);
+			});
+			for (var lv = level; lv > 0; --lv) {
+				levelWidth[level] += n.children.length;
+			}
 		}
+	}
+
+	setTreeView = (rowHeight) => {
+		var levelWidth = [1];
+		this.childCount(levelWidth, 0, this.state.rootNode)
 		var treeBoxHeight = d3.max(levelWidth) * rowHeight;
+		var hEl = document.getElementById("header-box")
+		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
+		var rootEl = document.getElementById("surface_" + this.state.board.id)
+		return [rootEl.getBoundingClientRect().width, treeBoxHeight]
+	}
+
+	setPartitionView = (rowHeight) => {
+
+		var treeBoxHeight = this.state.rootNode.value * rowHeight;
 		var hEl = document.getElementById("header-box")
 		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
 		var rootEl = document.getElementById("surface_" + this.state.board.id)
@@ -415,8 +406,6 @@ export class Board extends React.Component {
 		var rowHeight = 20;
 
 		this.calcTreeData(this.state.rootNode)
-		var viewBox = this.setViewBox(this.state.rootNode, rowHeight)
-
 
 		switch (this.state.tileType) {
 			case 'table': {
@@ -425,6 +414,7 @@ export class Board extends React.Component {
 			case 'partition': {
 
 				var me = this;
+				var viewBox = this.setPartitionView(rowHeight)
 
 				d3.partition()
 					.size([viewBox[1], viewBox[0]])
@@ -673,30 +663,35 @@ export class Board extends React.Component {
 			default: {
 
 
-				var rootEl = document.getElementById("surface_" + this.state.board.id)
-
-				var viewBox = this.setViewBox(this.state.rootNode, rowHeight)
-				var colWidth = (viewBox[0] / (this.state.rootNode.height || 1))
+				var rootEl = document.getElementById("surface_" + this.state.board.id);
+				var viewWidth = rootEl.getBoundingClientRect().width;
+				var colWidth = (viewWidth / (this.state.rootNode.height || 1))
 				var colMargin = 100
 
-
-				svg.attr('width', viewBox[0])
-				svg.attr("height", viewBox[1])
-				//Text size is too big, so offset by a few.....
-				svg.attr('viewBox', (colWidth - (rowHeight / 2)) + ' 0 ' + (viewBox[0]) + ' ' + viewBox[1])
-				rootEl.setAttribute('width', viewBox[0]);
-				rootEl.setAttribute('height', viewBox[1]);
-				svg.attr('preserveAspectRatio', 'none');
-				svg.attr('class', 'rootSurface')
 				var tree = d3.tree()
-					.size([viewBox[1], viewBox[0]])
+					.nodeSize([rowHeight, colWidth])
 					.separation(function (a, b) {
-						return (a.parent === b.parent ? 1 : 1); //All leaves equi-distant
+						return (a.parent === b.parent ? 1 : 2); 
 					}
 					);
 
 				tree(this.state.rootNode);
 
+				var smallestY = 0;
+				var biggestY = 0;
+				this.state.rootNode.descendants().slice(1).forEach( (d) => {
+					if (d.x < smallestY) smallestY = d.x
+					if (d.x > biggestY) biggestY = d.x
+				})
+				var viewBox = [viewWidth, (biggestY - smallestY) + rowHeight]
+				svg.attr('width', viewBox[0])
+				svg.attr("height", viewBox[1])
+				svg.attr('viewBox', (colWidth - (rowHeight/2)).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
+				rootEl.setAttribute('width', viewBox[0]);
+				rootEl.setAttribute('height', viewBox[1]);
+				svg.attr('preserveAspectRatio', 'none');
+				svg.attr('class', 'rootSurface')
+				
 				var nodes = svg.selectAll("g")
 					.data(this.state.rootNode.descendants().slice(1))
 					.enter()
@@ -707,8 +702,6 @@ export class Board extends React.Component {
 					d.colMargin = colMargin;
 					d.colWidth = colWidth - colMargin;
 					d.rowHeight = rowHeight;
-
-
 				})
 
 				this.addPortals(me, nodes);
@@ -1457,7 +1450,7 @@ export class Board extends React.Component {
 		as += "&depth=" + this.state.depth
 		as += "&eb=" + this.state.showErrors
 
-		document.open("/nui/board/" + this.state.board.id + as, "", "noopener=true")
+		document.open("/nui/context/" + this.state.board.id + as, "", "noopener=true")
 	}
 	handleChangeMultiple = (evt, valueList) => {
 		var root = { ...this.root };
