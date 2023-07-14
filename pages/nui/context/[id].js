@@ -13,8 +13,12 @@ import { doRequest, getCard, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
 import { TimeLineApp } from "../../../Components/TimeLineApp";
 import { shortDate } from "../../../utils/Client/Helpers";
+import { BroadcastChannel } from "broadcast-channel";
 
-export class Board extends React.Component {
+import io from 'socket.io-client'
+import NikApp from "../../../Components/NikApp";
+
+export class Board extends NikApp {
 
 	static DEFAULT_TREE_DEPTH = 4;
 	static OPACITY_HIGH = 1.0;
@@ -28,10 +32,10 @@ export class Board extends React.Component {
 		var stateDepth = this.props.depth || 3;	//If not depth given, assume 3
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
+			...this.state,
 			tileType: this.props.mode || 'sunburst',
 			anchorEl: null,
 			rootNode: null,
-			allData: null,
 			drawerOpen: false,
 			menuOpen: false,
 			board: this.props.board,
@@ -53,11 +57,6 @@ export class Board extends React.Component {
 		}
 		this.setColouring({ type: this.state.colouring })
 
-
-	}
-
-	resize = () => {
-		this.setState((prev) => { return { clickCount: prev.clickCount + 1 } })
 	}
 
 	popUp = null
@@ -264,8 +263,8 @@ export class Board extends React.Component {
 
 	addPortals = (me, nodes) => {
 		var allNodes = [...nodes];
-		var finder = function(array, id) {
-			for (var i = 0; i < array.length; i++){
+		var finder = function (array, id) {
+			for (var i = 0; i < array.length; i++) {
 				if (array[i].__data__.data.id === id) return i;
 			}
 			return null;
@@ -657,7 +656,7 @@ export class Board extends React.Component {
 				var colMargin = 100
 
 				var tree = d3.tree()
-					.nodeSize([rowHeight+2, colWidth])
+					.nodeSize([rowHeight + 2, colWidth])
 					.separation(function (a, b) {
 						return (a.parent === b.parent ? 1 : 2);
 					}
@@ -831,9 +830,9 @@ export class Board extends React.Component {
 			var myWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
 				d3.min([d.colWidth, Number(rEl.attributes["width"].value)]) :
 				d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-			
+
 			var eColour = me.getErrorColour(d);
-			
+
 			var g = node.append("g")
 
 			g.append("line")
@@ -869,13 +868,13 @@ export class Board extends React.Component {
 						return d.y
 					})
 					.attr("y1", function (d) {
-						return d.x +(d.rowHeight/2)
+						return d.x + (d.rowHeight / 2)
 					})
 					.attr("x2", function (d) {
 						return (d.y + (d.children ? (d.colWidth) : myWidth))
 					})
 					.attr("y2", function (d) {
-						return d.x +(d.rowHeight/2)
+						return d.x + (d.rowHeight / 2)
 					})
 			}
 
