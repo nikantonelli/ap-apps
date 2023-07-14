@@ -8,6 +8,16 @@ export class TimeLineApp extends React.Component {
 
 	constructor(props) {
 		super(props);
+		this.colourise = props.colourise || this.nullColourise
+		this.errorColour = props.errorColour || this.nullErrorColour
+	}
+
+	nullErrorColour = () => {
+		return "#ff0000"
+	}
+
+	nullColourise = () => {
+		return "#ffffff"
 	}
 
 	depthOrder = (tree) => {
@@ -110,11 +120,11 @@ export class TimeLineApp extends React.Component {
 				} else {
 					actualEndPC = nowPosn;
 				}
-
+				var eColour = this.errorColour(node);
 				return (
 					<Box key={idx + 1} sx={{ width: "95%" }}>
 						<Grid container direction='row'>
-							<Grid container sx={{ borderTop: "3px double #aaaaaa", width: "20%", maxWidth: 400, height: barHeight }}>
+							<Grid container sx={{ borderTop: "3px double " + (eColour.length?eColour:"#aaaaaa"), width: "20%", maxWidth: 400, height: barHeight }}>
 								{
 									treeSymbols(node.depth)
 								}
@@ -127,14 +137,14 @@ export class TimeLineApp extends React.Component {
 								</Grid>
 
 							</Grid>
-							<Grid sx={{ borderTop: "3px double #aaaaaa", width: "80%", height: barHeight }}>
+							<Grid sx={{ borderTop: "3px double " + (eColour.length?eColour:"#aaaaaa"), width: "80%", height: barHeight }}>
 								{((plannedStartPC !== undefined) && (plannedEndPC !== undefined)) ?
 									<Grid id="timelineRow" container direction='row'>
 										<Grid sx={{ width: plannedStartPC.toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 										</Grid>
 										<Grid sx={{ width: (plannedEndPC - plannedStartPC).toString() + "%" }}>
-											<Box sx={{ borderBottom: "solid 4px #4989e4", height: "8px", backgroundColor: this.props.colourise(node) }} />
+											<Box sx={{ borderBottom: "solid 3px #4989e4", height: "8px", backgroundColor: this.colourise(node) }} />
 										</Grid>
 										<Grid sx={{ width: (100.0 - plannedEndPC).toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
@@ -153,7 +163,7 @@ export class TimeLineApp extends React.Component {
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 										</Grid>
 										<Grid sx={{ width: (actualEndPC - actualStartPC).toString() + "%" }}>
-											<Box sx={{ borderBottom: "solid 4px " + colourBar, height: "8px", backgroundColor: this.props.colourise(node) }} />
+											<Box sx={{ borderBottom: "solid 3px " + colourBar, height: "8px", backgroundColor: this.colourise(node) }} />
 										</Grid>
 										<Grid sx={{ width: (100.0 - actualEndPC).toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />

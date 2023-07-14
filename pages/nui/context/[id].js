@@ -43,9 +43,7 @@ export class Board extends React.Component {
 			total: 0,
 			topLevelList: [],
 			popUp: null,
-			sortType: this.props.sort || (
-				((this.props.mode === 'partition') ||
-					(this.props.mode === 'timeline')) ? 'count' : 'size'),
+			sortType: this.props.sort || 'none',
 			sortDirection: this.props.dir || 'ascending',
 			clickCount: 0,
 			colouring: this.props.colour || 'type',
@@ -225,9 +223,13 @@ export class Board extends React.Component {
 					case 'context': {
 						return dirFnc(Number(a.data.board.id), Number(b.data.board.id))
 					}
+					case 'size': {
+						return dirFnc(a.data.size, b.data.size)
+					}
 
 					default: {
-						return dirFnc(a.data.size, b.data.size)
+						//Sort so the 'latest' (i.e biggest id number) is at top
+						return dirFnc(b.data.id, a.data.id)
 					}
 				}
 			})
@@ -262,17 +264,20 @@ export class Board extends React.Component {
 
 	addPortals = (me, nodes) => {
 		var allNodes = [...nodes];
-		var finder = d3.bisector((d) =>
-			d.__data__.data.id
-		);
+		var finder = function(array, id) {
+			for (var i = 0; i < array.length; i++){
+				if (array[i].__data__.data.id === id) return i;
+			}
+			return null;
+		}
 
 		nodes.each(function (d, idx) {
 			if (!d.parent) return;
 			var parents = []
 			if ((d.data.parentCards && d.data.parentCards.length)) {
 				_.each(d.data.parentCards, (card) => {
-					var index = finder.right(allNodes, card.cardId);
-					if (allNodes[index]) parents.push(allNodes[index].__data__.data)
+					var index = finder(allNodes, card.cardId);
+					if (index) parents.push(allNodes[index].__data__.data)
 				})
 			}
 			var children = []
@@ -781,6 +786,9 @@ export class Board extends React.Component {
 			case 'state': {
 				return (d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) : (d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) : "Not Started"
 			}
+			case 'context': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
+			}
 		}
 		return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
 	}
@@ -1015,6 +1023,7 @@ export class Board extends React.Component {
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
 								colourise={this.colour}
+								errorColour={this.getErrorColour}
 							/> : null}
 						<svg id={"svg_" + this.state.board.id} />
 					</div>
@@ -1080,6 +1089,7 @@ export class Board extends React.Component {
 												onChange={this.sortChange}
 												label="Sort By"
 											>
+												<MenuItem value="none">None</MenuItem>
 												<MenuItem value="plannedStart">Planned Start</MenuItem>
 												<MenuItem value="plannedFinish">Planned End</MenuItem>
 												<MenuItem value="size">Size</MenuItem>
