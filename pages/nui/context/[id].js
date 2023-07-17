@@ -67,6 +67,7 @@ export class Board extends NikApp {
 	};
 	assignedUserList = [];
 	createdUserList = [];
+	updatedUserList = [];
 	contextList = [];
 
 	/**
@@ -102,6 +103,34 @@ export class Board extends NikApp {
 		if (d.data.assignedUsers.length) {
 			user = d.data.assignedUsers[0];
 			var index = _.findIndex(this.assignedUserList, function (assignee) {
+				return user.id === assignee.id;
+			})
+			if (index > 0) return this.colourFnc(index);
+		}
+		return this.colourFnc(0);
+	}
+	
+	lUserColouring = (d) => {
+		this.opacityDrop = false;
+		var user = null;
+		//Assinged users is always returned and empty if there are none
+		if (d.data.updatedBy) {
+			user = d.data.updatedBy;
+			var index = _.findIndex(this.updatedUserList, function (assignee) {
+				return user.id === assignee.id;
+			})
+			if (index > 0) return this.colourFnc(index);
+		}
+		return this.colourFnc(0);
+	}
+
+	cUserColouring = (d) => {
+		this.opacityDrop = false;
+		var user = null;
+		//Assinged users is always returned and empty if there are none
+		if (d.data.createdBy) {
+			user = d.data.createdBy;
+			var index = _.findIndex(this.createdUserList, function (assignee) {
 				return user.id === assignee.id;
 			})
 			if (index > 0) return this.colourFnc(index);
@@ -166,6 +195,16 @@ export class Board extends NikApp {
 			case 'a_user': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length ? this.assignedUserList.length + 1 : 2))
 				this.colour = this.aUserColouring;
+				break;
+			}
+			case 'l_user': {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.updatedUserList.length ? this.updatedUserList.length + 1 : 2))
+				this.colour = this.lUserColouring;
+				break;
+			}
+			case 'c_user': {
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.createdUserList.length ? this.createdUserList.length + 1 : 2))
+				this.colour = this.cUserColouring;
 				break;
 			}
 			default: {
@@ -255,7 +294,10 @@ export class Board extends NikApp {
 				})
 			}
 			if (d.data.createdBy) {
-				this.assignedUserList = _.unionWith(this.createdUserList, [d.data.createdBy], function (a, b) { return b.is === a.id })
+				this.createdUserList = _.unionWith(this.createdUserList, [d.data.createdBy], function (a, b) { return b.id === a.id })
+			}
+			if (d.data.updatedBy) {
+				this.updatedUserList = _.unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
 			}
 			if (d.data.id != 'root') this.contextList = _.union(this.contextList, [d.data.board.id])
 		})
@@ -788,8 +830,14 @@ export class Board extends NikApp {
 			case 'context': {
 				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
 			}
-			case 'type' : {
+			case 'type': {
 				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.type.title + ")")
+			}
+			case 'l_user': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.updatedBy.fullName + ")")
+			}
+			case 'c_user': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.createdBy.fullName + ")")
 			}
 		}
 		return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
@@ -1128,6 +1176,8 @@ export class Board extends NikApp {
 												<MenuItem value="warm">Warm</MenuItem>
 												<MenuItem value="type">Card Type</MenuItem>
 												<MenuItem value="state">Card State</MenuItem>
+												<MenuItem value="l_user">Last Updater</MenuItem>
+												<MenuItem value="c_user">Creator</MenuItem>
 												<MenuItem value="a_user">First Assignee</MenuItem>
 												<MenuItem value="context">Context</MenuItem>
 											</Select>
