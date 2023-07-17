@@ -788,6 +788,9 @@ export class Board extends NikApp {
 			case 'context': {
 				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
 			}
+			case 'type' : {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.type.title + ")")
+			}
 		}
 		return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
 	}
