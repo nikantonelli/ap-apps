@@ -8,8 +8,11 @@ export class TimeLineApp extends React.Component {
 
 	constructor(props) {
 		super(props);
-		this.colourise = props.colourise || this.nullColourise
-		this.errorColour = props.errorColour || this.nullErrorColour
+		this.state = {
+			colourise : props.colourise || this.nullColourise,
+			errorColour : props.errorColour || this.nullErrorColour,
+			colouring : props.colouring || this.nullErrorColour,
+		}
 	}
 
 	nullErrorColour = () => {
@@ -120,7 +123,8 @@ export class TimeLineApp extends React.Component {
 				} else {
 					actualEndPC = nowPosn;
 				}
-				var eColour = this.errorColour(node);
+				var bCol = this.state.colourise(node) ;
+				var eColour = this.state.errorColour(node);
 				return (
 					<Box key={idx + 1} sx={{ width: "95%" }}>
 						<Grid container direction='row'>
@@ -144,7 +148,7 @@ export class TimeLineApp extends React.Component {
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 										</Grid>
 										<Grid sx={{ width: (plannedEndPC - plannedStartPC).toString() + "%" }}>
-											<Box sx={{ borderBottom: "solid 3px #4989e4", height: "8px", backgroundColor: this.colourise(node) }} />
+											<Box sx={{ borderBottom: "solid 3px #4989e4", height: "8px", backgroundColor: bCol}} />
 										</Grid>
 										<Grid sx={{ width: (100.0 - plannedEndPC).toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
@@ -163,7 +167,7 @@ export class TimeLineApp extends React.Component {
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 										</Grid>
 										<Grid sx={{ width: (actualEndPC - actualStartPC).toString() + "%" }}>
-											<Box sx={{ borderBottom: "solid 3px " + colourBar, height: "8px", backgroundColor: this.colourise(node) }} />
+											<Box sx={{ borderBottom: "solid 3px " + colourBar, height: "8px", backgroundColor: bCol}} />
 										</Grid>
 										<Grid sx={{ width: (100.0 - actualEndPC).toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />

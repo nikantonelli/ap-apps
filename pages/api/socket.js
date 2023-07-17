@@ -12,6 +12,9 @@ const SocketHandler = (req, res) => {
       })
     })
   }
+  else {
+	console.log("Socket already established")
+  }
   res.end()
 }
 

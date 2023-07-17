@@ -56,7 +56,6 @@ export class Board extends NikApp {
 
 		}
 		this.setColouring({ type: this.state.colouring })
-
 	}
 
 	popUp = null
@@ -69,6 +68,7 @@ export class Board extends NikApp {
 	createdUserList = [];
 	updatedUserList = [];
 	contextList = [];
+
 
 	/**
 	 * Two stage colour fetching:
@@ -99,43 +99,42 @@ export class Board extends NikApp {
 	aUserColouring = (d) => {
 		this.opacityDrop = false;
 		var user = null;
-		//Assinged users is always returned and empty if there are none
+		//Assigned users is always returned and empty if there are none
 		if (d.data.assignedUsers.length) {
 			user = d.data.assignedUsers[0];
 			var index = _.findIndex(this.assignedUserList, function (assignee) {
 				return user.id === assignee.id;
 			})
-			if (index > 0) return this.colourFnc(index);
+			if (index >= 0) return this.colourFnc(index);
 		}
 		return this.colourFnc(0);
 	}
-	
+
 	lUserColouring = (d) => {
 		this.opacityDrop = false;
 		var user = null;
-		//Assinged users is always returned and empty if there are none
+		//last update users is always returned and empty if there are none
 		if (d.data.updatedBy) {
 			user = d.data.updatedBy;
 			var index = _.findIndex(this.updatedUserList, function (assignee) {
 				return user.id === assignee.id;
 			})
-			if (index > 0) return this.colourFnc(index);
+			if (index >= 0) return this.colourFnc(index);
 		}
 		return this.colourFnc(0);
 	}
 
 	cUserColouring = (d) => {
 		this.opacityDrop = false;
-		var user = null;
-		//Assinged users is always returned and empty if there are none
+		var index = -1;
+		//creator users is always returned and empty if there are none
 		if (d.data.createdBy) {
-			user = d.data.createdBy;
-			var index = _.findIndex(this.createdUserList, function (assignee) {
-				return user.id === assignee.id;
+			index = _.findIndex(this.createdUserList, function (user) {
+				return d.data.createdBy.id === user.id;
 			})
-			if (index > 0) return this.colourFnc(index);
 		}
-		return this.colourFnc(0);
+		var colour = this.colourFnc((index >= 0) ? index : 0);
+		return colour
 	}
 
 	contextColouring = (d) => {
@@ -144,7 +143,7 @@ export class Board extends NikApp {
 		var index = _.findIndex(this.contextList, function (context) {
 			return boardid === context;
 		})
-		if (index > 0) return this.colourFnc(index);
+		if (index >= 0) return this.colourFnc(index);
 
 		return this.colourFnc(0);
 	}
@@ -300,6 +299,8 @@ export class Board extends NikApp {
 				this.updatedUserList = _.unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
 			}
 			if (d.data.id != 'root') this.contextList = _.union(this.contextList, [d.data.board.id])
+			//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
+			d.colour = this.colour(d);
 		})
 	};
 
@@ -874,7 +875,6 @@ export class Board extends NikApp {
 			var node = d3.select(this);
 			var opacity = me.state.opacityDrop ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM;
 			var colour = me.colour(d);
-
 			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
 			var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
 

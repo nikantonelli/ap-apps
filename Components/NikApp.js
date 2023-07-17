@@ -25,7 +25,7 @@ export default class NikApp extends React.Component {
 			}
 		}
 
-		//Connect to endpoint
+	
 		if (!globalThis.ws) {
 			globalThis.ws = io()
 
@@ -40,6 +40,8 @@ export default class NikApp extends React.Component {
 				})
 			})
 		}
+		//Connect to endpoint to establish socket set up on server
+		fetch("http://" + this.props.host+"/api/socket");
     }
     
 	resize = () => {
