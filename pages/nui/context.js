@@ -1,7 +1,7 @@
 import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
 import BoardService from "../../services/BoardService";
 
-import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, OpenInNew, Search } from "@mui/icons-material";
+import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, NextPlan, OpenInNew, Search } from "@mui/icons-material";
 import { useState } from 'react';
 import { findBoards } from "../../utils/Client/Sdk";
 import { orderBy } from "lodash";
@@ -29,6 +29,9 @@ export default function Board({ host }) {
 	}
 	function timeClicked(evt) {
 		document.open("/nui/context/" + evt.currentTarget.id + "?mode=timeline", "", "noopener=true")
+	}
+	function planClicked(evt) {
+		document.open("/nui/planning/" + evt.currentTarget.id , "", "noopener=true")
 	}
 
 	function updateList() {
@@ -125,6 +128,13 @@ export default function Board({ host }) {
 									id={brd.id}
 								>
 									<CalendarMonth />
+								</IconButton>
+								<IconButton
+									sx={{ cursor: 'pointer' }}
+									onClick={planClicked}
+									id={brd.id}
+								>
+									<NextPlan />
 								</IconButton>
 							</CardActions>
 						</Card>

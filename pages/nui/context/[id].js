@@ -41,7 +41,7 @@ export class Board extends NikApp {
 			board: this.props.board,
 			fetchActive: true,
 			active: props.active,
-			drawerWidth: 400,
+			drawerWidth: 300,
 			depth: stateDepth,
 			pending: 0,
 			total: 0,
@@ -1110,7 +1110,7 @@ export class Board extends NikApp {
 											onClick={this.openAsActive}
 											endIcon={<OpenInNew />}
 										>
-											Open In new Tab
+											Open Copy
 										</Button>
 									</Grid>
 									<Grid xs={6} item>

@@ -1137,3 +1137,180 @@ i.justify-align {
 .image-control-wrapper--resizing {
 	touch-action: none;
 }
+
+
+
+
+/* LIST */
+column ul {
+	list-style: none;
+}
+/* FORM */
+column input {
+	position: absolute;
+	top: -9999px;
+	left: -9999px;
+}
+column label {
+	display: block;
+	float: left;
+	height: 100vh;
+	width: 40px;
+	overflow: hidden;
+	background: #b4b6bd;
+	text-align: center;
+	font-size: 14px;
+	line-height: 50px;
+	transition: background 300ms ease;
+}
+column label:hover {
+	transition-duration: 0s;
+}
+column li:nth-child(even) > input + label {
+	background: #b4b6bd;
+}
+column label:hover, li:nth-child(even) > input + label:hover {
+	background: #00f;
+	color: #fff;
+	cursor: pointer;
+}
+column input[type="radio"]:checked ~ label {
+	background: #00f;
+	color: #fff;
+	cursor: default !important;
+	
+	width: 10px;
+}
+/* SLIDES */
+.accslide {
+	display: block;
+	height: 100%;
+	width: 0px;
+	padding: 10px 0;
+	float: left;
+	overflow-x: hidden;
+	font-size: 12px;
+	line-height: 1.5;
+	white-space: nowrap;
+	transition: all 700ms ease;
+}
+.accslide * {
+	padding-left: 10px;
+}
+.accslide img {
+	margin-top: 10px;
+}
+column input[type="radio"]:not(:checked) ~ label > * {
+	padding-left: 7px;
+	font-size: 1.2em;
+	white-space: nowrap;
+	transform: rotate(90deg);
+}
+column input[type="radio"]:checked ~ label > * {
+	display: none;
+}
+column li:nth-child(1):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 60px);
+}
+column li:nth-child(2):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 60px);
+}
+column li:nth-child(1):nth-last-child(3) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 120px);
+}
+column li:nth-child(2):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 120px);
+}
+column li:nth-child(3):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 120px);
+}
+column li:nth-child(1):nth-last-child(4) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 160px);
+}
+column li:nth-child(2):nth-last-child(3) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 160px);
+}
+column li:nth-child(3):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 160px);
+}
+column li:nth-child(4):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 160px);
+}
+column li:nth-child(1):nth-last-child(5) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 200px);
+}
+column li:nth-child(2):nth-last-child(4) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 200px);
+}
+column li:nth-child(3):nth-last-child(3) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 200px);
+}
+column li:nth-child(4):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 200px);
+}
+column li:nth-child(5):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 200px);
+}
+column li:nth-child(1):nth-last-child(6) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 240px);
+}
+column li:nth-child(2):nth-last-child(5) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 240px);
+}
+column li:nth-child(3):nth-last-child(4) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 240px);
+}
+column li:nth-child(4):nth-last-child(3) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 240px);
+}
+column li:nth-child(5):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 240px);
+}
+column li:nth-child(6):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 240px);
+}
+column li:nth-child(1):nth-last-child(7) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(2):nth-last-child(6) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(3):nth-last-child(5) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(4):nth-last-child(4) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(5):nth-last-child(3) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(6):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(7):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 280px);
+}
+column li:nth-child(1):nth-last-child(8) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(2):nth-last-child(7) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(3):nth-last-child(6) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(4):nth-last-child(5) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(5):nth-last-child(4) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(6):nth-last-child(3) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(7):nth-last-child(2) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}
+column li:nth-child(8):nth-last-child(1) input[type="radio"]:checked ~ .accslide {
+	width: calc(100% - 320px);
+}

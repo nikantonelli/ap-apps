@@ -1,6 +1,7 @@
 import { PlaylistRemove } from "@mui/icons-material";
 import { Box, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip } from "@mui/material";
 import React from "react";
+import { shortDate } from "../utils/Client/Helpers";
 
 export class CardUserTable extends React.Component {
 
@@ -36,7 +37,7 @@ export class CardUserTable extends React.Component {
                                 <TableCell component="th" scope="row">
                                     {row.type}
                                 </TableCell>
-                                <TableCell>{Boolean(row.date) ? row.date : null}</TableCell>
+                                <TableCell>{Boolean(row.date) ? shortDate(row.date) : null}</TableCell>
                                 <TableCell>{Boolean(row.user) ? row.user.fullName : null}</TableCell>
                                 {Boolean(row.user.emailAddress) ?
                                     <TableCell sx={{email:row.user.emailAddress}} className="clickable" onClick={this.sendEmail}>{Boolean(row.user) ? row.user.emailAddress : null}</TableCell> :
