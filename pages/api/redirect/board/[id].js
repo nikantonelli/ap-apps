@@ -12,9 +12,8 @@ export default async function handler(req, res) {
 	try {
 	  // some await stuff here
 	  var id = req.query.id;
-	  console.log(id)
 	  res.redirect(301, globalThis.dataProvider.getBoardUrl(id));
 	} catch (err) {
-	  res.status(500).send({ error: 'Error while redirecting' });
+		res.status(500).send({ error: `Error while redirecting to ${globalThis.dataProvider.getHost()}` });
 	}
   }

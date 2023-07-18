@@ -366,7 +366,7 @@ export class APcard extends React.Component {
 						{this.state.data.connectedCardStats ?
 							<Accordion expanded={this.state[APcard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 								<AccordionSummary aria-controls="progress-content" id={APcard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
-									<Typography variant={sectionHeaderType}>Progress</Typography>
+									<Typography variant={sectionHeaderType}>Child Progress</Typography>
 								</AccordionSummary>
 								<AccordionDetails>
 									<Grid container direction="row">
