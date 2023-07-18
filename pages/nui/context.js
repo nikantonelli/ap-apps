@@ -4,6 +4,7 @@ import BoardService from "../../services/BoardService";
 import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, OpenInNew, Search } from "@mui/icons-material";
 import { useState } from 'react';
 import { findBoards } from "../../utils/Client/Sdk";
+import { orderBy } from "lodash";
 
 export default function Board({ host }) {
 
@@ -11,6 +12,8 @@ export default function Board({ host }) {
 	const [filterText, setFilterText] = useState("");
 	const [timer, setTimer] = useState(null);
 	const [pending, setPending] = useState(false);
+	const [sortField, setSortField] = useState("id")
+	const [sortDir, setSortDir] = useState("desc")
 
 
 	function treeClicked(evt) {
@@ -34,13 +37,18 @@ export default function Board({ host }) {
 		setPending(false);
 	}
 
+	function sortBoards(boards) {
+		var sortedBoards = orderBy(boards, [sortField], [sortDir])
+		return sortedBoards;
+	}
+
 	async function getList(fltr) {
 		if (fltr && (fltr.length == 0)) fltr = null;
 		var result = await findBoards(host, { search: fltr });
 		if (result) {
-			setBoards(result.boards);
+			var sortedBoards = sortBoards(result.boards)
+			setBoards(sortedBoards);
 		}
-
 	}
 
 	if (!pending) {

@@ -229,7 +229,7 @@ export class Board extends NikApp {
 					case 'count': {
 						return 1;
 					}
-					case 'size': {
+					case 'r_size': {
 						return d.size ? d.size : 1;
 					}
 				}
@@ -262,6 +262,9 @@ export class Board extends NikApp {
 					}
 					case 'size': {
 						return dirFnc(a.data.size, b.data.size)
+					}
+					case 'r_size': {
+						return dirFnc(a.value, b.value)
 					}
 
 					default: {
@@ -298,9 +301,11 @@ export class Board extends NikApp {
 			if (d.data.updatedBy) {
 				this.updatedUserList = _.unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
 			}
-			if (d.data.id != 'root') this.contextList = _.union(this.contextList, [d.data.board.id])
-			//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
-			d.colour = this.colour(d);
+			if (d.data.id != 'root') {
+				this.contextList = _.union(this.contextList, [d.data.board.id])
+				//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
+				d.colour = this.colour(d);
+			}
 		})
 	};
 
@@ -570,15 +575,15 @@ export class Board extends NikApp {
 				d3.partition()
 					.size([2 * Math.PI, this.state.rootNode.height + 1])
 					(this.state.rootNode);
-				var width = _.min([window.innerWidth / 2, (window.innerHeight - document.getElementById("header-box").getBoundingClientRect().height) / 2])
+				var width = _.min([window.innerWidth / 2, (window.innerHeight / 2) - (document.getElementById("header-box").getBoundingClientRect().height/2) - 2])
 
-				svg.attr("width", width * 2)
+				svg.attr("width", window.innerWidth)
 				svg.attr("height", width * 2)
-				svg.attr('viewBox', [0, 0, width * 2, width * 2])
+				svg.attr('viewBox', [0, 0, window.innerWidth, width * 2])
 				svg.attr("height", width * 2)
 				svg.attr('class', 'rootSurface')
 				const g = svg.append("g")
-					.attr("transform", `translate(${width},${width})`);
+					.attr("transform", `translate(${width+((window.innerWidth-(width*2))/2)},${width})`);
 
 				var ringCount = _.min([(this.state.depth), 5]); //Max can be four rings including the root due to the text length
 				var arc = d3.arc()
@@ -818,15 +823,22 @@ export class Board extends NikApp {
 			case 'a_user': {
 				return d.data.id === "root" ? "" : (d.data.title + " (" + (d.data.assignedUsers && d.data.assignedUsers.length ? d.data.assignedUsers[0].fullName : "No User") + ")")
 			}
+			case 'r_size':
+			case 'size': {
+				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
+			}
 			default: {
-				//Fall out and try something else
+				//Fall out and try something else - usally if set to 'none'
 			}
 		}
 
 		/** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
 		switch (this.state.colouring) {
 			case 'state': {
-				return (d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) : (d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) : "Not Started"
+				return (d.data.id === "root" )? "":
+					(d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) : 
+						(d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) : 
+							"Not Started"
 			}
 			case 'context': {
 				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
@@ -1143,6 +1155,7 @@ export class Board extends NikApp {
 												<MenuItem value="plannedStart">Planned Start</MenuItem>
 												<MenuItem value="plannedFinish">Planned End</MenuItem>
 												<MenuItem value="size">Size</MenuItem>
+												<MenuItem value="r_size">Size Rollup</MenuItem>
 												{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 												<MenuItem value="score">Score Total</MenuItem>
 												{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
