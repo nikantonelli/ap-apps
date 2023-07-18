@@ -8,6 +8,14 @@ class AgilePlace {
 	getHost() {
 		return "https://" + process.env.AGILEPLACE_HOST
 	}
+
+	getCardUrl(id) {
+		return "https://" + process.env.AGILEPLACE_HOST + "/card/" + id
+	}
+	
+	getBoardUrl(id) {
+		return "https://" + process.env.AGILEPLACE_HOST + "/board/" + id
+	}
 	
 	async xfr(params) {
 

@@ -1,4 +1,4 @@
-import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInBrowser, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { APBlocked } from "./AP-Fields/blocked";
@@ -147,6 +147,14 @@ export class APcard extends React.Component {
 
 	}
 
+	openCard = () => {
+		document.open("/api/redirect/card/" + this.props.card.id, "", "noopener=true")
+	}
+
+	openBoard = () => {
+		document.open("/api/redirect/board/" + this.props.card.board.id, "", "noopener=true")
+	}
+
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
@@ -259,30 +267,46 @@ export class APcard extends React.Component {
 								<Grid item>
 									<Grid container direction="row">
 										<Grid item sx={cardDescriptionFieldStyle} >
-											<Grid>
-												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography></Paper>
-												<TextField
-													sx={{width:"100%"}}
-													variant="outlined"
-													className='card-description-field'
-													value={this.state.data.title}
-													onBlur={this.updateTitle}
-													onChange={this.titleChanged}
-												/>
+											<Grid container>
+												<Grid item>
+													<Paper xs elevation={0} sx={titlePaperStyle}>
+														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography>
+													</Paper>
+												</Grid>
+												<Grid item>
+													<IconButton xs={2} onClick={this.openCard}>
+														<OpenInBrowser />
+													</IconButton>
+												</Grid>
 											</Grid>
+											<TextField
+												sx={{ width: "100%" }}
+												variant="outlined"
+												className='card-description-field'
+												value={this.state.data.title}
+												onBlur={this.updateTitle}
+												onChange={this.titleChanged}
+											/>
 										</Grid>
 										<Grid item sx={cardDescriptionFieldStyle} >
-											<Grid>
-												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography></Paper>
-												<TextField
-													InputProps={{
-														readOnly: true,
-													}}
-													variant="outlined"
-													sx={cardDescriptionFieldStyle}
-													value={this.state.data.board.title}
-												/>
+											<Grid container>
+												<Grid item>
+													<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography></Paper>
+												</Grid>
+												<Grid item>
+													<IconButton onClick={this.openBoard}>
+														<OpenInBrowser />
+													</IconButton>
+												</Grid>
 											</Grid>
+											<TextField
+												InputProps={{
+													readOnly: true,
+												}}
+												variant="outlined"
+												sx={{ width: "100%" }}
+												value={this.state.data.board.title}
+											/>
 										</Grid>
 										<Grid item sx={cardDescriptionFieldStyle} >
 											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
@@ -370,7 +394,7 @@ export class APcard extends React.Component {
 							: null}
 						<Accordion expanded={this.state[APcard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="schedule-content" id={APcard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType} color={(Boolean(this.state.data.plannedStart) && Boolean(this.state.data.plannedFinish))?"text.primary":"error"}>Schedule</Typography>
+								<Typography variant={sectionHeaderType} color={(Boolean(this.state.data.plannedStart) && Boolean(this.state.data.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
 								<Grid container direction="row">

@@ -82,6 +82,12 @@ class DataProvider {
 	getHost() {
 		return this.provider.getHost();
 	}
+	getCardUrl(id) {
+		return this.provider.getCardUrl(id);
+	}
+	getBoardUrl(id) {
+		return this.provider.getBoardUrl(id);
+	}
 }
 
 export default DataProvider
