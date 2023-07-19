@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip, menuClasses } from "@mui/material";
+import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
 import _, { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
@@ -7,15 +7,12 @@ import DataProvider from "../../../utils/Server/DataProvider";
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
 import React from "react";
-import { createRoot, hydrateRoot } from 'react-dom/client';
 
-import { doRequest, getCard, getCardChildren } from "../../../utils/Client/Sdk";
 import { APcard } from "../../../Components/APcard";
 import { TimeLineApp } from "../../../Components/TimeLineApp";
 import { shortDate } from "../../../utils/Client/Helpers";
-import { BroadcastChannel } from "broadcast-channel";
+import { doRequest, getCard, getCardChildren } from "../../../utils/Client/Sdk";
 
-import io from 'socket.io-client'
 import NikApp from "../../../Components/NikApp";
 
 export class Board extends NikApp {
