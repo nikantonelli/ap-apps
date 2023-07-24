@@ -10,7 +10,7 @@ import DataProvider from "../../../utils/Server/DataProvider"
  * @param {*} res 
  */
 export default async function handler(req, res) {
-	const { id, incr } = req.query
+	const { id, incr="" } = req.query
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = new DataProvider()
 	}
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 			url: "/series/" + id,
 			mode: 'GET'
 		}
-	}else if (incr==="all"){
+	} else if (incr === "all") {
 		params = {
 			url: "/series/" + id + "/increment",
 			mode: 'GET'
@@ -32,11 +32,17 @@ export default async function handler(req, res) {
 			mode: 'GET'
 		}
 	}
-	var timebox = await globalThis.dataProvider.xfr(params)
-	if (timebox) {
-		res.status(200).json(timebox)
+	var timebox = null;
+	if (globalThis.dataProvider) {
+		timebox = globalThis.dataProvider.inCache(id+incr, 'timebox')
+		if (timebox) res.status(200).json(timebox)
 	}
-	else {
-		res.status(400).json({ error: "Invalid Timebox Request", message: params })
+	if (!timebox) {
+		timebox = await globalThis.dataProvider.xfr(params)
+		if (timebox) {
+			globalThis.dataProvider.addToCacheWithId(id+incr, timebox, 'timebox')
+			res.status(200).json(timebox)
+		}
 	}
+	if (!timebox) res.status(400).json({ error: "Invalid Timebox Request", message: params })
 }

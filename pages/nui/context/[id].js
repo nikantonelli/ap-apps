@@ -346,19 +346,16 @@ export class Board extends NikApp {
 					key={idx}
 					open={me.popUp === d.data.id}
 				>
-					<div>
-						<APcard
-							analysis={analysisData}
-							descendants={children}
-							parents={parents}
-							cardProps={{ maxWidth: 700 }}
-							loadSource={d.depth < 2 ? 'board' : 'card'}
-							host={me.props.host} card={d.data}
-							context={me.state.context}
-							onClose={me.closePopUp}
-							readOnly
-						/>
-					</div>
+					<APcard
+						descendants={children}
+						parents={parents}
+						cardProps={{ maxWidth: 700 }}
+						loadSource={d.depth < 2 ? 'board' : 'card'}
+						host={me.props.host} card={d.data}
+						context={me.state.context}
+						onClose={me.closePopUp}
+						readOnly
+					/>
 				</Drawer>
 
 			)
@@ -440,7 +437,7 @@ export class Board extends NikApp {
 		var svg = d3.select(svgEl);
 		svgEl.replaceChildren()
 		var me = this;
-		var rowHeight = 20;
+		var rowHeight = 30;
 
 		this.calcTreeData(this.state.rootNode)
 
@@ -572,7 +569,7 @@ export class Board extends NikApp {
 				d3.partition()
 					.size([2 * Math.PI, this.state.rootNode.height + 1])
 					(this.state.rootNode);
-				var width = _.min([window.innerWidth / 2, (window.innerHeight / 2) - (document.getElementById("header-box").getBoundingClientRect().height/2) - 2])
+				var width = _.min([window.innerWidth / 2, (window.innerHeight / 2) - (document.getElementById("header-box").getBoundingClientRect().height / 2) - 2])
 
 				svg.attr("width", window.innerWidth)
 				svg.attr("height", width * 2)
@@ -580,7 +577,7 @@ export class Board extends NikApp {
 				svg.attr("height", width * 2)
 				svg.attr('class', 'rootSurface')
 				const g = svg.append("g")
-					.attr("transform", `translate(${width+((window.innerWidth-(width*2))/2)},${width})`);
+					.attr("transform", `translate(${width + ((window.innerWidth - (width * 2)) / 2)},${width})`);
 
 				var ringCount = _.min([(this.state.depth), 5]); //Max can be four rings including the root due to the text length
 				var arc = d3.arc()
@@ -703,7 +700,7 @@ export class Board extends NikApp {
 				var tree = d3.tree()
 					.nodeSize([rowHeight + 2, colWidth])
 					.separation(function (a, b) {
-						return (a.parent === b.parent ? 1 : 2);
+						return (a.parent === b.parent ? 1 : 1);
 					}
 					);
 
@@ -832,9 +829,9 @@ export class Board extends NikApp {
 		/** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
 		switch (this.state.colouring) {
 			case 'state': {
-				return (d.data.id === "root" )? "":
-					(d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) : 
-						(d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) : 
+				return (d.data.id === "root") ? "" :
+					(d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) :
+						(d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) :
 							"Not Started"
 			}
 			case 'context': {

@@ -222,6 +222,7 @@ card {
 }
 
 .board-grid {
+	padding: 5px;
 	gap: 5px;
   }
 

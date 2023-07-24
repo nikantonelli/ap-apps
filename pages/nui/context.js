@@ -1,4 +1,4 @@
-import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField } from "@mui/material";
+import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField, Tooltip } from "@mui/material";
 import BoardService from "../../services/BoardService";
 
 import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, NextPlan, OpenInNew, Search } from "@mui/icons-material";
@@ -101,6 +101,7 @@ export default function Board({ host }) {
 								sx={{ textAlign: 'center' }}
 							/>
 							<CardActions>
+								<Tooltip title="Parent/Child Tree">
 								<IconButton
 									sx={{ cursor: 'pointer' }}
 									onClick={treeClicked}
@@ -108,6 +109,8 @@ export default function Board({ host }) {
 								>
 									<AccountTree />
 								</IconButton>
+								</Tooltip>
+								<Tooltip title="Partition Diagram">
 								<IconButton
 									sx={{ cursor: 'pointer' }}
 									onClick={partClicked}
@@ -115,6 +118,8 @@ export default function Board({ host }) {
 								>
 									< Domain />
 								</IconButton>
+								</Tooltip>
+								<Tooltip title="Sunburst Diagram">
 								<IconButton
 									sx={{ cursor: 'pointer' }}
 									onClick={sunClicked}
@@ -122,6 +127,8 @@ export default function Board({ host }) {
 								>
 									<Brightness7 />
 								</IconButton>
+								</Tooltip>
+								<Tooltip title="Timeline">
 								<IconButton
 									sx={{ cursor: 'pointer' }}
 									onClick={timeClicked}
@@ -129,6 +136,8 @@ export default function Board({ host }) {
 								>
 									<CalendarMonth />
 								</IconButton>
+								</Tooltip>
+								<Tooltip title="Planning">
 								<IconButton
 									sx={{ cursor: 'pointer' }}
 									onClick={planClicked}
@@ -136,6 +145,7 @@ export default function Board({ host }) {
 								>
 									<NextPlan />
 								</IconButton>
+								</Tooltip>
 							</CardActions>
 						</Card>
 					</Grid>

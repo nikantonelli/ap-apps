@@ -1,4 +1,4 @@
-import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInBrowser, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInBrowser, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { APBlocked } from "./AP-Fields/blocked";
@@ -275,7 +275,7 @@ export class APcard extends React.Component {
 												</Grid>
 												<Grid item>
 													<IconButton xs={2} onClick={this.openCard}>
-														<OpenInBrowser />
+														<OpenInNew />
 													</IconButton>
 												</Grid>
 											</Grid>
@@ -295,7 +295,7 @@ export class APcard extends React.Component {
 												</Grid>
 												<Grid item>
 													<IconButton onClick={this.openBoard}>
-														<OpenInBrowser />
+														<OpenInNew />
 													</IconButton>
 												</Grid>
 											</Grid>

@@ -32,24 +32,53 @@ class BoardService {
 		if (globalThis.dataProvider) {
 			board = globalThis.dataProvider.inCache(id, 'board')
 		}
-		if (!board)	{
+		if (!board) {
 			board = await this.getData(params);
-			if (board) globalThis.dataProvider.addToCacheWithId(id, board,'board')
+			if (board) globalThis.dataProvider.addToCacheWithId(id, board, 'board')
 		}
 		return board;
 	}
 
 	async getCards(id, options) {
 		var params = {
-			mode: "GET",
-			url: "/board/cards/" + id
+			mode: "POST",
+			url: "/card/list",
+			type: "application/json",
+			body: JSON.stringify({
+				"board": id,
+				"only": ["id"],
+				"lane_class_types": ["active", "backlog"]
+			})
 		}
-		var response = await this.getData(params).then((result) => result.json())
-		if (response) {
-			//Deal with paging here
-			return response.cards;
+
+
+		var cards = null;
+		if (globalThis.dataProvider) {
+			cards = globalThis.dataProvider.inCache(id, 'cards')
 		}
-		else return [];
+		if (!cards) {
+			var result = await this.getData(params)
+			if (result) {
+				var newCards = [];
+				cards = result.cards
+				if (cards && cards.length) {
+					cards.forEach(async (card) => {
+
+						var cParams = {
+							mode: "GET",
+							url: "/card/" + card.id
+						}
+						var response = await this.getData(cParams)
+						var cResult = await response;
+						newCards.push(cResult)
+					})
+
+					globalThis.dataProvider.addToCacheWithId(id, newCards, 'cards')
+					return newCards;
+				}
+			}
+		}
+		return cards;
 	}
 
 	async getData(params) {
