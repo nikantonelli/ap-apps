@@ -11,18 +11,12 @@ export default class PlanItem extends React.Component {
 	constructor(props) {
 		super(props)
 		this.state = {
-			selected: true
+			selected: Boolean(props.selected)
 		}
 	}
 
 	selectChange = (evt) => {
-		var newState = null;
-		this.setState((prev) => {
-			newState = !prev.selected;
-			if (this.props.selectChange) this.props.selectChange(this.props.card.id, newState)
-			return { selected: newState }
-		})
-
+			if (this.props.selectChange) this.props.selectChange(this.props.card.id, evt.target.checked)
 	}
 
 	openInNew = () => {
@@ -36,7 +30,7 @@ export default class PlanItem extends React.Component {
 				<CardActions>
 					<Switch
 						{...label}
-						checked={this.state.selected}
+						checked={this.props.selected}
 						onClick={this.selectChange}
 					/>
 				</CardActions>
@@ -47,7 +41,7 @@ export default class PlanItem extends React.Component {
 						</Typography>
 						: null}
 				</CardHeader>
-				<CardContent sx={{ background: "lightgrey", opacity: this.state.selected ? 1 : 0.3 }}>
+				<CardContent sx={{ background: "lightgrey", opacity: this.props.selected ? 1 : 0.3 }}>
 					<Typography sx={{ fontSize: 14 }} colour="text.secondary" gutterBottom>
 						{this.props.card.title}
 					</Typography>

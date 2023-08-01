@@ -3,7 +3,7 @@ import { doRequest } from "../utils/Client/Sdk";
 import Column from "./Column";
 import { APtimebox } from "./AP-Fields/timebox";
 import { filter, find, orderBy } from "lodash";
-import { Grid, IconButton } from "@mui/material";
+import { Grid, IconButton, Typography } from "@mui/material";
 import { OpenInNew } from "@mui/icons-material";
 import PlanItem from "./PlanningItem";
 
@@ -18,7 +18,10 @@ export class PIPlanApp extends React.Component {
 			currentSeries: "",
 			seriesIncrements: [],
 			currentTimebox: "",
-			topLevelList: []
+			topLevelList: {
+				active: [],
+				passive: []
+			},
 		}
 	}
 
@@ -87,11 +90,11 @@ export class PIPlanApp extends React.Component {
 			return (find(increments, { id: evt.target.value }) !== undefined)
 
 		})
-		this.setState({ topLevelList: newList })
+		this.setState({ topLevelList: { active: newList, passive: [] } })
 	}
 
 	openInTab = () => {
-		var activeList = this.state.topLevelList;
+		var activeList = this.state.topLevelList.active;
 		var as = ""
 		var ex = ""
 
@@ -117,7 +120,25 @@ export class PIPlanApp extends React.Component {
 	}
 
 	cardSelectChange = (id, newState) => {
-		console.log(id, newState)
+		var card = null;
+		this.setState((prevState) => {
+			if (newState === false) {
+				return {
+					topLevelList: {
+						passive: _.union(prevState.topLevelList.passive,_.remove(prevState.topLevelList.active, { id: id })),
+						active: prevState.topLevelList.active
+					}
+				}
+			}
+			else {
+				return {
+					topLevelList: {
+						active: _.union(prevState.topLevelList.active, _.remove(prevState.topLevelList.passive, { id: id })),
+						passive: prevState.topLevelList.passive
+					}
+				}
+			}
+		})
 	}
 
 	render() {
@@ -158,20 +179,44 @@ export class PIPlanApp extends React.Component {
 									/>
 								</Grid>
 							</Grid>
-							
-								<Grid container className="board-grid">
-									{this.state.topLevelList.map((card, idx) => {
-										return (
-											<Grid item>
-											<PlanItem key={idx}
-												card={card}
-												selectChange={this.cardSelectChange} />
-												</Grid>
-										)
-									})}
-								</Grid>
 
-							
+							<Grid container className="board-grid">
+								{this.state.topLevelList.active.length ?
+									<>
+										<Typography>Considering:</Typography>
+										{this.state.topLevelList.active.map((card, idx) => {
+											return (
+												<Grid key={idx + 1} item>
+													<PlanItem
+														card={card}
+														selected={true}
+														selectChange={this.cardSelectChange} />
+												</Grid>
+											)
+										})}
+									</>
+									: null}
+							</Grid>
+							<Grid container className="board-grid">
+								{this.state.topLevelList.passive.length ?
+									<>
+										<Typography>Out of Scope:</Typography>
+										{this.state.topLevelList.passive.map((card, idx) => {
+											return (
+												<Grid key={idx + 1} item>
+
+													<PlanItem
+														card={card}
+														selected={false}
+														selectChange={this.cardSelectChange} />
+												</Grid>
+											)
+										})}
+									</>
+									: null}
+							</Grid>
+
+
 
 						</div>
 					</div>
