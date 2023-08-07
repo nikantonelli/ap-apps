@@ -10,6 +10,9 @@ import Board from "../pages/nui/context/[id]";
 
 export class PIPlanApp extends React.Component {
 
+	CONFIG_PANEL = "config"
+	PLAN_PANEL = "plan"
+
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -23,7 +26,7 @@ export class PIPlanApp extends React.Component {
 				active: [],
 				passive: []
 			},
-			currentPanel: this.props.panel || 'plan'
+			currentPanel: this.props.panel || 'config'
 		}
 	}
 
@@ -148,8 +151,8 @@ export class PIPlanApp extends React.Component {
 			return (<Column>
 				<ul className="column-ul">
 					<li className="column-li">
-						<input className="column-input" id="rad1" type="radio" name="rad" />
-						<label className="column-label" htmlFor="rad1">
+						<input className="column-input" id={this.CONFIG_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.CONFIG_PANEL} type="radio" name={this.CONFIG_PANEL} />
+						<label className="column-label" htmlFor={this.CONFIG_PANEL}>
 							<div>
 								Configuration
 
@@ -237,18 +240,21 @@ export class PIPlanApp extends React.Component {
 						</div>
 					</li>
 					<li className="column-li">
-						<input className="column-input" id="rad2" type="radio" name="rad" checked={true}/><label className="column-label" htmlFor="rad2"><div>PI Planning</div></label>
+						<input className="column-input" id={this.PLAN_PANEL} type="radio" name={this.PLAN_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.PLAN_PANEL} />
+						<label className="column-label" htmlFor={this.PLAN_PANEL} ><div>PI Planning</div></label>
 						<div className="accslide">
 							<div className="content">
-								<Board
-								host={this.props.host}
-									mode='tree'
-									board={this.state.context}
-									active={this.state.topLevelList.active.length? join(this.state.topLevelList.active.map((card) => {
-										return card.id
-									}), ","): null}
+								{this.state.currentPanel === this.PLAN_PANEL ?
+									<Board
+										host={this.props.host}
+										mode='tree'
+										board={this.state.context}
+										active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
+											return card.id
+										}), ",") : null}
 									>
-								</Board>
+									</Board>
+									: null}
 							</div>
 						</div>
 					</li>
@@ -260,5 +266,9 @@ export class PIPlanApp extends React.Component {
 		else {
 			return null
 		}
+	}
+
+	panelChange = (evt) => {
+		this.setState({ currentPanel: evt.target.id })
 	}
 }

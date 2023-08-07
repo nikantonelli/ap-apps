@@ -269,7 +269,7 @@ export class APcard extends React.Component {
 										<Grid item sx={cardDescriptionFieldStyle} >
 											<Grid container>
 												<Grid item>
-													<Paper xs elevation={0} sx={titlePaperStyle}>
+													<Paper elevation={0} sx={titlePaperStyle}>
 														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography>
 													</Paper>
 												</Grid>

@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
+import { Autocomplete, Box, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
 import _, { forEach } from "lodash";
 import BoardService from "../../../services/BoardService";
@@ -50,7 +50,7 @@ export class Board extends NikApp {
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
-			
+
 		}
 		this.setColouring({ type: this.state.colouring })
 	}
@@ -346,16 +346,18 @@ export class Board extends NikApp {
 					key={idx}
 					open={me.popUp === d.data.id}
 				>
-					<APcard
-						descendants={children}
-						parents={parents}
-						cardProps={{ maxWidth: 700 }}
-						loadSource={d.depth < 2 ? 'board' : 'card'}
-						host={me.props.host} card={d.data}
-						context={me.state.context}
-						onClose={me.closePopUp}
-						readOnly
-					/>
+					<Box>
+						<APcard
+							descendants={children}
+							parents={parents}
+							cardProps={{ maxWidth: 700, flexGrow: 1 }}
+							loadSource={d.depth < 2 ? 'board' : 'card'}
+							host={me.props.host} card={d.data}
+							context={me.state.context}
+							onClose={me.closePopUp}
+							readOnly
+						/>
+					</Box>
 				</Drawer>
 
 			)
