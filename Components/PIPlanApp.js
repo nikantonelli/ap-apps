@@ -2,10 +2,11 @@ import React from "react";
 import { doRequest } from "../utils/Client/Sdk";
 import Column from "./Column";
 import { APtimebox } from "./AP-Fields/timebox";
-import { filter, find, orderBy } from "lodash";
+import { filter, find, orderBy, join } from "lodash";
 import { Grid, IconButton, Typography } from "@mui/material";
 import { OpenInNew } from "@mui/icons-material";
 import PlanItem from "./PlanningItem";
+import Board from "../pages/nui/context/[id]";
 
 export class PIPlanApp extends React.Component {
 
@@ -22,6 +23,7 @@ export class PIPlanApp extends React.Component {
 				active: [],
 				passive: []
 			},
+			currentPanel: this.props.panel || 'plan'
 		}
 	}
 
@@ -125,7 +127,7 @@ export class PIPlanApp extends React.Component {
 			if (newState === false) {
 				return {
 					topLevelList: {
-						passive: _.union(prevState.topLevelList.passive,_.remove(prevState.topLevelList.active, { id: id })),
+						passive: _.union(prevState.topLevelList.passive, _.remove(prevState.topLevelList.active, { id: id })),
 						active: prevState.topLevelList.active
 					}
 				}
@@ -142,101 +144,121 @@ export class PIPlanApp extends React.Component {
 	}
 
 	render() {
-		return (<Column>
-			<ul className="column-ul">
-				<li className="column-li">
-					<input className="column-input" id="rad1" type="radio" name="rad" />
-					<label className="column-label" htmlFor="rad1">
-						<div>
-							Configuration
-
-						</div>
-					</label>
-					<div className="accslide">
-						<div className="content">
-							<h1>
+		if (this.state.context) {
+			return (<Column>
+				<ul className="column-ul">
+					<li className="column-li">
+						<input className="column-input" id="rad1" type="radio" name="rad" />
+						<label className="column-label" htmlFor="rad1">
+							<div>
 								Configuration
-								<IconButton onClick={this.openInTab}>
-									<OpenInNew />
-								</IconButton>
-							</h1>
 
-							<Grid container>
-								<Grid item>
-									<APtimebox
-										title="Planning Series"
-										timeBoxChange={this.seriesChange}
-										timeboxes={this.state.planningSeries}
-										initialTimeBox={this.state.currentSeries}
-									/>
+							</div>
+						</label>
+						<div className="accslide">
+							<div className="content">
+								<h1>
+									Configuration
+									<IconButton onClick={this.openInTab}>
+										<OpenInNew />
+									</IconButton>
+								</h1>
+
+								<Grid container>
+									<Grid item>
+										<APtimebox
+											title="Planning Series"
+											timeBoxChange={this.seriesChange}
+											timeboxes={this.state.planningSeries}
+											initialTimeBox={this.state.currentSeries}
+										/>
+									</Grid>
+									<Grid item>
+										<APtimebox
+											title="Planning Timebox"
+											timeBoxChange={this.timeboxChange}
+											timeboxes={this.state.seriesIncrements}
+											initialTimeBox={this.state.currentTimebox}
+										/>
+									</Grid>
 								</Grid>
-								<Grid item>
-									<APtimebox
-										title="Planning Timebox"
-										timeBoxChange={this.timeboxChange}
-										timeboxes={this.state.seriesIncrements}
-										initialTimeBox={this.state.currentTimebox}
-									/>
+
+								<Grid container direction="column" className="board-grid">
+									{this.state.topLevelList.active.length ?
+										<>
+											<Grid item>
+												<Typography>Considering:</Typography>
+											</Grid>
+											<Grid item><Grid container direction="row">
+												{this.state.topLevelList.active.map((card, idx) => {
+													return (
+														<Grid key={idx + 1} item>
+															<PlanItem
+																card={card}
+																selected={true}
+																selectChange={this.cardSelectChange} />
+														</Grid>
+													)
+												})}
+											</Grid>
+											</Grid>
+										</>
+										: null}
 								</Grid>
-							</Grid>
+								<Grid container direction="column" className="board-grid">
+									{this.state.topLevelList.passive.length ?
+										<>
+											<Grid item>
+												<Typography>Out of Scope:</Typography>
+											</Grid>
+											<Grid item>
+												<Grid container direction="row">
+													{this.state.topLevelList.passive.map((card, idx) => {
+														return (
+															<Grid key={idx + 1} item>
 
-							<Grid container className="board-grid">
-								{this.state.topLevelList.active.length ?
-									<>
-										<Typography>Considering:</Typography>
-										{this.state.topLevelList.active.map((card, idx) => {
-											return (
-												<Grid key={idx + 1} item>
-													<PlanItem
-														card={card}
-														selected={true}
-														selectChange={this.cardSelectChange} />
+																<PlanItem
+																	card={card}
+																	selected={false}
+																	selectChange={this.cardSelectChange} />
+															</Grid>
+														)
+													})}
 												</Grid>
-											)
-										})}
-									</>
-									: null}
-							</Grid>
-							<Grid container className="board-grid">
-								{this.state.topLevelList.passive.length ?
-									<>
-										<Typography>Out of Scope:</Typography>
-										{this.state.topLevelList.passive.map((card, idx) => {
-											return (
-												<Grid key={idx + 1} item>
+											</Grid>
+										</>
+										: null}
 
-													<PlanItem
-														card={card}
-														selected={false}
-														selectChange={this.cardSelectChange} />
-												</Grid>
-											)
-										})}
-									</>
-									: null}
-							</Grid>
+								</Grid>
 
 
 
+							</div>
 						</div>
-					</div>
-				</li>
-				<li className="column-li">
-					<input className="column-input" id="rad2" type="radio" name="rad" /><label className="column-label" htmlFor="rad2"><div>PI Planning</div></label>
-					<div className="accslide">
-						<div className="content">
-							<h1>
-								PI Planning
-							</h1>
-							<p>
-								Go
-							</p>
+					</li>
+					<li className="column-li">
+						<input className="column-input" id="rad2" type="radio" name="rad" checked={true}/><label className="column-label" htmlFor="rad2"><div>PI Planning</div></label>
+						<div className="accslide">
+							<div className="content">
+								<Board
+								host={this.props.host}
+									mode='tree'
+									board={this.state.context}
+									active={this.state.topLevelList.active.length? join(this.state.topLevelList.active.map((card) => {
+										return card.id
+									}), ","): null}
+									>
+								</Board>
+							</div>
 						</div>
-					</div>
-				</li>
-			</ul>
+					</li>
+				</ul>
 
 
-		</Column>)
+			</Column>)
+		}
+		else {
+			return null
+		}
 	}
 }

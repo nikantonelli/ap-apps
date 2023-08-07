@@ -1,3 +1,4 @@
+import { BroadcastChannel } from "broadcast-channel";
 import React from "react";
 import { io } from "socket.io-client";
 

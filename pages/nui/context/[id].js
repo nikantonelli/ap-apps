@@ -42,15 +42,15 @@ export class Board extends NikApp {
 			depth: stateDepth,
 			pending: 0,
 			total: 0,
-			topLevelList: [],
+			topLevelList: props.topLevelList || [],
 			popUp: null,
 			sortType: this.props.sort || 'none',
 			sortDirection: this.props.dir || 'ascending',
 			clickCount: 0,
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
-			showErrors: this.props.eb || 'off'
-
+			showErrors: this.props.eb || 'off',
+			
 		}
 		this.setColouring({ type: this.state.colouring })
 	}
@@ -430,7 +430,7 @@ export class Board extends NikApp {
 		/**
 		 * If a network error has occurred that is unrecoverable, then we may still come here but without a board
 		 */
-		if (!this.state.board) return;
+		if (!this.state.board || !this.state.rootNode) return;
 
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		if (!Boolean(svgEl)) return;
