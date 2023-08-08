@@ -50,7 +50,7 @@ export class Board extends NikApp {
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
-
+			colourise: null,
 		}
 		this.setColouring({ type: this.state.colouring })
 	}
@@ -77,7 +77,6 @@ export class Board extends NikApp {
 	 */
 	opacityDrop = true;
 	colourFnc = null;
-	colour = null;
 
 	tempColouring = (d) => {
 		this.opacityDrop = true;
@@ -167,40 +166,40 @@ export class Board extends NikApp {
 		switch (params.type) {
 			case 'cool': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
-				this.colour = this.tempColouring;
+				this.setState({ colourise: this.tempColouring });
 				break;
 			}
 			case 'warm': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
-				this.colour = this.tempColouring;
+				this.setState({ colourise: this.tempColouring });
 				break;
 			}
 			case 'context': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length ? this.contextList.length + 1 : 2))
-				this.colour = this.contextColouring;
+				this.setState({ colourise: this.contextColouring });
 				break;
 			}
 			case 'type': {
-				this.colour = this.typeColouring;
+				this.setState({ colourise: this.typeColouring });
 				break;
 			}
 			case 'state': {
-				this.colour = this.stateColouring;
+				this.setState({ colourise: this.stateColouring });
 				break;
 			}
 			case 'a_user': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length ? this.assignedUserList.length + 1 : 2))
-				this.colour = this.aUserColouring;
+				this.setState({ colourise: this.aUserColouring });
 				break;
 			}
 			case 'l_user': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.updatedUserList.length ? this.updatedUserList.length + 1 : 2))
-				this.colour = this.lUserColouring;
+				this.setState({ colourise: this.lUserColouring });
 				break;
 			}
 			case 'c_user': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.createdUserList.length ? this.createdUserList.length + 1 : 2))
-				this.colour = this.cUserColouring;
+				this.setState({ colourise: this.cUserColouring });
 				break;
 			}
 			default: {
@@ -301,7 +300,7 @@ export class Board extends NikApp {
 			if (d.data.id != 'root') {
 				this.contextList = _.union(this.contextList, [d.data.board.id])
 				//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
-				d.colour = this.colour(d);
+				d.colour = this.state.colourise(d);
 			}
 		})
 	};
@@ -479,7 +478,7 @@ export class Board extends NikApp {
 					.attr("height", d => rectHeight(d))
 					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM))
 					.attr("fill", d => {
-						return me.colour(d);
+						return me.state.colourise(d);
 					})
 					.style("cursor", "pointer")
 					.on("click", me.nodeClicked)
@@ -499,7 +498,7 @@ export class Board extends NikApp {
 					})
 					.attr("fill", d => {
 						var eColour = me.getErrorColour(d)
-						return eColour.length ? eColour : me.colour(d)
+						return eColour.length ? eColour : me.state.colourise(d)
 					})
 					.append("title").text(d => me.getErrorMessage(d))
 
@@ -602,7 +601,7 @@ export class Board extends NikApp {
 					.data(this.state.rootNode.descendants().slice(1))
 					.join("path")
 					.attr("fill", d => {
-						return me.colour(d);
+						return me.state.colourise(d);
 					})
 					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
 					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
@@ -621,7 +620,7 @@ export class Board extends NikApp {
 					.join("path")
 					.attr("fill", d => {
 						var eColour = me.getErrorColour(d);
-						return eColour.length ? eColour : me.colour(d);
+						return eColour.length ? eColour : me.state.colourise(d);
 					})
 					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
 					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
@@ -880,7 +879,7 @@ export class Board extends NikApp {
 		nodes.each(function (d, idx, nodeArray) {
 			var node = d3.select(this);
 			var opacity = me.state.opacityDrop ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM;
-			var colour = me.colour(d);
+			var colour = me.state.colourise(d);
 			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
 			var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
 
@@ -1076,7 +1075,7 @@ export class Board extends NikApp {
 								data={this.state.rootNode ? this.state.rootNode : []}
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
-								colourise={this.colour}
+								colourise={this.state.colourise}
 								errorColour={this.getErrorColour}
 							/> : null}
 						<svg id={"svg_" + this.state.board.id} />
@@ -1084,7 +1083,8 @@ export class Board extends NikApp {
 
 
 					<Drawer
-						variant='persistent'
+						
+						onClose={this.closeDrawer}
 						open={Boolean(this.state.drawerOpen)}
 						anchor='left'
 						sx={{
@@ -1093,134 +1093,136 @@ export class Board extends NikApp {
 							[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
 						}}
 					>
-						<Grid container direction="column">
-							<Grid item>
-								<Grid container direction="row">
-									<Grid xs={6} item>
-										<Button
-											aria-label="Open As New Tab"
-											onClick={this.openAsActive}
-											endIcon={<OpenInNew />}
-										>
-											Open Copy
-										</Button>
-									</Grid>
-									<Grid xs={6} item>
-										<Grid sx={{ justifyContent: 'flex-end' }} container>
+						<Box>
+							<Grid container direction="column">
+								<Grid item>
+									<Grid container direction="row">
+										<Grid xs={6} item>
+											<Button
+												aria-label="Open As New Tab"
+												onClick={this.openAsActive}
+												endIcon={<OpenInNew />}
+											>
+												Open Copy
+											</Button>
+										</Grid>
+										<Grid xs={6} item>
+											<Grid sx={{ justifyContent: 'flex-end' }} container>
 
-											<Tooltip title='Close Settings'>
-												<HighlightOff onClick={this.closeDrawer} />
-											</Tooltip>
+												<Tooltip title='Close Settings'>
+													<HighlightOff onClick={this.closeDrawer} />
+												</Tooltip>
+											</Grid>
 										</Grid>
 									</Grid>
 								</Grid>
-							</Grid>
-							<Grid item>
-								{this.topLevelList()}
-							</Grid>
-							<Grid item>
-								<Grid container>
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Mode</InputLabel>
-											<Select
-												value={this.state.tileType}
-												onChange={this.modeChange}
-												label="Mode"
-											>
-												<MenuItem value="tree">Tree</MenuItem>
-												<MenuItem value="sunburst">Sunburst</MenuItem>
-												<MenuItem value="partition">Partition</MenuItem>
-												<MenuItem value="timeline">Timeline</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Sort By</InputLabel>
-											<Select
-												value={this.state.sortType}
-												onChange={this.sortChange}
-												label="Sort By"
-											>
-												<MenuItem value="none">None</MenuItem>
-												<MenuItem value="plannedStart">Planned Start</MenuItem>
-												<MenuItem value="plannedFinish">Planned End</MenuItem>
-												<MenuItem value="size">Size</MenuItem>
-												<MenuItem value="r_size">Size Rollup</MenuItem>
-												{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
-												<MenuItem value="score">Score Total</MenuItem>
-												{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
-
-												<MenuItem value="id">ID#</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									<Grid item >
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Sort Direction</InputLabel>
-											<Select
-												value={this.state.sortDirection}
-												onChange={this.sortDirChange}
-												label="Sort Direction"
-											>
-												<MenuItem value="ascending">Ascending</MenuItem>
-												<MenuItem value="descending">Descending</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Colours</InputLabel>
-											<Select
-												value={this.state.colouring}
-												onChange={this.colourChange}
-												label="Colours"
-											>
-												<MenuItem value="cool">Cool</MenuItem>
-												<MenuItem value="warm">Warm</MenuItem>
-												<MenuItem value="type">Card Type</MenuItem>
-												<MenuItem value="state">Card State</MenuItem>
-												<MenuItem value="l_user">Last Updater</MenuItem>
-												<MenuItem value="c_user">Creator</MenuItem>
-												<MenuItem value="a_user">First Assignee</MenuItem>
-												<MenuItem value="context">Context</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									{this.state.tileType === 'timeline' ? (
+								<Grid item>
+									{this.topLevelList()}
+								</Grid>
+								<Grid item>
+									<Grid container>
 										<Grid item>
 											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Group By</InputLabel>
+												<InputLabel>Mode</InputLabel>
 												<Select
-													value={this.state.grouping}
-													onChange={this.groupChange}
-													label="Grouping"
+													value={this.state.tileType}
+													onChange={this.modeChange}
+													label="Mode"
 												>
-													<MenuItem value="level">Level</MenuItem>
-													<MenuItem value="context">Context</MenuItem>
-													<MenuItem value="type">Card Type</MenuItem>
+													<MenuItem value="tree">Tree</MenuItem>
+													<MenuItem value="sunburst">Sunburst</MenuItem>
+													<MenuItem value="partition">Partition</MenuItem>
+													<MenuItem value="timeline">Timeline</MenuItem>
 												</Select>
 											</FormControl>
 										</Grid>
-									) : null}
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Error Bars</InputLabel>
-											<Select
-												value={this.state.showErrors}
-												onChange={this.errorChange}
-												label="Errors"
-											>
-												<MenuItem value="on">On</MenuItem>
-												<MenuItem value="off">Off</MenuItem>
-											</Select>
-										</FormControl>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Sort By</InputLabel>
+												<Select
+													value={this.state.sortType}
+													onChange={this.sortChange}
+													label="Sort By"
+												>
+													<MenuItem value="none">None</MenuItem>
+													<MenuItem value="plannedStart">Planned Start</MenuItem>
+													<MenuItem value="plannedFinish">Planned End</MenuItem>
+													<MenuItem value="size">Size</MenuItem>
+													<MenuItem value="r_size">Size Rollup</MenuItem>
+													{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
+													<MenuItem value="score">Score Total</MenuItem>
+													{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
+
+													<MenuItem value="id">ID#</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item >
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Sort Direction</InputLabel>
+												<Select
+													value={this.state.sortDirection}
+													onChange={this.sortDirChange}
+													label="Sort Direction"
+												>
+													<MenuItem value="ascending">Ascending</MenuItem>
+													<MenuItem value="descending">Descending</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Colours</InputLabel>
+												<Select
+													value={this.state.colouring}
+													onChange={this.colourChange}
+													label="Colours"
+												>
+													<MenuItem value="cool">Cool</MenuItem>
+													<MenuItem value="warm">Warm</MenuItem>
+													<MenuItem value="type">Card Type</MenuItem>
+													<MenuItem value="state">Card State</MenuItem>
+													<MenuItem value="l_user">Last Updater</MenuItem>
+													<MenuItem value="c_user">Creator</MenuItem>
+													<MenuItem value="a_user">First Assignee</MenuItem>
+													<MenuItem value="context">Context</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										{this.state.tileType === 'timeline' ? (
+											<Grid item>
+												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+													<InputLabel>Group By</InputLabel>
+													<Select
+														value={this.state.grouping}
+														onChange={this.groupChange}
+														label="Grouping"
+													>
+														<MenuItem value="level">Level</MenuItem>
+														<MenuItem value="context">Context</MenuItem>
+														<MenuItem value="type">Card Type</MenuItem>
+													</Select>
+												</FormControl>
+											</Grid>
+										) : null}
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Error Bars</InputLabel>
+												<Select
+													value={this.state.showErrors}
+													onChange={this.errorChange}
+													label="Errors"
+												>
+													<MenuItem value="on">On</MenuItem>
+													<MenuItem value="off">Off</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
 									</Grid>
 								</Grid>
-							</Grid>
 
-						</Grid>
+							</Grid>
+						</Box>
 					</Drawer>
 				</Stack >
 			)

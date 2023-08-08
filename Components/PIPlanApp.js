@@ -2,7 +2,7 @@ import React from "react";
 import { doRequest } from "../utils/Client/Sdk";
 import Column from "./Column";
 import { APtimebox } from "./AP-Fields/timebox";
-import { filter, find, orderBy, join } from "lodash";
+import { filter, find, orderBy, join, forEach } from "lodash";
 import { Grid, IconButton, Typography } from "@mui/material";
 import { OpenInNew } from "@mui/icons-material";
 import PlanItem from "./PlanningItem";
@@ -15,15 +15,16 @@ export class PIPlanApp extends React.Component {
 
 	constructor(props) {
 		super(props);
+		var splitActive = this.props.active ? this.props.active.split(',') : []
 		this.state = {
 			context: props.board,
 			cards: props.cards || [],
 			planningSeries: [],
-			currentSeries: "",
+			currentSeries: null,
 			seriesIncrements: [],
-			currentTimebox: "",
+			currentTimebox: null,
 			topLevelList: {
-				active: [],
+				active: splitActive.length ? splitActive : [],
 				passive: []
 			},
 			currentPanel: this.props.panel || 'config'
@@ -52,19 +53,19 @@ export class PIPlanApp extends React.Component {
 	setAllSeries = (series) => {
 		this.setState({ planningSeries: series })
 		if (this.props.series && find(series, { id: this.props.series })) {
-			this.setCurrentSeries(this.props.series)
+			this.seriesChange({ target: { value: this.props.series } })
 		}
 	}
 
-	setCurrentSeries = (currentSeriesId) => {
-		this.setState({ currentSeries: currentSeriesId })
+	setCurrentSeries = (currentSeries) => {
+		this.setState({ currentSeries: currentSeries })
 	}
 	setAllTimeboxes = (increments) => {
 		this.setState({ seriesIncrements: increments })
 	}
 
-	setCurrentTimebox = (currentIncrementId) => {
-		this.setState({ currentTimebox: currentIncrementId })
+	setCurrentTimebox = (currentIncrement) => {
+		this.setState({ currentTimebox: currentIncrement })
 	}
 
 	seriesChange = async (evt) => {
@@ -77,25 +78,46 @@ export class PIPlanApp extends React.Component {
 		var cResponse = await doRequest(cParams)
 		var cResult = await cResponse.json()
 		var increments = orderBy(cResult.increments, ["startDate"], ["desc"])
-		this.setCurrentSeries(evt.target.value)
+		this.setCurrentSeries(find(this.state.planningSeries, { id: evt.target.value }))
 		this.setAllTimeboxes(increments)
-		if (this.props.timebox && find(increments, { id: this.props.timebox })) {
-			this.timeboxChange({ target: { value: this.props.timebox } });
+		var foundTimebox = null;
+		if (this.props.timebox && (foundTimebox = find(increments, { id: this.props.timebox }))) {
+			this.updateTimeBox(increments, this.props.timebox);
 		} else {
-			this.timeboxChange({ target: { value: increments[0].id } });
+			this.updateTimeBox(increments, increments[0].id);
 		}
 	}
 
-	timeboxChange = (evt) => {
-		this.setCurrentTimebox(evt.target.value)
+	updateTimeBox = (timeboxes, tid) => {
 		//Filter the root items to those that are part of this increment
-
-		var newList = filter(this.props.cards, (card) => {
+		var incrementList = []
+		var activeList = []
+		var passiveList = []
+		incrementList = filter(this.props.cards, (card) => {
 			var increments = card.planningIncrements;
-			return (find(increments, { id: evt.target.value }) !== undefined)
-
+			return (find(increments, { id: tid }) !== undefined)
 		})
-		this.setState({ topLevelList: { active: newList, passive: [] } })
+
+		var propsActiveList = incrementList.map( item => item.id);
+		
+		if (this.props.active) propsActiveList = this.props.active.split(',');
+
+		if (Boolean(incrementList)){
+			forEach(incrementList, (card) => {
+				if (find(propsActiveList, (item) => {
+					 return item === card.id}))
+					activeList.push(card)
+				else
+					passiveList.push(card)
+			})
+		}
+
+		this.setState({ topLevelList: { active: activeList, passive: passiveList } })
+		this.setCurrentTimebox(find(timeboxes, { id: tid }))
+	}
+
+	timeboxChange = (evt) => {
+		this.updateTimeBox(this.state.seriesIncrements, evt.target.value)
 	}
 
 	openInTab = () => {
@@ -117,8 +139,8 @@ export class PIPlanApp extends React.Component {
 			ex += "?"
 		}
 		if (this.state.currentSeries) {
-			as += ex + "srs=" + this.state.currentSeries
-			if (this.state.currentTimebox) as += "&tmb=" + this.state.currentTimebox
+			as += ex + "srs=" + this.state.currentSeries.id
+			if (this.state.currentTimebox) as += "&tmb=" + this.state.currentTimebox.id
 		}
 
 		document.open("/nui/planning/" + this.state.context.id + as, "", "noopener=true")
@@ -154,7 +176,7 @@ export class PIPlanApp extends React.Component {
 						<input className="column-input" id={this.CONFIG_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.CONFIG_PANEL} type="radio" name={this.CONFIG_PANEL} />
 						<label className="column-label" htmlFor={this.CONFIG_PANEL}>
 							<div>
-								Configuration
+								{"Configuration" + ((this.state.currentSeries && this.state.currentTimebox) ? (": " + this.state.currentSeries.label + " -> " + this.state.currentTimebox.label) : "")}
 
 							</div>
 						</label>
@@ -173,7 +195,7 @@ export class PIPlanApp extends React.Component {
 											title="Planning Series"
 											timeBoxChange={this.seriesChange}
 											timeboxes={this.state.planningSeries}
-											initialTimeBox={this.state.currentSeries}
+											initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
 										/>
 									</Grid>
 									<Grid item>
@@ -181,7 +203,7 @@ export class PIPlanApp extends React.Component {
 											title="Planning Timebox"
 											timeBoxChange={this.timeboxChange}
 											timeboxes={this.state.seriesIncrements}
-											initialTimeBox={this.state.currentTimebox}
+											initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
 										/>
 									</Grid>
 								</Grid>

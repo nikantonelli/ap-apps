@@ -24,7 +24,7 @@ export default class PlanItem extends React.Component {
 	}
 	
 	render() {
-		const label = { inputProps: { 'aria-label': 'Switch demo' } };
+		const label = { inputProps: { 'aria-label': 'Include in Plan Switch' } };
 		return (
 			<Card sx={{ minWidth: 200, maxWidth: 400 }}>
 				<CardActions>

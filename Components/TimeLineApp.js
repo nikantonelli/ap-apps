@@ -9,18 +9,12 @@ export class TimeLineApp extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			colourise : props.colourise || this.nullColourise,
-			errorColour : props.errorColour || this.nullErrorColour,
-			colouring : props.colouring || this.nullErrorColour,
+			errorColour : props.errorColour || this.nullErrorColour
 		}
 	}
 
 	nullErrorColour = () => {
 		return "#ff0000"
-	}
-
-	nullColourise = () => {
-		return "#ffffff"
 	}
 
 	depthOrder = (tree) => {
@@ -123,7 +117,7 @@ export class TimeLineApp extends React.Component {
 				} else {
 					actualEndPC = nowPosn;
 				}
-				var bCol = this.state.colourise(node) ;
+				var bCol = this.props.colourise(node) ;
 				var eColour = this.state.errorColour(node);
 				return (
 					<Box key={idx + 1} sx={{ width: "95%" }}>
