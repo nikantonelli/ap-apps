@@ -270,18 +270,22 @@ export class Board extends NikApp {
 				}
 			})
 		//Do some other stuff for stats on the hierarchy to show to user
-
 		rootNode.eachAfter((d) => {
 			//If we are the leaves, then check if our dates are outside the parent's
-			if (d.parent && (d.parent.id !== "root")) {
+			if (d.parent && (d.parent.data.id !== "root")) {
 
 				var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
 				var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
 				var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
 				var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-				d.parent.latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
-				d.parent.earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+				var aPF = d.parent.data.actualFinish ? new Date(d.parent.data.actualFinish).getTime() : null;
+				var aPS = d.parent.data.actualStart ? new Date(d.parent.data.actualStart).getTime() : null;
+				var af = d.data.actualFinish ? new Date(d.data.actualFinish).getTime() : null;
+				var as = d.data.actualStart ? new Date(d.data.actualStart).getTime() : null;
+
+				rootNode.latest = _.max([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.latest])
+				rootNode.earliest = _.min([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.earliest])
 			}
 		})
 
@@ -999,6 +1003,7 @@ export class Board extends NikApp {
 			}
 			return { tileType: newMode }
 		});
+		if (this.props.modeChange) this.props.modeChange(newMode);
 	}
 	sortChange = (e) => {
 		this.setState({ sortType: e.target.value });

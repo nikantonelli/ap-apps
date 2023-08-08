@@ -269,7 +269,8 @@ export class PIPlanApp extends React.Component {
 								{this.state.currentPanel === this.PLAN_PANEL ?
 									<Board
 										host={this.props.host}
-										mode='tree'
+										mode={this.state.mode}
+										modeChange={this.modeChange}
 										board={this.state.context}
 										active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
 											return card.id
@@ -288,6 +289,10 @@ export class PIPlanApp extends React.Component {
 		else {
 			return null
 		}
+	}
+
+	modeChange = (mode) => {
+		this.setState({mode: mode})
 	}
 
 	panelChange = (evt) => {

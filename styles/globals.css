@@ -928,7 +928,7 @@ i.chevron-down {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	font-size: 8px;
+	font-size: 16px;
 }
 
 .link-editor .link-input a {
@@ -1181,7 +1181,6 @@ i.justify-align {
 	display: block;
 	height: 100%;
 	width: 0px;
-	padding: 5px 0;
 	float: left;
 	overflow-x: hidden;
 	font-size: 12px;
@@ -1190,7 +1189,7 @@ i.justify-align {
 	transition: all 700ms ease;
 }
 .accslide * {
-	padding-left: 5px;
+	padding-left: 1px;
 }
 .accslide img {
 	margin-top: 5px;

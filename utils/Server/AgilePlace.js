@@ -41,7 +41,7 @@ class AgilePlace {
 			headers["Authorization"] = "Basic " + Base64.encode(token);
 		}
 
-		console.log("ap: ", this.count += 1, params.baseUrl + encodeURIComponent(params.url), params.body?params.body:"")
+		console.log("ap: ", this.count += 1, params.baseUrl + params.url, params.body?params.body:"")
 		var ps =  { headers: headers, method: params.mode }
 		if (params.body) ps.body = params.body;
 		var req = new Request(params.baseUrl + params.url,ps);
