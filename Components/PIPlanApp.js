@@ -27,7 +27,14 @@ export class PIPlanApp extends React.Component {
 				active: splitActive.length ? splitActive : [],
 				passive: []
 			},
-			currentPanel: this.props.panel || 'config'
+			
+			currentPanel: this.props.panel || 'config',
+			mode: this.props.mode || 'tree',
+			colouring: this.props.colour || 'type',
+			grouping: this.props.group || 'level',
+			showErrors: this.props.eb || 'off',
+			sortType: this.props.sort || 'none',
+			sortDirection: this.props.dir || 'ascending',
 		}
 	}
 

@@ -30,7 +30,7 @@ export class Board extends NikApp {
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			...this.state,
-			tileType: this.props.mode || 'sunburst',
+			mode: this.props.mode || 'sunburst',
 			anchorEl: null,
 			rootNode: null,
 			drawerOpen: false,
@@ -447,7 +447,7 @@ export class Board extends NikApp {
 
 		this.calcTreeData(this.state.rootNode)
 
-		switch (this.state.tileType) {
+		switch (this.state.mode) {
 			case 'table': {
 				break;
 			}
@@ -789,7 +789,7 @@ export class Board extends NikApp {
 
 	}
 	getLabel = (d) => {
-		switch (this.state.tileType) {
+		switch (this.state.mode) {
 			case 'sunburst': {
 				return d.data.id === "root" ? "" : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
 			}
@@ -993,36 +993,49 @@ export class Board extends NikApp {
 		var newMode = e.target.value;
 		this.setState((prev) => {
 			if (newMode === 'timeline') {
-				return { tileType: newMode, sortType: 'count' }
+				return { mode: newMode, sortType: 'count' }
 			}
 			if ((prev.sortType === "title") && (newMode === 'sunburst')) {
-				return { tileType: newMode, sortType: 'count' }
+				return { mode: newMode, sortType: 'count' }
 			}
 			else if ((prev.sortType === "count") && (newMode === 'tree')) {
-				return { tileType: newMode, sortType: 'size' }
+				return { mode: newMode, sortType: 'size' }
 			}
-			return { tileType: newMode }
+			return { mode: newMode }
 		});
 		if (this.props.modeChange) this.props.modeChange(newMode);
 	}
+
 	sortChange = (e) => {
-		this.setState({ sortType: e.target.value });
+		var value = e.target.value;
+		this.setState({ sortType: value });
+		if (this.props.sortChange) this.props.sortChange(value);
+		
 	}
 
 	sortDirChange = (e) => {
-		this.setState({ sortDirection: e.target.value });
+		var value = e.target.value;
+		this.setState({ sortDirection: value });
+		if (this.props.sortDirChange) this.props.sortDirChange(value);
 	}
 
 	errorChange = (e) => {
-		this.setState({ showErrors: e.target.value });
+		var value = e.target.value;
+		this.setState({ showErrors:  value});
+		if (this.props.errorChange) this.props.errorChange(value);
 	}
 
 	groupChange = (e) => {
-		this.setState({ grouping: e.target.value });
+		var value = e.target.value;
+		this.setState({ grouping: value });
+		if (this.props.groupChange) this.props.groupChange(value);
 	}
+
 	colourChange = (e) => {
-		this.setColouring({ type: e.target.value })
-		this.setState({ colouring: e.target.value });
+		var value = e.target.value;
+		this.setColouring({ type: value })
+		this.setState({ type: value });
+		if (this.props.colourChange) this.props.colourChange(value);
 	}
 
 	render() {
@@ -1075,7 +1088,7 @@ export class Board extends NikApp {
 
 
 					<div id={"surface_" + this.state.board.id}>
-						{this.state.tileType === 'timeline' ?
+						{this.state.mode === 'timeline' ?
 							<TimeLineApp
 								data={this.state.rootNode ? this.state.rootNode : []}
 								end={this.dateRangeEnd}
@@ -1130,7 +1143,7 @@ export class Board extends NikApp {
 											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
 												<InputLabel>Mode</InputLabel>
 												<Select
-													value={this.state.tileType}
+													value={this.state.mode}
 													onChange={this.modeChange}
 													label="Mode"
 												>
@@ -1154,9 +1167,9 @@ export class Board extends NikApp {
 													<MenuItem value="plannedFinish">Planned End</MenuItem>
 													<MenuItem value="size">Size</MenuItem>
 													<MenuItem value="r_size">Size Rollup</MenuItem>
-													{this.state.tileType === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
+													{this.state.mode === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
 													<MenuItem value="score">Score Total</MenuItem>
-													{this.state.tileType === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
+													{this.state.mode === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
 
 													<MenuItem value="id">ID#</MenuItem>
 												</Select>
@@ -1194,7 +1207,7 @@ export class Board extends NikApp {
 												</Select>
 											</FormControl>
 										</Grid>
-										{this.state.tileType === 'timeline' ? (
+										{this.state.mode === 'timeline' ? (
 											<Grid item>
 												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
 													<InputLabel>Group By</InputLabel>
@@ -1480,7 +1493,7 @@ export class Board extends NikApp {
 			case 'partition':
 			case 'sunburst': {
 				//Force a redraw as well
-				this.setState({ tileType: e.target.getAttribute('value') })
+				this.setState({ mode: e.target.getAttribute('value') })
 				break;
 			}
 			case 'reloadAll': {
@@ -1535,7 +1548,7 @@ export class Board extends NikApp {
 			as += "?"
 		}
 		as += "sort=" + this.state.sortType
-		as += "&mode=" + this.state.tileType
+		as += "&mode=" + this.state.mode
 		as += "&dir=" + this.state.sortDirection
 		as += "&colour=" + this.state.colouring
 		as += "&depth=" + this.state.depth
