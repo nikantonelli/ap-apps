@@ -38,7 +38,7 @@ export class Board extends NikApp {
 			board: this.props.board,
 			fetchActive: true,
 			active: props.active,
-			drawerWidth: 300,
+			drawerWidth: this.props.drawerWidth || 400,
 			depth: stateDepth,
 			pending: 0,
 			total: 0,
@@ -437,6 +437,7 @@ export class Board extends NikApp {
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		if (!Boolean(svgEl)) return;
 		var svg = d3.select(svgEl);
+		svg.attr('class', 'rootSurface')
 		svgEl.replaceChildren()
 		var me = this;
 		var rowHeight = 30;
@@ -465,7 +466,6 @@ export class Board extends NikApp {
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
 				svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
-				svg.attr('class', 'rootSurface')
 
 				const cell = svg
 					.selectAll("g")
@@ -577,7 +577,6 @@ export class Board extends NikApp {
 				svg.attr("height", width * 2)
 				svg.attr('viewBox', [0, 0, window.innerWidth, width * 2])
 				svg.attr("height", width * 2)
-				svg.attr('class', 'rootSurface')
 				const g = svg.append("g")
 					.attr("transform", `translate(${width + ((window.innerWidth - (width * 2)) / 2)},${width})`);
 
@@ -700,7 +699,7 @@ export class Board extends NikApp {
 				var colMargin = 100
 
 				var tree = d3.tree()
-					.nodeSize([rowHeight + 2, colWidth])
+					.nodeSize([rowHeight, colWidth])
 					.separation(function (a, b) {
 						return (a.parent === b.parent ? 1 : 1);
 					}
@@ -715,13 +714,12 @@ export class Board extends NikApp {
 					if (d.x > biggestY) biggestY = d.x
 				})
 				var viewBox = [viewWidth, (biggestY - smallestY) + rowHeight]
-				svg.attr('width', viewBox[0])
-				svg.attr("height", viewBox[1])
+				svg.attr('width', viewBox[0] + (rowHeight / 2))
+				svg.attr("height", viewBox[1] + rowHeight)
 				svg.attr('viewBox', (colWidth - (rowHeight / 2)).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
 				rootEl.setAttribute('width', viewBox[0]);
 				rootEl.setAttribute('height', viewBox[1]);
 				svg.attr('preserveAspectRatio', 'none');
-				svg.attr('class', 'rootSurface')
 
 				var nodes = svg.selectAll("g")
 					.data(this.state.rootNode.descendants().slice(1))
@@ -751,7 +749,7 @@ export class Board extends NikApp {
 				nodes.append("text")
 					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
 					.text(d => me.getLabel(d))
-					.attr("height", rowHeight - 12)
+					.attr("height", rowHeight)
 					.attr("id", function (d) {
 						return "text_" + d.depth + '_' + d.data.id
 					})
@@ -899,7 +897,6 @@ export class Board extends NikApp {
 				.attr("stroke-width", d => d.rowHeight - 2)
 				.attr("stroke", colour)
 				.attr("opacity", opacity)
-				//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
 				.on('click', me.nodeClicked)
 				.attr("x1", function (d) {
@@ -920,7 +917,6 @@ export class Board extends NikApp {
 					.attr("stroke-width", 3)
 					.attr("stroke", eColour)
 					.attr("opacity", opacity)
-					//.attr("class", function (d) { return ((d.parent.data.id == 'root') && !d.children) ? "invisible--link" : "local--link" })
 
 					.on('click', me.nodeClicked)
 					.attr("x1", function (d) {
