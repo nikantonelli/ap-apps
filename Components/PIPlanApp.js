@@ -283,10 +283,10 @@ export class PIPlanApp extends React.Component {
 									<Board
 										host={this.props.host}
 										mode={this.state.mode}
-										colour={this.state.colour}
-										sort={this.state.sort}
+										colour={this.state.colouring}
+										sort={this.state.sortType}
 										sortDir={this.state.sortDir}
-										eb={this.state.eb}
+										eb={this.state.showErrors}
 										modeChange={this.modeChange}
 										sortChange={this.sortChange}
 										sortDirChange={this.sortDirChange}
