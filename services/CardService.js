@@ -24,7 +24,7 @@ class CardService {
 		}
 		var card = null;
 		if (globalThis.dataProvider) {
-			board = globalThis.dataProvider.inCache(id, 'card')
+			card = globalThis.dataProvider.inCache(id, 'card')
 		}
 		if (!card)	{
 			card = await this.getData(params);
