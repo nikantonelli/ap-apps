@@ -378,12 +378,18 @@ export class Board extends NikApp {
 
 			if ((pf == null) || (ps == null)) {
 				colour = "red"
+				d.opacity = 0.7
 			} else {
 				if ((pf > pPF) || (ps >= pPF)) {
 					colour = "red"
+					d.opacity = 0.7
 				}
 				else if (ps < pPS) {
 					colour = "#e69500"
+					d.opacity = 0.7
+				}
+				else {
+					d.opacity = 1.0
 				}
 			}
 		}
@@ -881,7 +887,7 @@ export class Board extends NikApp {
 
 		nodes.each(function (d, idx, nodeArray) {
 			var node = d3.select(this);
-			var opacity = me.state.opacityDrop ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM;
+			var opacity = me.opacityDrop ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM;
 			var colour = me.state.colourise(d);
 			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
 			var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
@@ -898,7 +904,7 @@ export class Board extends NikApp {
 				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
 				.attr("stroke-width", d => d.rowHeight - 2)
 				.attr("stroke", colour)
-				.attr("opacity", opacity)
+				.attr("opacity", function(d) { return opacity * d.opacity})
 
 				.on('click', me.nodeClicked)
 				.attr("x1", function (d) {
@@ -933,6 +939,7 @@ export class Board extends NikApp {
 					.attr("y2", function (d) {
 						return d.x + (d.rowHeight / 2)
 					})
+				.append("title").text(d => me.getErrorMessage(d))
 			}
 
 			//Start semi-circle
@@ -942,7 +949,7 @@ export class Board extends NikApp {
 						, d.x, (d.rowHeight - 2) / 2, 180, 0)
 
 				})
-				.attr("opacity", opacity)
+				.attr("opacity", function(d) { return opacity * d.opacity})
 				.attr("fill", colour)
 
 			//End semi-circle
@@ -953,7 +960,7 @@ export class Board extends NikApp {
 					return describeArc(endpoint, d.x, (d.rowHeight - 2) / 2, 0, 180)
 
 				})
-				.attr("opacity", opacity)
+				.attr("opacity", function(d) { return opacity * d.opacity})
 				.attr("fill", colour)
 				.append("title").text(d => me.getErrorMessage(d))
 		})

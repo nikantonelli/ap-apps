@@ -1191,11 +1191,9 @@ i.justify-align {
 .accslide * {
 	padding-left: 1px;
 }
-.accslide img {
-	margin-top: 5px;
-}
+
 .column-input[type="radio"]:not(:checked) ~ label > * {
-	padding-left: 5px;
+	padding-left: 15px;
 	font-size: 1.2em;
 	white-space: nowrap;
 	transform: rotate(90deg);

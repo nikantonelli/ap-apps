@@ -291,7 +291,7 @@ export class PIPlanApp extends React.Component {
 										sortChange={this.sortChange}
 										sortDirChange={this.sortDirChange}
 										colourChange={this.colourChange}
-										ebChange={this.ebChange}
+										errorChange={this.errorChange}
 										board={this.state.context}
 										active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
 											return card.id
@@ -328,8 +328,8 @@ export class PIPlanApp extends React.Component {
 		this.setState({sortDir: sortDir})
 	}
 
-	ebChange = (eb) => {
-		this.setState({eb: eb})
+	errorChange = (eb) => {
+		this.setState({showErrors: eb})
 	}
 
 	panelChange = (evt) => {
