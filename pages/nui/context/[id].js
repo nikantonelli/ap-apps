@@ -45,14 +45,13 @@ export class Board extends NikApp {
 			topLevelList: props.topLevelList || [],
 			popUp: null,
 			sortType: this.props.sort || 'none',
-			sortDirection: this.props.dir || 'ascending',
+			sortDir: this.props.dir || 'ascending',
 			clickCount: 0,
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
 			colourise: null,
 		}
-		this.setColouring({ type: this.state.colouring })
 	}
 
 	popUp = null
@@ -163,7 +162,7 @@ export class Board extends NikApp {
 	 * } params 
 	 */
 	setColouring = (params) => {
-		switch (params.type) {
+		switch (params.colouring) {
 			case 'cool': {
 				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
 				this.setState({ colourise: this.tempColouring });
@@ -231,7 +230,7 @@ export class Board extends NikApp {
 				}
 			})
 			.sort((a, b) => {
-				var dirFnc = me.state.sortDirection === "ascending" ? d3.ascending : d3.descending
+				var dirFnc = me.state.sortDir === "ascending" ? d3.ascending : d3.descending
 				switch (me.state.sortType) {
 					case 'title': {
 						return dirFnc(a.data.title, b.data.title)
@@ -1015,7 +1014,7 @@ export class Board extends NikApp {
 
 	sortDirChange = (e) => {
 		var value = e.target.value;
-		this.setState({ sortDirection: value });
+		this.setState({ sortDir: value });
 		if (this.props.sortDirChange) this.props.sortDirChange(value);
 	}
 
@@ -1033,8 +1032,8 @@ export class Board extends NikApp {
 
 	colourChange = (e) => {
 		var value = e.target.value;
-		this.setColouring({ type: value })
-		this.setState({ type: value });
+		this.setColouring({ colouring: value })
+		this.setState({ colouring: value });
 		if (this.props.colourChange) this.props.colourChange(value);
 	}
 
@@ -1179,7 +1178,7 @@ export class Board extends NikApp {
 											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
 												<InputLabel>Sort Direction</InputLabel>
 												<Select
-													value={this.state.sortDirection}
+													value={this.state.sortDir}
 													onChange={this.sortDirChange}
 													label="Sort Direction"
 												>
@@ -1354,7 +1353,7 @@ export class Board extends NikApp {
 			setChildIdx(this.root)
 		}
 		//If colouring is set to cool, we need to provide a length
-		this.setColouring({ type: this.state.colouring })
+		this.setColouring({ colouring: this.state.colouring })
 		this.setState({ rootNode: d3.hierarchy(this.root) })
 	}
 
@@ -1364,6 +1363,8 @@ export class Board extends NikApp {
 			this.getTopLevel();
 			this.setState({ fetchActive: false })
 		}
+		
+		this.setColouring({ colouring: this.state.colouring })
 		window.addEventListener('resize', this.resize);
 	}
 
@@ -1549,7 +1550,7 @@ export class Board extends NikApp {
 		}
 		as += "sort=" + this.state.sortType
 		as += "&mode=" + this.state.mode
-		as += "&dir=" + this.state.sortDirection
+		as += "&dir=" + this.state.sortDir
 		as += "&colour=" + this.state.colouring
 		as += "&depth=" + this.state.depth
 		as += "&eb=" + this.state.showErrors

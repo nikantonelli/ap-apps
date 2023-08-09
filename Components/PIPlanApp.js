@@ -27,14 +27,14 @@ export class PIPlanApp extends React.Component {
 				active: splitActive.length ? splitActive : [],
 				passive: []
 			},
-			
+
 			currentPanel: this.props.panel || 'config',
 			mode: this.props.mode || 'tree',
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
 			sortType: this.props.sort || 'none',
-			sortDirection: this.props.dir || 'ascending',
+			sortDir: this.props.dir || 'ascending',
 		}
 	}
 
@@ -149,6 +149,12 @@ export class PIPlanApp extends React.Component {
 			as += ex + "srs=" + this.state.currentSeries.id
 			if (this.state.currentTimebox) as += "&tmb=" + this.state.currentTimebox.id
 		}
+		as += "sort=" + this.state.sortType
+		as += "&mode=" + this.state.mode
+		as += "&dir=" + this.state.sortDir
+		as += "&colour=" + this.state.colouring
+		as += "&depth=" + this.state.depth
+		as += "&eb=" + this.state.showErrors
 
 		document.open("/nui/planning/" + this.state.context.id + as, "", "noopener=true")
 	}
@@ -277,7 +283,15 @@ export class PIPlanApp extends React.Component {
 									<Board
 										host={this.props.host}
 										mode={this.state.mode}
+										colour={this.state.colour}
+										sort={this.state.sort}
+										sortDir={this.state.sortDir}
+										eb={this.state.eb}
 										modeChange={this.modeChange}
+										sortChange={this.sortChange}
+										sortDirChange={this.sortDirChange}
+										colourChange={this.colourChange}
+										ebChange={this.ebChange}
 										board={this.state.context}
 										active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
 											return card.id
@@ -300,6 +314,22 @@ export class PIPlanApp extends React.Component {
 
 	modeChange = (mode) => {
 		this.setState({mode: mode})
+	}
+
+	sortChange = (sort) => {
+		this.setState({sort: sort})
+	}
+
+	colourChange = (colour) => {
+		this.setState({colouring : colour})
+	}
+
+	sortDirChange = (sortDir) => {
+		this.setState({sortDir: sortDir})
+	}
+
+	ebChange = (eb) => {
+		this.setState({eb: eb})
 	}
 
 	panelChange = (evt) => {
