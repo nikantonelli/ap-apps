@@ -1,5 +1,5 @@
-import { CheckBox } from "@mui/icons-material";
-import { Button, Card, CardActions, CardContent, CardHeader, IconButton, Switch, Typography } from "@mui/material";
+import { CheckBox, OpenInNew } from "@mui/icons-material";
+import { Button, Card, CardActions, CardContent, CardHeader, Grid, IconButton, Switch, Typography } from "@mui/material";
 import React from "react";
 
 /**
@@ -16,30 +16,21 @@ export default class PlanItem extends React.Component {
 	}
 
 	selectChange = (evt) => {
-			if (this.props.selectChange) this.props.selectChange(this.props.card.id, evt.target.checked)
+		if (this.props.selectChange) this.props.selectChange(this.props.card.id, evt.target.checked)
 	}
 
 	openInNew = () => {
 		document.open("/api/redirect/card/" + this.props.card.id, "", "noopener=true")
 	}
-	
+
 	render() {
 		const label = { inputProps: { 'aria-label': 'Include in Plan Switch' } };
 		return (
 			<Card sx={{ minWidth: 200, maxWidth: 400 }}>
-				<CardActions>
-					<Switch
-						{...label}
-						checked={this.props.selected}
-						onClick={this.selectChange}
-					/>
-				</CardActions>
-				<CardHeader>
+				<CardHeader subheader=
 					{(this.props.card.customId && this.props.card.customId.value && this.props.card.customId.value.length) ?
-						<Typography sx={{ fontSize: 14 }} colour="text.secondary" gutterBottom>
-							{this.props.card.customId.value}
-						</Typography>
-						: null}
+						this.props.card.customId.value
+						: null}>
 				</CardHeader>
 				<CardContent sx={{ background: "lightgrey", opacity: this.props.selected ? 1 : 0.3 }}>
 					<Typography sx={{ fontSize: 14 }} colour="text.secondary" gutterBottom>
@@ -47,12 +38,25 @@ export default class PlanItem extends React.Component {
 					</Typography>
 				</CardContent>
 				<CardActions>
-					<Button
-						size="small"
-						onClick={this.openInNew}
-					>
-						Open In New Tab
-					</Button>
+					<Grid container direction={'row'}>
+						<Grid xs={6} item>
+							<IconButton
+								size="small"
+								onClick={this.openInNew}
+							>
+								<OpenInNew/>
+							</IconButton>
+						</Grid>
+						<Grid item xs={6} alignContent={'right'}>
+							{this.props.showSelector ? <Switch
+								{...label}
+								checked={this.props.selected}
+								onClick={this.selectChange}
+							/> : null}
+						</Grid>
+					</Grid>
+
+
 				</CardActions>
 			</Card>
 		)

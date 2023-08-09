@@ -12,6 +12,7 @@ export class PIPlanApp extends React.Component {
 
 	CONFIG_PANEL = "config"
 	PLAN_PANEL = "plan"
+	ALLOC_PANEL = "allocation"
 
 	constructor(props) {
 		super(props);
@@ -105,14 +106,15 @@ export class PIPlanApp extends React.Component {
 			return (find(increments, { id: tid }) !== undefined)
 		})
 
-		var propsActiveList = incrementList.map( item => item.id);
-		
+		var propsActiveList = incrementList.map(item => item.id);
+
 		if (this.props.active) propsActiveList = this.props.active.split(',');
 
-		if (Boolean(incrementList)){
+		if (Boolean(incrementList)) {
 			forEach(incrementList, (card) => {
 				if (find(propsActiveList, (item) => {
-					 return item === card.id}))
+					return item === card.id
+				}))
 					activeList.push(card)
 				else
 					passiveList.push(card)
@@ -183,129 +185,138 @@ export class PIPlanApp extends React.Component {
 
 	render() {
 		if (this.state.context) {
-			return (<Column>
-				<ul className="column-ul">
-					<li className="column-li">
-						<input className="column-input" id={this.CONFIG_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.CONFIG_PANEL} type="radio" name={this.CONFIG_PANEL} />
-						<label className="column-label" htmlFor={this.CONFIG_PANEL}>
-							<div>
-								{"Configuration" + ((this.state.currentSeries && this.state.currentTimebox) ? (": " + this.state.currentSeries.label + " -> " + this.state.currentTimebox.label) : "")}
+			return (
+				<Column>
+					<ul className="column-ul">
+						<li className="column-li">
+							<input className="column-input" id={this.CONFIG_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.CONFIG_PANEL} type="radio" name={this.CONFIG_PANEL} />
+							<label className="column-label" htmlFor={this.CONFIG_PANEL}>
+								<div>
+									{"Configuration" + ((this.state.currentSeries && this.state.currentTimebox) ? (": " + this.state.currentSeries.label + " -> " + this.state.currentTimebox.label) : "")}
 
-							</div>
-						</label>
-						<div className="accslide">
-							<div className="content">
-								<h1>
-									Configuration
-									<IconButton onClick={this.openInTab}>
-										<OpenInNew />
-									</IconButton>
-								</h1>
+								</div>
+							</label>
+							<div className="accslide">
+								<div className="content">
+									<h1>
+										Configuration
+										<IconButton onClick={this.openInTab}>
+											<OpenInNew />
+										</IconButton>
+									</h1>
 
-								<Grid container>
-									<Grid item>
-										<APtimebox
-											title="Planning Series"
-											timeBoxChange={this.seriesChange}
-											timeboxes={this.state.planningSeries}
-											initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
-										/>
+									<Grid container>
+										<Grid item>
+											<APtimebox
+												title="Planning Series"
+												timeBoxChange={this.seriesChange}
+												timeboxes={this.state.planningSeries}
+												initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
+											/>
+										</Grid>
+										<Grid item>
+											<APtimebox
+												title="Planning Timebox"
+												timeBoxChange={this.timeboxChange}
+												timeboxes={this.state.seriesIncrements}
+												initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
+											/>
+										</Grid>
 									</Grid>
-									<Grid item>
-										<APtimebox
-											title="Planning Timebox"
-											timeBoxChange={this.timeboxChange}
-											timeboxes={this.state.seriesIncrements}
-											initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
-										/>
-									</Grid>
-								</Grid>
 
-								<Grid container direction="column" className="board-grid">
-									{this.state.topLevelList.active.length ?
-										<>
-											<Grid item>
-												<Typography>Considering:</Typography>
-											</Grid>
-											<Grid item><Grid container direction="row">
-												{this.state.topLevelList.active.map((card, idx) => {
-													return (
-														<Grid key={idx + 1} item>
-															<PlanItem
-																card={card}
-																selected={true}
-																selectChange={this.cardSelectChange} />
-														</Grid>
-													)
-												})}
-											</Grid>
-											</Grid>
-										</>
-										: null}
-								</Grid>
-								<Grid container direction="column" className="board-grid">
-									{this.state.topLevelList.passive.length ?
-										<>
-											<Grid item>
-												<Typography>Out of Scope:</Typography>
-											</Grid>
-											<Grid item>
-												<Grid container direction="row">
-													{this.state.topLevelList.passive.map((card, idx) => {
+									<Grid container direction="column" className="board-grid">
+										{this.state.topLevelList.active.length ?
+											<>
+												<Grid item>
+													<Typography>Considering:</Typography>
+												</Grid>
+												<Grid item><Grid container direction="row">
+													{this.state.topLevelList.active.map((card, idx) => {
 														return (
 															<Grid key={idx + 1} item>
-
 																<PlanItem
 																	card={card}
-																	selected={false}
+																	showSelector
+																	selected={true}
 																	selectChange={this.cardSelectChange} />
 															</Grid>
 														)
 													})}
 												</Grid>
-											</Grid>
-										</>
+												</Grid>
+											</>
+											: null}
+									</Grid>
+									<Grid container direction="column" className="board-grid">
+										{this.state.topLevelList.passive.length ?
+											<>
+												<Grid item>
+													<Typography>Out of Scope:</Typography>
+												</Grid>
+												<Grid item>
+													<Grid container direction="row">
+														{this.state.topLevelList.passive.map((card, idx) => {
+															return (
+																<Grid key={idx + 1} item>
+
+																	<PlanItem
+																		card={card}
+																		showSelector
+																		selected={false}
+																		selectChange={this.cardSelectChange} />
+																</Grid>
+															)
+														})}
+													</Grid>
+												</Grid>
+											</>
+											: null}
+
+									</Grid>
+
+
+
+								</div>
+							</div>
+						</li>
+						<li className="column-li">
+							<input className="column-input" id={this.PLAN_PANEL} type="radio" name={this.PLAN_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.PLAN_PANEL} />
+							<label className="column-label" htmlFor={this.PLAN_PANEL} ><div>PI Planning</div></label>
+							<div className="accslide">
+								<div className="content">
+									{this.state.currentPanel === this.PLAN_PANEL ?
+										<Board
+											host={this.props.host}
+											mode={this.state.mode}
+											colour={this.state.colouring}
+											sort={this.state.sortType}
+											sortDir={this.state.sortDir}
+											eb={this.state.showErrors}
+											modeChange={this.modeChange}
+											sortChange={this.sortChange}
+											sortDirChange={this.sortDirChange}
+											colourChange={this.colourChange}
+											errorChange={this.errorChange}
+											board={this.state.context}
+											active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
+												return card.id
+											}), ",") : null}
+										>
+										</Board>
 										: null}
-
-								</Grid>
-
-
-
+								</div>
 							</div>
-						</div>
-					</li>
-					<li className="column-li">
-						<input className="column-input" id={this.PLAN_PANEL} type="radio" name={this.PLAN_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.PLAN_PANEL} />
-						<label className="column-label" htmlFor={this.PLAN_PANEL} ><div>PI Planning</div></label>
-						<div className="accslide">
-							<div className="content">
-								{this.state.currentPanel === this.PLAN_PANEL ?
-									<Board
-										host={this.props.host}
-										mode={this.state.mode}
-										colour={this.state.colouring}
-										sort={this.state.sortType}
-										sortDir={this.state.sortDir}
-										eb={this.state.showErrors}
-										modeChange={this.modeChange}
-										sortChange={this.sortChange}
-										sortDirChange={this.sortDirChange}
-										colourChange={this.colourChange}
-										errorChange={this.errorChange}
-										board={this.state.context}
-										active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
-											return card.id
-										}), ",") : null}
-									>
-									</Board>
-									: null}
+						</li>
+						<li className="column-li">
+							<input className="column-input" id={this.ALLOC_PANEL} type="radio" name={this.ALLOC_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.ALLOC_PANEL} />
+							<label className="column-label" htmlFor={this.ALLOC_PANEL} ><div>Allocation</div></label>
+							<div className="accslide">
+								<div className="content">
+								</div>
 							</div>
-						</div>
-					</li>
-				</ul>
-
-
-			</Column>)
+						</li>
+					</ul>
+				</Column>)
 		}
 		else {
 			return null
@@ -313,23 +324,23 @@ export class PIPlanApp extends React.Component {
 	}
 
 	modeChange = (mode) => {
-		this.setState({mode: mode})
+		this.setState({ mode: mode })
 	}
 
 	sortChange = (sort) => {
-		this.setState({sort: sort})
+		this.setState({ sort: sort })
 	}
 
 	colourChange = (colour) => {
-		this.setState({colouring : colour})
+		this.setState({ colouring: colour })
 	}
 
 	sortDirChange = (sortDir) => {
-		this.setState({sortDir: sortDir})
+		this.setState({ sortDir: sortDir })
 	}
 
 	errorChange = (eb) => {
-		this.setState({showErrors: eb})
+		this.setState({ showErrors: eb })
 	}
 
 	panelChange = (evt) => {
