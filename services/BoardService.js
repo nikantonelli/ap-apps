@@ -1,4 +1,5 @@
 import DataProvider from "../utils/Server/DataProvider";
+import CardService from "./CardService";
 
 class BoardService {
 
@@ -53,6 +54,8 @@ class BoardService {
 
 
 		var cards = null;
+		var cs = new CardService();
+
 		if (globalThis.dataProvider) {
 			cards = globalThis.dataProvider.inCache(id, 'cards')
 		}
@@ -64,16 +67,11 @@ class BoardService {
 				if (cards && cards.length) {
 					cards.forEach(async (card) => {
 
-						var cParams = {
-							mode: "GET",
-							url: "/card/" + card.id
-						}
-						var response = await this.getData(cParams)
-						var cResult = await response;
-						newCards.push(cResult)
+						var cResult = await cs.get(card.id)
+						if (cResult) newCards.push(cResult)
 					})
 
-					globalThis.dataProvider.addToCacheWithId(id, newCards, 'cards')
+					if (newCards.length) globalThis.dataProvider.addToCacheWithId(id, newCards, 'cards')
 					return newCards;
 				}
 			}
