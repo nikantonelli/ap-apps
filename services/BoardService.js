@@ -65,13 +65,12 @@ class BoardService {
 				var newCards = [];
 				cards = result.cards
 				if (cards && cards.length) {
-					cards.forEach(async (card) => {
-
-						var cResult = await cs.get(card.id)
-						if (cResult) newCards.push(cResult)
-					})
-
-					if (newCards.length) globalThis.dataProvider.addToCacheWithId(id, newCards, 'cards')
+					for (var i = 0; i < cards.length; i++) {
+						newCards.push(await cs.get(cards[i].id))
+					}
+					if (newCards.length) {
+						globalThis.dataProvider.addToCacheWithId(id, newCards, 'cards')
+					}
 					return newCards;
 				}
 			}

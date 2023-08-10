@@ -1,3 +1,4 @@
+import { union } from "lodash";
 import { shortDate } from "./Helpers";
 
 export const getCardChildren = async (host, card) => {
@@ -22,6 +23,31 @@ export const getCard = async (host, card) => {
 	return await doRequest(params);
 }
 
+export const getCardHierarchy = async (host, card, type, depth) => {
+	console.log( card.title, depth)
+	if (depth < 0) return //We're done
+	
+	var level = depth - 1;
+	switch (type) {
+		case 'children':{
+			var result = await getCardChildren(host, card);
+			var children = await result.json()
+			if (children.cards && children.cards.length) {
+				if (!card.children) {
+					card.children = children.cards
+				} else {
+					card.children = union(card.children, children.cards)
+				}
+				for (var i = 0; i < children.cards.length; i++) {
+					await getCardHierarchy(host, children.cards[i], type, level)
+				}
+				//children.cards.forEach((card) => { getCardHierarchy(host, card, type, level) })	
+			}		
+		}
+	}
+	return card
+}
+
 export const findBoards = async (host, options) => {
 	var params = {
 		url: "/board",
@@ -34,8 +60,8 @@ export const findBoards = async (host, options) => {
 	}
 	var result = await doMultiRequest(params, "boards")
 	if (result)
-		return  result
-		else	return null
+		return result
+	else return null
 
 }
 export const getListOfCards = async (host, cardList) => {
@@ -104,7 +130,7 @@ export const doMultiRequest = async (params, itemType) => {
 
 	while (moreItems) {
 		//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
-		var response = await fetch(new Request("http://" + params.host + "/api" + params.url + "?offset=" + currentItem + extras, ps))
+		var response = await fetch(new Request(encodeURI("http://" + params.host + "/api" + params.url + "?offset=" + currentItem + extras), ps))
 		var res = await response.json();
 		if (res) {
 			currentItem = res.pageMeta.endRow

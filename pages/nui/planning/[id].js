@@ -19,14 +19,13 @@ export default function Planning({ board, host, series, timebox, cards, active, 
 		/>
 	)
 }
-export async function getServerSideProps({ req, params, query }) {
+export  async function getServerSideProps({ req, params, query }) {
 	if (globalThis.dataProvider == null) {
 		globalThis.dataProvider = new DataProvider()
 	}
 	var bs = new BoardService(req.headers.host);
 	var board = await bs.get(params.id)
 	var cards = await bs.getCards(params.id);
-
 	var series = null;
 	if (query.srs) {
 		series = query.srs;

@@ -1,8 +1,8 @@
 import React from "react";
-import { doRequest } from "../utils/Client/Sdk";
+import { doRequest, findBoards, getCardHierarchy } from "../utils/Client/Sdk";
 import Column from "./Column";
 import { APtimebox } from "./AP-Fields/timebox";
-import { filter, find, orderBy, join, forEach } from "lodash";
+import { filter, find, orderBy, join, forEach, uniq } from "lodash";
 import { Grid, IconButton, Typography } from "@mui/material";
 import { OpenInNew } from "@mui/icons-material";
 import PlanItem from "./PlanningItem";
@@ -36,6 +36,7 @@ export class PIPlanApp extends React.Component {
 			showErrors: this.props.eb || 'off',
 			sortType: this.props.sort || 'none',
 			sortDir: this.props.dir || 'ascending',
+			depth: this.props.depth || 3
 		}
 	}
 
@@ -101,6 +102,7 @@ export class PIPlanApp extends React.Component {
 		var incrementList = []
 		var activeList = []
 		var passiveList = []
+		console.log("update timebox: ", this.props.cards)
 		incrementList = filter(this.props.cards, (card) => {
 			var increments = card.planningIncrements;
 			return (find(increments, { id: tid }) !== undefined)
@@ -121,8 +123,41 @@ export class PIPlanApp extends React.Component {
 			})
 		}
 
+		this.data = this.createAllocationData(activeList)
 		this.setState({ topLevelList: { active: activeList, passive: passiveList } })
 		this.setCurrentTimebox(find(timeboxes, { id: tid }))
+	}
+
+	createAllocationData = async (cardList) => {
+		var groups = [];
+		//Get all the boards
+
+		//First get the hierarchy
+		for (var i = 0; i < cardList.length; i++) {
+			await getCardHierarchy(this.props.host, cardList[i], 'children', this.state.depth)
+			
+		}
+		
+		// var boards = await findBoards(this.props.host, 
+		// 	{search: 
+		// 		join(
+		// 			uniq( cardList.map((card) => card.board.title)),
+		// 			',')
+		// 	})
+
+		// switch (this.state.grouping) {
+		// 	case 'level': {
+		// 		//Get the levels from the system? Or just use the levesl from the boards we have
+		// 		break;
+		// 	}
+
+		// 	case 'board': {
+				
+		// 		break;
+		// 	}
+		// }
+		
+		return cardList;
 	}
 
 	timeboxChange = (evt) => {
@@ -285,24 +320,25 @@ export class PIPlanApp extends React.Component {
 							<div className="accslide">
 								<div className="content">
 									{this.state.currentPanel === this.PLAN_PANEL ?
-										<Board
-											host={this.props.host}
-											mode={this.state.mode}
-											colour={this.state.colouring}
-											sort={this.state.sortType}
-											sortDir={this.state.sortDir}
-											eb={this.state.showErrors}
-											modeChange={this.modeChange}
-											sortChange={this.sortChange}
-											sortDirChange={this.sortDirChange}
-											colourChange={this.colourChange}
-											errorChange={this.errorChange}
-											board={this.state.context}
-											active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
-												return card.id
-											}), ",") : null}
-										>
-										</Board>
+										// <Board
+										// 	host={this.props.host}
+										// 	mode={this.state.mode}
+										// 	colour={this.state.colouring}
+										// 	sort={this.state.sortType}
+										// 	sortDir={this.state.sortDir}
+										// 	eb={this.state.showErrors}
+										// 	modeChange={this.modeChange}
+										// 	sortChange={this.sortChange}
+										// 	sortDirChange={this.sortDirChange}
+										// 	colourChange={this.colourChange}
+										// 	errorChange={this.errorChange}
+										// 	board={this.state.context}
+										// 	active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
+										// 		return card.id
+										// 	}), ",") : null}
+										// >
+										// </Board>
+										null
 										: null}
 								</div>
 							</div>
