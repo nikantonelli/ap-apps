@@ -1,15 +1,15 @@
-import React from "react";
-import { doRequest, findBoards, getCardHierarchy } from "../utils/Client/Sdk";
-import Column from "./Column";
-import { APtimebox } from "./AP-Fields/timebox";
-import { filter, find, orderBy, join, forEach, uniq } from "lodash";
-import { Grid, IconButton, Typography } from "@mui/material";
 import { OpenInNew } from "@mui/icons-material";
-import PlanItem from "./PlanningItem";
-import Board from "../pages/nui/context/[id]";
+import { Grid, IconButton, Typography } from "@mui/material";
+import { filter, find, forEach, orderBy } from "lodash";
+import React from "react";
+import { doRequest, getCardHierarchy } from "../utils/Client/Sdk";
+import { APtimebox } from "./AP-Fields/timebox";
 import APBoard from "./APBoard";
+import Column from "./Column";
+import NikApp from "./NikApp";
+import PlanItem from "./PlanningItem";
 
-export class PIPlanApp extends React.Component {
+export class PIPlanApp extends NikApp {
 
 	CONFIG_PANEL = "config"
 	PLAN_PANEL = "plan"
@@ -37,7 +37,8 @@ export class PIPlanApp extends React.Component {
 			showErrors: this.props.eb || 'off',
 			sortType: this.props.sort || 'none',
 			sortDir: this.props.dir || 'ascending',
-			depth: this.props.depth || 3
+			depth: this.props.depth || 3,
+			transitionDone: true
 		}
 	}
 
@@ -317,10 +318,12 @@ export class PIPlanApp extends React.Component {
 						<li className="column-li">
 							<input className="column-input" id={this.PLAN_PANEL} type="radio" name={this.PLAN_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.PLAN_PANEL} />
 							<label className="column-label" htmlFor={this.PLAN_PANEL} ><div>PI Planning</div></label>
-							<div className="accslide">
-								<div className="content">
-									{this.state.currentPanel === this.PLAN_PANEL ?
+							<div className="accslide" name={this.PLAN_PANEL} onTransitionEnd={this.transitionDone}>
+								<div id={this.PLAN_PANEL} className="content">
+									
+									{(this.state.currentPanel === this.PLAN_PANEL && this.state.transitionDone) ?
 										<APBoard
+											target={this.PLAN_PANEL}
 											board={this.state.context}
 											cards={this.state.topLevelList.active}
 											depth={this.props.depth}
@@ -331,25 +334,10 @@ export class PIPlanApp extends React.Component {
 											sortDir={this.state.sortDir}
 											host={this.props.host}
 										/>
-										// <Board
-										// 	host={this.props.host}
-										// 	mode={this.state.mode}
-										// 	colour={this.state.colouring}
-										// 	sort={this.state.sortType}
-										// 	sortDir={this.state.sortDir}
-										// 	eb={this.state.showErrors}
-										// 	modeChange={this.modeChange}
-										// 	sortChange={this.sortChange}
-										// 	sortDirChange={this.sortDirChange}
-										// 	colourChange={this.colourChange}
-										// 	errorChange={this.errorChange}
-										// 	board={this.state.context}
-										// 	active={this.state.topLevelList.active.length ? join(this.state.topLevelList.active.map((card) => {
-										// 		return card.id
-										// 	}), ",") : null}
-										// >
-										// </Board>
 										: null}
+										<div id={"surface_" + this.state.context.id}>
+										<svg id={"svg_" + this.state.context.id} />
+									</div>
 								</div>
 							</div>
 						</li>
@@ -390,6 +378,10 @@ export class PIPlanApp extends React.Component {
 	}
 
 	panelChange = (evt) => {
-		this.setState({ currentPanel: evt.target.id })
+		this.setState({ currentPanel: evt.target.name, transitionDone: false })
+	}
+
+	transitionDone = (evt) => {
+		this.setState( { transitionDone : true })
 	}
 }

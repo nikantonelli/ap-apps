@@ -1044,6 +1044,7 @@ export class APBoard extends NikApp {
 
 	render() {
 		if (!this.state.fetchActive) {
+			this.update()
 			return (
 				<Stack id="portalContainer" sx={{ width: '100%' }}>
 					{this.portals}
@@ -1090,17 +1091,15 @@ export class APBoard extends NikApp {
 					</Menu>
 
 
-					<div id={"surface_" + this.state.board.id}>
-						{this.state.mode === 'timeline' ?
-							<TimeLineApp
-								data={this.state.rootNode ? this.state.rootNode : []}
-								end={this.dateRangeEnd}
-								start={this.dateRangeStart}
-								colourise={this.state.colourise}
-								errorColour={this.getErrorColour}
-							/> : null}
-						<svg id={"svg_" + this.state.board.id} />
-					</div>
+					{this.state.mode === 'timeline' ?
+						<TimeLineApp
+							data={this.state.rootNode ? this.state.rootNode : []}
+							end={this.dateRangeEnd}
+							start={this.dateRangeStart}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorColour}
+						/> : null}
+
 
 
 					<Drawer
@@ -1385,10 +1384,8 @@ export class APBoard extends NikApp {
 	componentDidMount = () => {
 		if (this.state.fetchActive) {
 			this.setData()
-			this.update()
 			this.setState({ fetchActive: false })
 		}
-
 		this.setColouring({ colouring: this.state.colouring })
 		window.addEventListener('resize', this.resize);
 	}
