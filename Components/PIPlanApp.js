@@ -7,6 +7,7 @@ import { Grid, IconButton, Typography } from "@mui/material";
 import { OpenInNew } from "@mui/icons-material";
 import PlanItem from "./PlanningItem";
 import Board from "../pages/nui/context/[id]";
+import APBoard from "./APBoard";
 
 export class PIPlanApp extends React.Component {
 
@@ -102,7 +103,6 @@ export class PIPlanApp extends React.Component {
 		var incrementList = []
 		var activeList = []
 		var passiveList = []
-		console.log("update timebox: ", this.props.cards)
 		incrementList = filter(this.props.cards, (card) => {
 			var increments = card.planningIncrements;
 			return (find(increments, { id: tid }) !== undefined)
@@ -135,9 +135,9 @@ export class PIPlanApp extends React.Component {
 		//First get the hierarchy
 		for (var i = 0; i < cardList.length; i++) {
 			await getCardHierarchy(this.props.host, cardList[i], 'children', this.state.depth)
-			
+
 		}
-		
+
 		// var boards = await findBoards(this.props.host, 
 		// 	{search: 
 		// 		join(
@@ -152,11 +152,11 @@ export class PIPlanApp extends React.Component {
 		// 	}
 
 		// 	case 'board': {
-				
+
 		// 		break;
 		// 	}
 		// }
-		
+
 		return cardList;
 	}
 
@@ -320,6 +320,17 @@ export class PIPlanApp extends React.Component {
 							<div className="accslide">
 								<div className="content">
 									{this.state.currentPanel === this.PLAN_PANEL ?
+										<APBoard
+											board={this.state.context}
+											cards={this.state.topLevelList.active}
+											depth={this.props.depth}
+											colour={this.state.colouring}
+											mode={this.state.mode}
+											sort={this.state.sortType}
+											eb={this.state.showErrors}
+											sortDir={this.state.sortDir}
+											host={this.props.host}
+										/>
 										// <Board
 										// 	host={this.props.host}
 										// 	mode={this.state.mode}
@@ -338,7 +349,6 @@ export class PIPlanApp extends React.Component {
 										// 	}), ",") : null}
 										// >
 										// </Board>
-										null
 										: null}
 								</div>
 							</div>

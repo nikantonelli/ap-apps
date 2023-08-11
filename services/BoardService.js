@@ -51,11 +51,8 @@ class BoardService {
 				"lane_class_types": ["active", "backlog"]
 			})
 		}
-
-
 		var cards = null;
 		var cs = new CardService();
-
 		if (globalThis.dataProvider) {
 			cards = globalThis.dataProvider.inCache(id, 'cards')
 		}

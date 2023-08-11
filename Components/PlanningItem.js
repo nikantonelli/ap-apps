@@ -27,7 +27,7 @@ export default class PlanItem extends React.Component {
 		const label = { inputProps: { 'aria-label': 'Include in Plan Switch' } };
 		return (
 			<Card sx={{ minWidth: 200, maxWidth: 400 }}>
-				<CardHeader subheader=
+				<CardHeader sx={{backgroundColor:this.props.card.color}} subheader=
 					{(this.props.card.customId && this.props.card.customId.value && this.props.card.customId.value.length) ?
 						this.props.card.customId.value
 						: null}>
@@ -37,7 +37,7 @@ export default class PlanItem extends React.Component {
 						{this.props.card.title}
 					</Typography>
 				</CardContent>
-				<CardActions>
+				<CardActions sx={{backgroundColor:this.props.card.color}} >
 					<Grid container direction={'row'}>
 						<Grid xs={6} item>
 							<IconButton

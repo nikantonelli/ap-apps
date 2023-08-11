@@ -56,7 +56,7 @@ export class APBoard extends NikApp {
 	portals = [];
 	root = {
 		id: 'root',
-		children: []
+		children: this.props.cards || []
 	};
 	assignedUserList = [];
 	createdUserList = [];
@@ -483,7 +483,7 @@ export class APBoard extends NikApp {
 					.attr("id", (d, idx) => "rect_" + idx)
 					.attr("width", d => d.y1 - d.y0 - 4)
 					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM))
+					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM))
 					.attr("fill", d => {
 						return me.state.colourise(d);
 					})
@@ -610,7 +610,7 @@ export class APBoard extends NikApp {
 					.attr("fill", d => {
 						return me.state.colourise(d);
 					})
-					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
+					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
 					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
 
 					.attr("d", d => arc(d))
@@ -629,7 +629,7 @@ export class APBoard extends NikApp {
 						var eColour = me.getErrorColour(d);
 						return eColour.length ? eColour : me.state.colourise(d);
 					})
-					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM) : 0)
+					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
 					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
 					.attr("d", d => eArc(d))
 					.append("title")
@@ -885,7 +885,7 @@ export class APBoard extends NikApp {
 
 		nodes.each(function (d, idx, nodeArray) {
 			var node = d3.select(this);
-			var opacity = me.opacityDrop ? Board.OPACITY_HIGH : Board.OPACITY_MEDIUM;
+			var opacity = me.opacityDrop ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM;
 			var colour = me.state.colourise(d);
 			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
 			var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
@@ -1044,7 +1044,6 @@ export class APBoard extends NikApp {
 
 	render() {
 		if (!this.state.fetchActive) {
-			this.update()
 			return (
 				<Stack id="portalContainer" sx={{ width: '100%' }}>
 					{this.portals}
@@ -1249,7 +1248,11 @@ export class APBoard extends NikApp {
 				</Stack >
 			)
 		}
-		else return <div>loading</div>;
+		else return (
+			<div>
+				loading
+			</div>
+		);
 	}
 
 	getTopLevel = async () => {
@@ -1381,7 +1384,8 @@ export class APBoard extends NikApp {
 
 	componentDidMount = () => {
 		if (this.state.fetchActive) {
-			this.getTopLevel();
+			this.setData()
+			this.update()
 			this.setState({ fetchActive: false })
 		}
 

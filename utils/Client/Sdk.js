@@ -24,7 +24,6 @@ export const getCard = async (host, card) => {
 }
 
 export const getCardHierarchy = async (host, card, type, depth) => {
-	console.log( card.title, depth)
 	if (depth < 0) return //We're done
 	
 	var level = depth - 1;
