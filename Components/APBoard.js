@@ -9,13 +9,13 @@ import React from "react";
 import { APcard } from "../Components/APcard";
 import { TimeLineApp } from "../Components/TimeLineApp";
 import { shortDate } from "../utils/Client/Helpers";
-import { doRequest, getCardHierarchy } from "../utils/Client/Sdk";
+import { doRequest, getCardHierarchy, removeDuplicates } from "../utils/Client/Sdk";
 
-import NikApp from "../Components/NikApp";
+import App from "./App";
 
-export class APBoard extends NikApp {
+export class APBoard extends App {
 
-	static DEFAULT_TREE_DEPTH = 4;
+	static DEFAULT_TREE_DEPTH = 3;
 	static OPACITY_HIGH = 1.0;
 	static OPACITY_MEDIUM = 0.7;
 	static OPACITY_LOW = 0.3;
@@ -50,10 +50,12 @@ export class APBoard extends NikApp {
 			showErrors: this.props.eb || 'off',
 			colourise: null,
 		}
+		console.log("rootcards: ", this.props.cards)
 	}
 
 	popUp = null
 	portals = [];
+	
 	root = {
 		id: 'root',
 		children: this.props.cards || []
@@ -1254,98 +1256,15 @@ export class APBoard extends NikApp {
 		);
 	}
 
-	getTopLevel = async () => {
-
-		var me = this;
-		var params = {
-			host: this.props.host,
-			mode: "POST",
-			url: "/card/list",
-			type: "application/json",
-			body: JSON.stringify({
-				"board": this.state.board.id, "only": ["id"],
-				"lane_class_types": ["active", "backlog"]
-			})
-		}
-
-		try {
-			var response = await doRequest(params)
-			var result = await response.json()
-			var cards = result.cards
-
-			//Filter out the ones we don't want
-			if (this.state.active && !this.reloadInProgress) {
-				var activeCards = this.state.active.split(',')
-				cards = _.filter(cards, function (child) {
-					var result = (_.filter(activeCards, function (value) {
-						var eqv = value === child.id;
-						return eqv
-					}))
-					return (result.length > 0)
-				})
-			}
-
-			//Collect the ids and get the 'real' versions of the cards
-			if (cards && cards.length) {
-				for (var i = 0; i < cards.length; i++) {
-					var cParams = {
-						host: this.props.host,
-						mode: "GET",
-						url: "/card/" + cards[i].id
-					}
-					var cResponse = await doRequest(cParams)
-					var cResult = await cResponse.json()
-					this.root.children.push(cResult)
-					if (this.state.depth > 0) this.childrenOf(params.host, [cResult], this.state.depth)
-					else this.setData()
-				}
-			}
-		} catch (error) {
-			console.log("Caught error: ", error)
-		}
-		return null;
-	}
-
 	childrenOf = (host, cards, depth) => {
 
 		var me = this;
 		for (var i = 0; i < cards.length; i++) {
 			getCardHierarchy(host, cards[i], 'children', depth)
+
 			me.setData()
 		}
-		//		forEach(cards, (card, idx) => {
-		//			getCardHierarchy(host, card, 'children', depth)
 
-		// me.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
-		// getCardChildren(host, card).then(async (result) => {
-		// 	me.setState((prev) => { return { pending: prev.pending - 1 } })
-		// 	var children = await result.json()
-		// 	if (children) {
-		// 		if (!Boolean(card.children)) card.children = [];
-		// 		forEach(children.cards, (cd) => {
-		// 			//Remove from top list if they are a child of something
-		// 			me.root.children = _.reject(me.root.children, function (rootChild) {
-		// 				return rootChild.id === cd.id
-		// 			})
-		// 			me.setState((prev) => { return { pending: prev.pending + 1, total: prev.total + 1 } })
-		// 			getCard(host, cd).then(async (realResult) => {
-		// 				var realCard = await realResult.json();
-		// 				if (realCard) {
-		// 					me.setState((prev) => { return { pending: prev.pending - 1 } })
-		// 					//Tag a single parent for the 'hierarchy'
-		// 					realCard.parent = card.id
-		// 					card.children.push(realCard);
-		// 					me.setData();
-		// 					if (depth < this.state.depth) this.childrenOf(host, [realCard], depth + 1)
-		// 				}
-		// 			})
-
-		// 		})
-
-		// 	}
-		// 	this.setData()
-		// }, this)
-		//		})
 	}
 	setData = () => {
 		function setChildIdx(item) {

@@ -6,10 +6,10 @@ import { doRequest, getCardHierarchy } from "../utils/Client/Sdk";
 import { APtimebox } from "./AP-Fields/timebox";
 import APBoard from "./APBoard";
 import Column from "./Column";
-import NikApp from "./NikApp";
+import App from "./App";
 import PlanItem from "./PlanningItem";
 
-export class PIPlanApp extends NikApp {
+export class PIPlanApp extends App {
 
 	CONFIG_PANEL = "config"
 	PLAN_PANEL = "plan"

@@ -3,23 +3,26 @@ import DataProvider from "../../../utils/Server/DataProvider";
 import React from "react";
 import { APBoard } from "../../../Components/APBoard";
 import { getCardHierarchy } from "../../../utils/Client/Sdk";
-export default function Board({board, cards, active, depth, colour,mode, sort, eb, dir, host}) {
-	for (var i = 0; i < cards.length; i++){
-		getCardHierarchy(host, cards[i], 'children', depth)
-	}
+export default function Board({ board, cards, active, depth, colour, mode, sort, eb, dir, host }) {
+	for (var i = 0; i < cards.length; i++) getCardHierarchy(host, cards[i], 'children', depth)
 	return (
-		<APBoard 
-			board={ board}
-			cards={ cards} 
-			active={ active} 
-			depth={ depth} 
-			colour={ colour} 
-			mode={ mode} 
-			sort={ sort} 
-			eb={ eb} 
-			dir={ dir} 
-			host={ host }
-		/>
+		<>
+			<APBoard
+				board={board}
+				cards={cards}
+				active={active}
+				depth={depth}
+				colour={colour}
+				mode={mode}
+				sort={sort}
+				eb={eb}
+				dir={dir}
+				host={host}
+			/>
+			<div id={"surface_" + board.id}>
+				<svg id={"svg_" + board.id} />
+			</div>
+		</>
 	)
 }
 
@@ -39,7 +42,7 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.depth) {
 			depth = query.depth;
 		}
-		else depth = Board.DEFAULT_TREE_DEPTH	//Limit the exponential explosion of fetches as you go down the tree
+		else depth = APBoard.DEFAULT_TREE_DEPTH	//Limit the exponential explosion of fetches as you go down the tree
 
 		var mode = null;
 		if (query.mode) {

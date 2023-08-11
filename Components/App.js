@@ -2,7 +2,7 @@ import { BroadcastChannel } from "broadcast-channel";
 import React from "react";
 import { io } from "socket.io-client";
 
-export default class NikApp extends React.Component {
+export default class App extends React.Component {
     constructor(props) {
         super(props);
 

@@ -1,4 +1,4 @@
-import { union } from "lodash";
+import { union, unionBy } from "lodash";
 import { shortDate } from "./Helpers";
 
 export const getCardChildren = async (host, card) => {
@@ -35,7 +35,7 @@ export const getCardHierarchy = async (host, card, type, depth) => {
 				if (!card.children) {
 					card.children = children.cards
 				} else {
-					card.children = union(card.children, children.cards)
+					card.children = unionBy(card.children, children.cards, (card) => card.id)
 				}
 				for (var i = 0; i < children.cards.length; i++) {
 					await getCardHierarchy(host, children.cards[i], type, level)
@@ -45,6 +45,20 @@ export const getCardHierarchy = async (host, card, type, depth) => {
 		}
 	}
 	return card
+}
+
+/** If a top level card is a child of something else in the hierarchy, then remove from the top layer */
+export const removeDuplicates = (cards) => {
+	var checkedCards = cards;
+
+	cards.forEach((card) => {
+		checkedCards = filter(checkedCards, (cc) => {
+			return !filter(card.children, (child) => {
+				return child.id === cc.id
+			})
+		})
+	})
+	return checkedCards
 }
 
 export const findBoards = async (host, options) => {
