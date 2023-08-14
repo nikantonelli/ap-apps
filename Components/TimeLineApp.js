@@ -1,10 +1,10 @@
-import React from "react";
-import Grid from "@mui/material/Unstable_Grid2";
+import { DragHandle, SubdirectoryArrowRight } from "@mui/icons-material";
 import { Box, Tooltip, Typography } from "@mui/material";
+import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
-import { DragHandle, IceSkatingOutlined, ImportContacts, SubdirectoryArrowRight } from "@mui/icons-material";
 import { forEach } from "lodash";
-export class TimeLineApp extends React.Component {
+import React from "react";
+export class APTimeLineView extends React.Component {
 
 	constructor(props) {
 		super(props);

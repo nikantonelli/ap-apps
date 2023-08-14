@@ -1,18 +1,19 @@
 import { Autocomplete, Box, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
-import _, { flatten, forEach } from "lodash";
+import _, { forEach } from "lodash";
 
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
 import React from "react";
 
 import { APcard } from "../Components/APcard";
-import { TimeLineApp } from "../Components/TimeLineApp";
+import { APTimeLineView } from "../Components/TimeLineApp";
 import { shortDate } from "../utils/Client/Helpers";
-import { doRequest, flattenTree, getCardHierarchy, removeDuplicates } from "../utils/Client/Sdk";
+import { flattenTree, getCardHierarchy } from "../utils/Client/Sdk";
 
 import App from "./App";
-import { APTreeView } from "./APTreeView";
+import { APTreeView } from "./TreeApp";
+import { APSunburstView } from "./SunburstApp";
 
 export class APBoard extends App {
 
@@ -51,7 +52,6 @@ export class APBoard extends App {
 			showErrors: this.props.eb || 'off',
 			colourise: this.typeColouring,
 		}
-		console.log("rootcards: ", this.props.cards)
 	}
 
 	popUp = null
@@ -312,7 +312,7 @@ export class APBoard extends App {
 	addPortals = () => {
 		var allItems = []
 		flattenTree(this.root.children, allItems)
-		
+
 		var me = this;
 		allItems.forEach(function (item, idx) {
 
@@ -330,7 +330,7 @@ export class APBoard extends App {
 							descendants={item.children}
 							parents={parents}
 							cardProps={{ maxWidth: 700, flexGrow: 1 }}
-							host={me.props.host} 
+							host={me.props.host}
 							card={item}
 							context={me.state.context}
 							onClose={me.closePopUp}
@@ -542,147 +542,11 @@ export class APBoard extends App {
 
 				break;
 			}
-			case 'sunburst': {
-
-				var nodes = d3.selectAll(".node")
-					.data(this.rootNode.descendants().slice(1))
-					.enter()
-
-				d3.partition()
-					.size([2 * Math.PI, this.rootNode.height + 1])
-					(this.rootNode);
-				var width = _.min([window.innerWidth / 2, (window.innerHeight / 2) - (document.getElementById("header-box").getBoundingClientRect().height / 2) - 2])
-
-				svg.attr("width", window.innerWidth)
-				svg.attr("height", width * 2)
-				svg.attr('viewBox', [0, 0, window.innerWidth, width * 2])
-				svg.attr("height", width * 2)
-				const g = svg.append("g")
-					.attr("transform", `translate(${width + ((window.innerWidth - (width * 2)) / 2)},${width})`);
-
-				var ringCount = _.min([(this.state.depth), 5]); //Max can be four rings including the root due to the text length
-				var arc = d3.arc()
-					.startAngle(d => d.x0)
-					.endAngle(d => d.x1)
-					.padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
-					.padRadius((width / ringCount) * 1.5)
-					.innerRadius(d => d.y0 * (width / ringCount))
-					.outerRadius(d => Math.max(d.y0 * (width / ringCount), d.y1 * (width / ringCount) - 1))
-
-				var eArc = d3.arc()
-					.startAngle(d => d.x0)
-					.endAngle(d => d.x1)
-					.padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
-					.padRadius((width / ringCount) * 1.5)
-					.innerRadius(d => Math.max(d.y1 * (width / ringCount) - 3, d.y0 * (width / ringCount)))
-					.outerRadius(d => d.y1 * (width / ringCount) - 1)
-
-				var path = g.append("g")
-					.selectAll("path")
-					.data(this.rootNode.descendants().slice(1))
-					.join("path")
-					.attr("fill", d => {
-						return me.state.colourise(d);
-					})
-					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
-					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
-
-					.attr("d", d => arc(d))
-					.style("cursor", "pointer")
-					.on("click", me.nodeClicked);
-
-				path.append("title")
-					.text(d => me.getTitle(d))
-					;
-
-				var ePath = g.append("g")
-					.selectAll("path")
-					.data(this.rootNode.descendants().slice(1))
-					.join("path")
-					.attr("fill", d => {
-						var eColour = me.getErrorColour(d);
-						return eColour.length ? eColour : me.state.colourise(d);
-					})
-					.attr("fill-opacity", d => arcVisible(d) ? ((d.children && me.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
-					.attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
-					.attr("d", d => eArc(d))
-					.append("title")
-					.text(d => me.getErrorMessage(d))
-
-				const label = g.append("g")
-					.attr("pointer-events", "none")
-					.style("user-select", "none")
-					.selectAll("text")
-					.data(this.rootNode.descendants().slice(1))
-					.join("text")
-					.attr("dy", "0.35em")
-					//					.attr("fill-opacity", 1)
-					.attr("fill-opacity", d => +sbLabel(d, d))
-					.attr("transform", d => labelTransform(d))
-
-					.attr("text-anchor", d => labelAnchor(d))
-					.text(d => me.getLabel(d));
-
-				const parent = g.append("circle")
-					.attr("class", "parentNode")
-					.datum(this.rootNode)
-					.attr("r", (width / ringCount))
-					.attr("fill", "#888")
-					.attr("pointer-events", "all")
-					.on("click", me.nodeClicked)
-
-				const parentLabel = g.append("text")
-					.attr("class", "parentLabel")
-					.datum(this.rootNode)
-					.text(d => me.getLabel(d))
-					.attr("text-anchor", "middle");
-
-				const parentTitle = g.append("title")
-					.attr("class", "parentTitle")
-					.datum(this.rootNode)
-					.text(d => me.getTitle(d))
-
-				function arcVisible(d) {
-					return d.y1 <= ringCount && d.y0 >= 1 && d.x1 > d.x0;
-				}
-
-				function sbLabel(d, target) {
-					return (
-						target.y1 <= ringCount &&
-						target.y0 >= 1 &&
-						((target.y1 - target.y0) * (target.x1 - target.x0)) > (0.06 / d.depth)
-					);
-				}
-
-				function labelAnchor(d) {
-
-					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-					return (x < 180) ? "end" : "start"
-				}
-				function labelTransform(d) {
-					// const x = d.x0  * 180 / Math.PI;
-					const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-
-					const y = (d.y1 * (width / ringCount)) - 5;
-					// const y = (d.y0 + d.y1) / 2 * (width / ringCount);
-					return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-				}
-				break;
-			}
+			
+			case 'sunburst':
 			case 'tree':
 			default: {
-				
-				<APTreeView
-					board={this.state.board}
-					root={this.rootNode}
-					sort={this.state.sortType}
-					colouring={this.state.colouring}
-					colourise={this.state.colourise}
-					errorColour={me.getErrorColour}
-					errorMessage={me.getErrorMessage}
-				/>
-
-	}
+			}
 		}
 
 
@@ -804,207 +668,226 @@ export class APBoard extends App {
 	}
 
 	render() {
-		return (
-			<Stack id="portalContainer" sx={{ width: '100%' }}>
-				{this.portals}
-				<Grid id="header-box" container direction={'row'}>
-					<Grid xs={10} item>
-						<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
-							<Grid item>
-								<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
-							</Grid>
-							<Grid item>
-								<TextField
-									variant="standard"
-									sx={{ m: 1, minWidth: 400 }}
-									size="small"
-									defaultValue={this.state.board.title}
-									label="Context"
-									InputProps={{ readOnly: true }} />
-							</Grid>
+		if (!this.state.fetchActive)
+			return (
+				<Stack id="portalContainer" sx={{ width: '100%' }}>
+					{this.portals}
+					<Grid id="header-box" container direction={'row'}>
+						<Grid xs={10} item>
+							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
+								<Grid item>
+									<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
+								</Grid>
+								<Grid item>
+									<TextField
+										variant="standard"
+										sx={{ m: 1, minWidth: 400 }}
+										size="small"
+										defaultValue={this.state.board.title}
+										label="Context"
+										InputProps={{ readOnly: true }} />
+								</Grid>
 
+							</Grid>
+						</Grid>
+						<Grid item xs={2} sx={{ alignItems: 'center' }}>
+							<Grid container style={{ justifyContent: 'flex-end' }} >
+								{this.state.pending ?
+									<Chip color="warning" label={"Queued: " + this.state.pending} />
+									: <Chip label={"Total loaded: " + this.state.total}></Chip>}
+							</Grid>
 						</Grid>
 					</Grid>
-					<Grid item xs={2} sx={{ alignItems: 'center' }}>
-						<Grid container style={{ justifyContent: 'flex-end' }} >
-							{this.state.pending ?
-								<Chip color="warning" label={"Queued: " + this.state.pending} />
-								: <Chip label={"Total loaded: " + this.state.total}></Chip>}
-						</Grid>
-					</Grid>
-				</Grid>
-				<Menu
-					open={Boolean(this.state.anchorEl)}
-					anchorEl={this.state.anchorEl}
-					onClose={this.closeMenu}
-					anchorOrigin={{
-						vertical: 'top',
-						horizontal: 'right',
-					}}
-				>
+					<Menu
+						open={Boolean(this.state.anchorEl)}
+						anchorEl={this.state.anchorEl}
+						onClose={this.closeMenu}
+						anchorOrigin={{
+							vertical: 'top',
+							horizontal: 'right',
+						}}
+					>
 
-					<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
-					{(this.state.active && this.state.active.length) ?
-						<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
-						: null}
-				</Menu>
+						<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
+						{(this.state.active && this.state.active.length) ?
+							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
+							: null}
+					</Menu>
 
 
-				{this.state.mode === 'timeline' ?
-					<TimeLineApp
-						data={this.rootNode ? this.rootNode : []}
-						end={this.dateRangeEnd}
-						start={this.dateRangeStart}
-						colourise={this.state.colourise}
-						errorColour={this.getErrorColour}
-					/> : null}
+					{this.state.mode === 'timeline' ?
+						<APTimeLineView
+							data={this.rootNode ? this.rootNode : []}
+							end={this.dateRangeEnd}
+							start={this.dateRangeStart}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorColour}
+						/> : null}
 
+					{this.state.mode === 'tree' ?
+						<APTreeView
+							board={this.state.board}
+							root={this.rootNode}
+							sort={this.state.sortType}
+							colouring={this.state.colouring}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorColour}
+							errorMessage={this.getErrorMessage}
+						/> : null}
+						{this.state.mode === 'sunburst' ?
+						<APSunburstView
+							board={this.state.board}
+							root={this.rootNode}
+							sort={this.state.sortType}
+							colouring={this.state.colouring}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorColour}
+							errorMessage={this.getErrorMessage}
+						/> : null}
+					<Drawer
 
+						onClose={this.closeDrawer}
+						open={Boolean(this.state.drawerOpen)}
+						anchor='left'
+						sx={{
+							width: this.state.drawerWidth,
+							flexShrink: 0,
+							[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
+						}}
+					>
+						<Box>
+							<Grid container direction="column">
+								<Grid item>
+									<Grid container direction="row">
+										<Grid xs={6} item>
+											<Button
+												aria-label="Open As New Tab"
+												onClick={this.openAsActive}
+												endIcon={<OpenInNew />}
+											>
+												Open Copy
+											</Button>
+										</Grid>
+										<Grid xs={6} item>
+											<Grid sx={{ justifyContent: 'flex-end' }} container>
 
-				<Drawer
-
-					onClose={this.closeDrawer}
-					open={Boolean(this.state.drawerOpen)}
-					anchor='left'
-					sx={{
-						width: this.state.drawerWidth,
-						flexShrink: 0,
-						[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
-					}}
-				>
-					<Box>
-						<Grid container direction="column">
-							<Grid item>
-								<Grid container direction="row">
-									<Grid xs={6} item>
-										<Button
-											aria-label="Open As New Tab"
-											onClick={this.openAsActive}
-											endIcon={<OpenInNew />}
-										>
-											Open Copy
-										</Button>
-									</Grid>
-									<Grid xs={6} item>
-										<Grid sx={{ justifyContent: 'flex-end' }} container>
-
-											<Tooltip title='Close Settings'>
-												<HighlightOff onClick={this.closeDrawer} />
-											</Tooltip>
+												<Tooltip title='Close Settings'>
+													<HighlightOff onClick={this.closeDrawer} />
+												</Tooltip>
+											</Grid>
 										</Grid>
 									</Grid>
 								</Grid>
-							</Grid>
-							<Grid item>
-								{this.topLevelList()}
-							</Grid>
-							<Grid item>
-								<Grid container>
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Mode</InputLabel>
-											<Select
-												value={this.state.mode}
-												onChange={this.modeChange}
-												label="Mode"
-											>
-												<MenuItem value="tree">Tree</MenuItem>
-												<MenuItem value="sunburst">Sunburst</MenuItem>
-												<MenuItem value="partition">Partition</MenuItem>
-												<MenuItem value="timeline">Timeline</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Sort By</InputLabel>
-											<Select
-												value={this.state.sortType}
-												onChange={this.sortChange}
-												label="Sort By"
-											>
-												<MenuItem value="none">None</MenuItem>
-												<MenuItem value="plannedStart">Planned Start</MenuItem>
-												<MenuItem value="plannedFinish">Planned End</MenuItem>
-												<MenuItem value="size">Size</MenuItem>
-												<MenuItem value="r_size">Size Rollup</MenuItem>
-												{this.state.mode === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
-												<MenuItem value="score">Score Total</MenuItem>
-												{this.state.mode === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
-
-												<MenuItem value="id">ID#</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									<Grid item >
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Sort Direction</InputLabel>
-											<Select
-												value={this.state.sortDir}
-												onChange={this.sortDirChange}
-												label="Sort Direction"
-											>
-												<MenuItem value="ascending">Ascending</MenuItem>
-												<MenuItem value="descending">Descending</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Colours</InputLabel>
-											<Select
-												value={this.state.colouring}
-												onChange={this.colourChange}
-												label="Colours"
-											>
-												<MenuItem value="cool">Cool</MenuItem>
-												<MenuItem value="warm">Warm</MenuItem>
-												<MenuItem value="type">Card Type</MenuItem>
-												<MenuItem value="state">Card State</MenuItem>
-												<MenuItem value="l_user">Last Updater</MenuItem>
-												<MenuItem value="c_user">Creator</MenuItem>
-												<MenuItem value="a_user">First Assignee</MenuItem>
-												<MenuItem value="context">Context</MenuItem>
-											</Select>
-										</FormControl>
-									</Grid>
-									{this.state.mode === 'timeline' ? (
+								<Grid item>
+									{this.topLevelList()}
+								</Grid>
+								<Grid item>
+									<Grid container>
 										<Grid item>
 											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Group By</InputLabel>
+												<InputLabel>Mode</InputLabel>
 												<Select
-													value={this.state.grouping}
-													onChange={this.groupChange}
-													label="Grouping"
+													value={this.state.mode}
+													onChange={this.modeChange}
+													label="Mode"
 												>
-													<MenuItem value="level">Level</MenuItem>
-													<MenuItem value="context">Context</MenuItem>
-													<MenuItem value="type">Card Type</MenuItem>
+													<MenuItem value="tree">Tree</MenuItem>
+													<MenuItem value="sunburst">Sunburst</MenuItem>
+													<MenuItem value="partition">Partition</MenuItem>
+													<MenuItem value="timeline">Timeline</MenuItem>
 												</Select>
 											</FormControl>
 										</Grid>
-									) : null}
-									<Grid item>
-										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-											<InputLabel>Error Bars</InputLabel>
-											<Select
-												value={this.state.showErrors}
-												onChange={this.errorChange}
-												label="Errors"
-											>
-												<MenuItem value="on">On</MenuItem>
-												<MenuItem value="off">Off</MenuItem>
-											</Select>
-										</FormControl>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Sort By</InputLabel>
+												<Select
+													value={this.state.sortType}
+													onChange={this.sortChange}
+													label="Sort By"
+												>
+													<MenuItem value="none">None</MenuItem>
+													<MenuItem value="plannedStart">Planned Start</MenuItem>
+													<MenuItem value="plannedFinish">Planned End</MenuItem>
+													<MenuItem value="size">Size</MenuItem>
+													<MenuItem value="r_size">Size Rollup</MenuItem>
+													{this.state.mode === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
+													<MenuItem value="score">Score Total</MenuItem>
+													{this.state.mode === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
+
+													<MenuItem value="id">ID#</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item >
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Sort Direction</InputLabel>
+												<Select
+													value={this.state.sortDir}
+													onChange={this.sortDirChange}
+													label="Sort Direction"
+												>
+													<MenuItem value="ascending">Ascending</MenuItem>
+													<MenuItem value="descending">Descending</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Colours</InputLabel>
+												<Select
+													value={this.state.colouring}
+													onChange={this.colourChange}
+													label="Colours"
+												>
+													<MenuItem value="cool">Cool</MenuItem>
+													<MenuItem value="warm">Warm</MenuItem>
+													<MenuItem value="type">Card Type</MenuItem>
+													<MenuItem value="state">Card State</MenuItem>
+													<MenuItem value="l_user">Last Updater</MenuItem>
+													<MenuItem value="c_user">Creator</MenuItem>
+													<MenuItem value="a_user">First Assignee</MenuItem>
+													<MenuItem value="context">Context</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										{this.state.mode === 'timeline' ? (
+											<Grid item>
+												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+													<InputLabel>Group By</InputLabel>
+													<Select
+														value={this.state.grouping}
+														onChange={this.groupChange}
+														label="Grouping"
+													>
+														<MenuItem value="level">Level</MenuItem>
+														<MenuItem value="context">Context</MenuItem>
+														<MenuItem value="type">Card Type</MenuItem>
+													</Select>
+												</FormControl>
+											</Grid>
+										) : null}
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Error Bars</InputLabel>
+												<Select
+													value={this.state.showErrors}
+													onChange={this.errorChange}
+													label="Errors"
+												>
+													<MenuItem value="on">On</MenuItem>
+													<MenuItem value="off">Off</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
 									</Grid>
 								</Grid>
-							</Grid>
 
-						</Grid>
-					</Box>
-				</Drawer>
-			</Stack >
-		)
+							</Grid>
+						</Box>
+					</Drawer>
+				</Stack >
+			)
 	}
 
 	childrenOf = (host, cards, depth) => {
@@ -1029,7 +912,6 @@ export class APBoard extends App {
 		function filterRootItems(root) {
 			var items = []
 			flattenTree(root.children, items)
-			console.log("flatted: ", items)
 			return items
 		}
 		if (this.root) {
