@@ -320,7 +320,6 @@ export class PIPlanApp extends App {
 							<label className="column-label" htmlFor={this.PLAN_PANEL} ><div>PI Planning</div></label>
 							<div className="accslide" name={this.PLAN_PANEL} onTransitionEnd={this.transitionDone}>
 								<div id={this.PLAN_PANEL} className="content">
-									
 									{(this.state.currentPanel === this.PLAN_PANEL && this.state.transitionDone) ?
 										<APBoard
 											target={this.PLAN_PANEL}
@@ -335,9 +334,7 @@ export class PIPlanApp extends App {
 											host={this.props.host}
 										/>
 										: null}
-										<div id={"surface_" + this.state.context.id}>
-										<svg id={"svg_" + this.state.context.id} />
-									</div>
+									<svg id={"svg_" + this.state.context.id} />
 								</div>
 							</div>
 						</li>
@@ -382,6 +379,6 @@ export class PIPlanApp extends App {
 	}
 
 	transitionDone = (evt) => {
-		this.setState( { transitionDone : true })
+		this.setState({ transitionDone: true })
 	}
 }

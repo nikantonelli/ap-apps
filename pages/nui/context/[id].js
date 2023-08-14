@@ -19,9 +19,11 @@ export default function Board({ board, cards, active, depth, colour, mode, sort,
 				dir={dir}
 				host={host}
 			/>
-			<div id={"surface_" + board.id}>
-				<svg id={"svg_" + board.id} />
-			</div>
+			<svg
+				id={"svg_" + board.id}
+				width={"100%"}
+			/>
+
 		</>
 	)
 }
@@ -38,16 +40,30 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.active) {
 			active = query.active;
 		}
-		var depth = null;
-		if (query.depth) {
-			depth = query.depth;
-		}
-		else depth = APBoard.DEFAULT_TREE_DEPTH	//Limit the exponential explosion of fetches as you go down the tree
 
 		var mode = null;
 		if (query.mode) {
 			mode = query.mode;
 		}
+
+		var depth = null;
+		if (query.depth) {
+			depth = query.depth;
+		}
+		else {
+			switch (mode) {
+				case 'sunburst': {
+					depth = APBoard.DEFAULT_SUNBURST_DEPTH //Rings are harder to fit in than the tree
+					break;
+				}
+				default:
+				case 'tree': {
+					depth = APBoard.DEFAULT_TREE_DEPTH	//Limit the exponential explosion of fetches as you go down the tree
+					break;
+				}
+			}
+		}
+
 		var colour = null;
 		if (query.colour) {
 			colour = query.colour;

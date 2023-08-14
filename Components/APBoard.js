@@ -1,6 +1,6 @@
 import { Autocomplete, Box, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
-import _, { forEach } from "lodash";
+import _, { flatten, forEach } from "lodash";
 
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
@@ -9,13 +9,15 @@ import React from "react";
 import { APcard } from "../Components/APcard";
 import { TimeLineApp } from "../Components/TimeLineApp";
 import { shortDate } from "../utils/Client/Helpers";
-import { doRequest, getCardHierarchy, removeDuplicates } from "../utils/Client/Sdk";
+import { doRequest, flattenTree, getCardHierarchy, removeDuplicates } from "../utils/Client/Sdk";
 
 import App from "./App";
+import { APTreeView } from "./APTreeView";
 
 export class APBoard extends App {
 
 	static DEFAULT_TREE_DEPTH = 3;
+	static DEFAULT_SUNBURST_DEPTH = 2;	//Two rings of children
 	static OPACITY_HIGH = 1.0;
 	static OPACITY_MEDIUM = 0.7;
 	static OPACITY_LOW = 0.3;
@@ -30,7 +32,6 @@ export class APBoard extends App {
 			...this.state,
 			mode: this.props.mode || 'sunburst',
 			anchorEl: null,
-			rootNode: null,
 			drawerOpen: false,
 			menuOpen: false,
 			board: this.props.board,
@@ -48,14 +49,14 @@ export class APBoard extends App {
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
-			colourise: null,
+			colourise: this.typeColouring,
 		}
 		console.log("rootcards: ", this.props.cards)
 	}
 
 	popUp = null
 	portals = [];
-	
+
 	root = {
 		id: 'root',
 		children: this.props.cards || []
@@ -308,53 +309,29 @@ export class APBoard extends App {
 		})
 	};
 
-	addPortals = (me, nodes) => {
-		var allNodes = [...nodes];
-		var finder = function (array, id) {
-			for (var i = 0; i < array.length; i++) {
-				if (array[i].__data__.data.id === id) return i;
-			}
-			return null;
-		}
+	addPortals = () => {
+		var allItems = []
+		flattenTree(this.root.children, allItems)
+		
+		var me = this;
+		allItems.forEach(function (item, idx) {
 
-		nodes.each(function (d, idx) {
-			if (!d.parent) return;
-			var parents = []
-			if ((d.data.parentCards && d.data.parentCards.length)) {
-				_.each(d.data.parentCards, (card) => {
-					var index = finder(allNodes, card.cardId);
-					if (index) parents.push(allNodes[index].__data__.data)
-				})
-			}
-			var children = []
-
-			//Get child data ready to pass to APCard
-			if (Boolean(d.children)) {
-				d.children.forEach((child) => {
-					children.push(child.data)
-
-				})
-			}
-
-			//Placeholder for future developments. Might pass extra data to card view
-			var analysisData = {
-				calculatedSize: d.value
-			}
+			var parents = []	//TODO: add parents to children
 
 			//Create a load of popups to show card details
 			me.portals.push(
 				<Drawer
 					onClose={me.closePopUp}
 					key={idx}
-					open={me.popUp === d.data.id}
+					open={me.popUp === item.id}
 				>
 					<Box>
 						<APcard
-							descendants={children}
+							descendants={item.children}
 							parents={parents}
 							cardProps={{ maxWidth: 700, flexGrow: 1 }}
-							loadSource={d.depth < 2 ? 'board' : 'card'}
-							host={me.props.host} card={d.data}
+							host={me.props.host} 
+							card={item}
 							context={me.state.context}
 							onClose={me.closePopUp}
 							readOnly
@@ -428,11 +405,11 @@ export class APBoard extends App {
 
 	setPartitionView = (rowHeight) => {
 
-		var treeBoxHeight = this.state.rootNode.value * rowHeight;
+		var treeBoxHeight = this.rootNode.value * rowHeight;
 		var hEl = document.getElementById("header-box")
 		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
-		var rootEl = document.getElementById("surface_" + this.state.board.id)
-		return [rootEl.getBoundingClientRect().width, treeBoxHeight]
+		var svgEl = document.getElementById("svg_" + this.state.board.id)
+		return [svgEl.getBoundingClientRect().width, treeBoxHeight]
 	}
 
 	update = () => {
@@ -440,7 +417,7 @@ export class APBoard extends App {
 		/**
 		 * If a network error has occurred that is unrecoverable, then we may still come here but without a board
 		 */
-		if (!this.state.board || !this.state.rootNode) return;
+		if (!this.state.board || !this.rootNode) return;
 
 		var svgEl = document.getElementById("svg_" + this.state.board.id)
 		if (!Boolean(svgEl)) return;
@@ -450,7 +427,8 @@ export class APBoard extends App {
 		var me = this;
 		var rowHeight = 30;
 
-		this.calcTreeData(this.state.rootNode)
+		this.calcTreeData(this.rootNode)
+		this.addPortals()
 
 		switch (this.state.mode) {
 			case 'table': {
@@ -463,13 +441,11 @@ export class APBoard extends App {
 
 				d3.partition()
 					.size([viewBox[1], viewBox[0]])
-					(this.state.rootNode)
+					(this.rootNode)
 
 				var nodes = d3.selectAll(".node")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.enter()
-
-				this.addPortals(me, nodes);
 
 				svg.attr("width", viewBox[0])
 				svg.attr("height", viewBox[1])
@@ -477,7 +453,7 @@ export class APBoard extends App {
 
 				const cell = svg
 					.selectAll("g")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.join("g")
 					.attr("transform", d => `translate(${d.y0},${d.x0})`);
 
@@ -549,36 +525,32 @@ export class APBoard extends App {
 				this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
 				this.dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
 
-				if (this.state.rootNode.earliest) {
-					this.dateRangeStart = this.state.rootNode.earliest;
-					if (!this.state.rootNode.latest) {
+				if (this.rootNode.earliest) {
+					this.dateRangeStart = this.rootNode.earliest;
+					if (!this.rootNode.latest) {
 						this.dateRangeEnd = this.dateRangeStart + (1000 * 60 * 60 * 24 * 28)	//Go for 28 days onwards
 					}
 					else {
-						this.dateRangeEnd = this.state.rootNode.latest
+						this.dateRangeEnd = this.rootNode.latest
 					}
 
 				}
 
 				var nodes = d3.selectAll(".node")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.enter()
-
-				this.addPortals(me, nodes);
 
 				break;
 			}
 			case 'sunburst': {
 
 				var nodes = d3.selectAll(".node")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.enter()
 
-				this.addPortals(me, nodes);
-
 				d3.partition()
-					.size([2 * Math.PI, this.state.rootNode.height + 1])
-					(this.state.rootNode);
+					.size([2 * Math.PI, this.rootNode.height + 1])
+					(this.rootNode);
 				var width = _.min([window.innerWidth / 2, (window.innerHeight / 2) - (document.getElementById("header-box").getBoundingClientRect().height / 2) - 2])
 
 				svg.attr("width", window.innerWidth)
@@ -607,7 +579,7 @@ export class APBoard extends App {
 
 				var path = g.append("g")
 					.selectAll("path")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.join("path")
 					.attr("fill", d => {
 						return me.state.colourise(d);
@@ -625,7 +597,7 @@ export class APBoard extends App {
 
 				var ePath = g.append("g")
 					.selectAll("path")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.join("path")
 					.attr("fill", d => {
 						var eColour = me.getErrorColour(d);
@@ -641,7 +613,7 @@ export class APBoard extends App {
 					.attr("pointer-events", "none")
 					.style("user-select", "none")
 					.selectAll("text")
-					.data(this.state.rootNode.descendants().slice(1))
+					.data(this.rootNode.descendants().slice(1))
 					.join("text")
 					.attr("dy", "0.35em")
 					//					.attr("fill-opacity", 1)
@@ -653,7 +625,7 @@ export class APBoard extends App {
 
 				const parent = g.append("circle")
 					.attr("class", "parentNode")
-					.datum(this.state.rootNode)
+					.datum(this.rootNode)
 					.attr("r", (width / ringCount))
 					.attr("fill", "#888")
 					.attr("pointer-events", "all")
@@ -661,13 +633,13 @@ export class APBoard extends App {
 
 				const parentLabel = g.append("text")
 					.attr("class", "parentLabel")
-					.datum(this.state.rootNode)
+					.datum(this.rootNode)
 					.text(d => me.getLabel(d))
 					.attr("text-anchor", "middle");
 
 				const parentTitle = g.append("title")
 					.attr("class", "parentTitle")
-					.datum(this.state.rootNode)
+					.datum(this.rootNode)
 					.text(d => me.getTitle(d))
 
 				function arcVisible(d) {
@@ -699,96 +671,18 @@ export class APBoard extends App {
 			}
 			case 'tree':
 			default: {
+				
+				<APTreeView
+					board={this.state.board}
+					root={this.rootNode}
+					sort={this.state.sortType}
+					colouring={this.state.colouring}
+					colourise={this.state.colourise}
+					errorColour={me.getErrorColour}
+					errorMessage={me.getErrorMessage}
+				/>
 
-
-				var rootEl = document.getElementById("surface_" + this.state.board.id);
-				var viewWidth = rootEl.getBoundingClientRect().width;
-				var colWidth = (viewWidth / (this.state.rootNode.height || 1))
-				var colMargin = 100
-
-				var tree = d3.tree()
-					.nodeSize([rowHeight, colWidth])
-					.separation(function (a, b) {
-						return (a.parent === b.parent ? 1 : 1);
-					}
-					);
-
-				tree(this.state.rootNode);
-
-				var smallestY = 0;
-				var biggestY = 0;
-				this.state.rootNode.descendants().slice(1).forEach((d) => {
-					if (d.x < smallestY) smallestY = d.x
-					if (d.x > biggestY) biggestY = d.x
-				})
-				var viewBox = [viewWidth, (biggestY - smallestY) + rowHeight]
-				svg.attr('width', viewBox[0] + (rowHeight / 2))
-				svg.attr("height", viewBox[1] + rowHeight)
-				svg.attr('viewBox', (colWidth - (rowHeight / 2)).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
-				rootEl.setAttribute('width', viewBox[0]);
-				rootEl.setAttribute('height', viewBox[1]);
-				svg.attr('preserveAspectRatio', 'none');
-
-				var nodes = svg.selectAll("g")
-					.data(this.state.rootNode.descendants().slice(1))
-					.enter()
-
-				var me = this;
-
-				nodes.each(function (d) {
-					d.colMargin = colMargin;
-					d.colWidth = colWidth - colMargin;
-					d.rowHeight = rowHeight;
-				})
-
-				this.addPortals(me, nodes);
-
-				nodes.append("clipPath")
-					.attr("id", function (d, idx) { d.idx = idx; return "clip_" + idx })
-					.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
-					.attr("x", function (d) { return d.y })
-					.attr("y", function (d) { return d.x - (d.rowHeight / 2) })
-					.attr("width", function (d) { return d.colWidth })
-					.attr("height", rowHeight)
-
-				//Draw the first time so that we can get the sizes of things.
-				//THe paths routine needs this info, but the side effect is that the bar that is
-				//drawn obliterates the text. We redraw below......
-				nodes.append("text")
-					.attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-					.text(d => me.getLabel(d))
-					.attr("height", rowHeight)
-					.attr("id", function (d) {
-						return "text_" + d.depth + '_' + d.data.id
-					})
-					.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
-					.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
-
-				this.bars(nodes)
-				this.paths(nodes)
-
-
-				//Draw it twice so we can put it on top of the line
-				nodes.selectAll("text").remove()
-				nodes.each(function (p, idx, nodeArray) {
-					var node = d3.select(this);
-					node.append("text")
-						.attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
-						.text(d => me.getLabel(d))
-						.attr("height", rowHeight - 12)
-						.attr("id", function (d) {
-							return "text_" + d.depth + '_' + d.data.id
-						})
-						.on('click', me.nodeClicked)
-						.style("text-anchor", "start")
-						.attr("x", function (d) { return d.y + (d.rowHeight / 16) })
-						.attr("y", function (d) { return d.x + (d.rowHeight / 8) })
-						.style('cursor', 'pointer')
-						.append("title")
-						.text(d => me.getTitle(d));
-				})
-				break;
-			}
+	}
 		}
 
 
@@ -858,142 +752,7 @@ export class APBoard extends App {
 		return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
 	}
 
-	bars = (nodes) => {
-		var me = this;
 
-
-		function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-			var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-
-			return {
-				x: centerX + (radius * Math.cos(angleInRadians)),
-				y: centerY + (radius * Math.sin(angleInRadians))
-			};
-		}
-
-		function describeArc(x, y, radius, startAngle, endAngle) {
-
-			var start = polarToCartesian(x, y, radius, endAngle);
-			var end = polarToCartesian(x, y, radius, startAngle);
-
-			var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-			var d = [
-				"M", start.x, start.y,
-				"A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-			].join(" ");
-			return d;
-		}
-
-		nodes.each(function (d, idx, nodeArray) {
-			var node = d3.select(this);
-			var opacity = me.opacityDrop ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM;
-			var colour = me.state.colourise(d);
-			var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
-			var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
-
-			var myWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-				d3.min([d.colWidth, Number(rEl.attributes["width"].value)]) :
-				d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
-
-			var eColour = me.getErrorColour(d);
-
-			var g = node.append("g")
-
-			g.append("line")
-				.attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
-				.attr("stroke-width", d => d.rowHeight - 2)
-				.attr("stroke", colour)
-				.attr("opacity", function (d) { return opacity * d.opacity })
-
-				.on('click', me.nodeClicked)
-				.attr("x1", function (d) {
-					return d.y
-				})
-				.attr("y1", function (d) {
-					return d.x
-				})
-				.attr("x2", function (d) {
-					return (d.y + (d.children ? (d.colWidth) : myWidth))
-				})
-				.attr("y2", function (d) {
-					return d.x
-				})
-
-			if (eColour.length) {
-				g.append("line")
-					.attr("stroke-width", 3)
-					.attr("stroke", eColour)
-					.attr("opacity", opacity)
-
-					.on('click', me.nodeClicked)
-					.attr("x1", function (d) {
-						return d.y
-					})
-					.attr("y1", function (d) {
-						return d.x + (d.rowHeight / 2)
-					})
-					.attr("x2", function (d) {
-						return (d.y + (d.children ? (d.colWidth) : myWidth))
-					})
-					.attr("y2", function (d) {
-						return d.x + (d.rowHeight / 2)
-					})
-					.append("title").text(d => me.getErrorMessage(d))
-			}
-
-			//Start semi-circle
-			g.append("path")
-				.attr("d", function (d) {
-					return describeArc(d.y
-						, d.x, (d.rowHeight - 2) / 2, 180, 0)
-
-				})
-				.attr("opacity", function (d) { return opacity * d.opacity })
-				.attr("fill", colour)
-
-			//End semi-circle
-
-			g.append("path")
-				.attr("d", function (d) {
-					var endpoint = (d.y + (d.children ? (d.colWidth) : myWidth))
-					return describeArc(endpoint, d.x, (d.rowHeight - 2) / 2, 0, 180)
-
-				})
-				.attr("opacity", function (d) { return opacity * d.opacity })
-				.attr("fill", colour)
-				.append("title").text(d => me.getErrorMessage(d))
-		})
-	}
-
-	paths = (nodes) => {
-		nodes.each(function (d, idx, nodeArray) {
-			var node = d3.select(this);
-			var pWidth = 0;
-
-			var pEl = document.getElementById("rect_" + d.parent.depth + '_' + d.parent.data.id);
-			if (Boolean(pEl)) pWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-				Number(pEl.attributes["width"].value) :
-				pEl.getClientRects()[0].width
-
-			node.append("path")
-				.attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
-				.attr("class", function (d) { return "local--link"; })
-				.attr("d", function (d) {
-					var startPointH = d.parent.y + pWidth + (d.rowHeight / 2);
-					var startApex = (d.y - (d.parent.y + pWidth)) / 2
-					var startPointV = d.parent.x;
-					var endPointH = d.y - (d.rowHeight / 2);
-					var endPointV = d.x;
-
-					var string = "M" + startPointH + "," + startPointV +
-						"C" + (startPointH + (startApex)) + "," + (startPointV) + " " +
-						(endPointH - (startApex)) + "," + endPointV + " " +
-						endPointH + "," + endPointV;
-					return string
-				});
-		})
-	}
 
 	modeChange = (e) => {
 		var newMode = e.target.value;
@@ -1045,215 +804,207 @@ export class APBoard extends App {
 	}
 
 	render() {
-		if (!this.state.fetchActive) {
-			this.update()
-			return (
-				<Stack id="portalContainer" sx={{ width: '100%' }}>
-					{this.portals}
-					<Grid id="header-box" container direction={'row'}>
-						<Grid xs={10} item>
-							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
-								<Grid item>
-									<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
-								</Grid>
-								<Grid item>
-									<TextField
-										variant="standard"
-										sx={{ m: 1, minWidth: 400 }}
-										size="small"
-										defaultValue={this.state.board.title}
-										label="Context"
-										InputProps={{ readOnly: true }} />
-								</Grid>
+		return (
+			<Stack id="portalContainer" sx={{ width: '100%' }}>
+				{this.portals}
+				<Grid id="header-box" container direction={'row'}>
+					<Grid xs={10} item>
+						<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
+							<Grid item>
+								<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
+							</Grid>
+							<Grid item>
+								<TextField
+									variant="standard"
+									sx={{ m: 1, minWidth: 400 }}
+									size="small"
+									defaultValue={this.state.board.title}
+									label="Context"
+									InputProps={{ readOnly: true }} />
+							</Grid>
 
-							</Grid>
-						</Grid>
-						<Grid item xs={2} sx={{ alignItems: 'center' }}>
-							<Grid container style={{ justifyContent: 'flex-end' }} >
-								{this.state.pending ?
-									<Chip color="warning" label={"Queued: " + this.state.pending} />
-									: <Chip label={"Total loaded: " + this.state.total}></Chip>}
-							</Grid>
 						</Grid>
 					</Grid>
-					<Menu
-						open={Boolean(this.state.anchorEl)}
-						anchorEl={this.state.anchorEl}
-						onClose={this.closeMenu}
-						anchorOrigin={{
-							vertical: 'top',
-							horizontal: 'right',
-						}}
-					>
+					<Grid item xs={2} sx={{ alignItems: 'center' }}>
+						<Grid container style={{ justifyContent: 'flex-end' }} >
+							{this.state.pending ?
+								<Chip color="warning" label={"Queued: " + this.state.pending} />
+								: <Chip label={"Total loaded: " + this.state.total}></Chip>}
+						</Grid>
+					</Grid>
+				</Grid>
+				<Menu
+					open={Boolean(this.state.anchorEl)}
+					anchorEl={this.state.anchorEl}
+					onClose={this.closeMenu}
+					anchorOrigin={{
+						vertical: 'top',
+						horizontal: 'right',
+					}}
+				>
 
-						<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
-						{(this.state.active && this.state.active.length) ?
-							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
-							: null}
-					</Menu>
-
-
-					{this.state.mode === 'timeline' ?
-						<TimeLineApp
-							data={this.state.rootNode ? this.state.rootNode : []}
-							end={this.dateRangeEnd}
-							start={this.dateRangeStart}
-							colourise={this.state.colourise}
-							errorColour={this.getErrorColour}
-						/> : null}
+					<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
+					{(this.state.active && this.state.active.length) ?
+						<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
+						: null}
+				</Menu>
 
 
+				{this.state.mode === 'timeline' ?
+					<TimeLineApp
+						data={this.rootNode ? this.rootNode : []}
+						end={this.dateRangeEnd}
+						start={this.dateRangeStart}
+						colourise={this.state.colourise}
+						errorColour={this.getErrorColour}
+					/> : null}
 
-					<Drawer
 
-						onClose={this.closeDrawer}
-						open={Boolean(this.state.drawerOpen)}
-						anchor='left'
-						sx={{
-							width: this.state.drawerWidth,
-							flexShrink: 0,
-							[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
-						}}
-					>
-						<Box>
-							<Grid container direction="column">
-								<Grid item>
-									<Grid container direction="row">
-										<Grid xs={6} item>
-											<Button
-												aria-label="Open As New Tab"
-												onClick={this.openAsActive}
-												endIcon={<OpenInNew />}
-											>
-												Open Copy
-											</Button>
-										</Grid>
-										<Grid xs={6} item>
-											<Grid sx={{ justifyContent: 'flex-end' }} container>
 
-												<Tooltip title='Close Settings'>
-													<HighlightOff onClick={this.closeDrawer} />
-												</Tooltip>
-											</Grid>
+				<Drawer
+
+					onClose={this.closeDrawer}
+					open={Boolean(this.state.drawerOpen)}
+					anchor='left'
+					sx={{
+						width: this.state.drawerWidth,
+						flexShrink: 0,
+						[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
+					}}
+				>
+					<Box>
+						<Grid container direction="column">
+							<Grid item>
+								<Grid container direction="row">
+									<Grid xs={6} item>
+										<Button
+											aria-label="Open As New Tab"
+											onClick={this.openAsActive}
+											endIcon={<OpenInNew />}
+										>
+											Open Copy
+										</Button>
+									</Grid>
+									<Grid xs={6} item>
+										<Grid sx={{ justifyContent: 'flex-end' }} container>
+
+											<Tooltip title='Close Settings'>
+												<HighlightOff onClick={this.closeDrawer} />
+											</Tooltip>
 										</Grid>
 									</Grid>
 								</Grid>
-								<Grid item>
-									{this.topLevelList()}
-								</Grid>
-								<Grid item>
-									<Grid container>
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Mode</InputLabel>
-												<Select
-													value={this.state.mode}
-													onChange={this.modeChange}
-													label="Mode"
-												>
-													<MenuItem value="tree">Tree</MenuItem>
-													<MenuItem value="sunburst">Sunburst</MenuItem>
-													<MenuItem value="partition">Partition</MenuItem>
-													<MenuItem value="timeline">Timeline</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Sort By</InputLabel>
-												<Select
-													value={this.state.sortType}
-													onChange={this.sortChange}
-													label="Sort By"
-												>
-													<MenuItem value="none">None</MenuItem>
-													<MenuItem value="plannedStart">Planned Start</MenuItem>
-													<MenuItem value="plannedFinish">Planned End</MenuItem>
-													<MenuItem value="size">Size</MenuItem>
-													<MenuItem value="r_size">Size Rollup</MenuItem>
-													{this.state.mode === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
-													<MenuItem value="score">Score Total</MenuItem>
-													{this.state.mode === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
-
-													<MenuItem value="id">ID#</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										<Grid item >
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Sort Direction</InputLabel>
-												<Select
-													value={this.state.sortDir}
-													onChange={this.sortDirChange}
-													label="Sort Direction"
-												>
-													<MenuItem value="ascending">Ascending</MenuItem>
-													<MenuItem value="descending">Descending</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Colours</InputLabel>
-												<Select
-													value={this.state.colouring}
-													onChange={this.colourChange}
-													label="Colours"
-												>
-													<MenuItem value="cool">Cool</MenuItem>
-													<MenuItem value="warm">Warm</MenuItem>
-													<MenuItem value="type">Card Type</MenuItem>
-													<MenuItem value="state">Card State</MenuItem>
-													<MenuItem value="l_user">Last Updater</MenuItem>
-													<MenuItem value="c_user">Creator</MenuItem>
-													<MenuItem value="a_user">First Assignee</MenuItem>
-													<MenuItem value="context">Context</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										{this.state.mode === 'timeline' ? (
-											<Grid item>
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Group By</InputLabel>
-													<Select
-														value={this.state.grouping}
-														onChange={this.groupChange}
-														label="Grouping"
-													>
-														<MenuItem value="level">Level</MenuItem>
-														<MenuItem value="context">Context</MenuItem>
-														<MenuItem value="type">Card Type</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-										) : null}
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Error Bars</InputLabel>
-												<Select
-													value={this.state.showErrors}
-													onChange={this.errorChange}
-													label="Errors"
-												>
-													<MenuItem value="on">On</MenuItem>
-													<MenuItem value="off">Off</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-									</Grid>
-								</Grid>
-
 							</Grid>
-						</Box>
-					</Drawer>
-				</Stack >
-			)
-		}
-		else return (
-			<div>
-				loading
-			</div>
-		);
+							<Grid item>
+								{this.topLevelList()}
+							</Grid>
+							<Grid item>
+								<Grid container>
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Mode</InputLabel>
+											<Select
+												value={this.state.mode}
+												onChange={this.modeChange}
+												label="Mode"
+											>
+												<MenuItem value="tree">Tree</MenuItem>
+												<MenuItem value="sunburst">Sunburst</MenuItem>
+												<MenuItem value="partition">Partition</MenuItem>
+												<MenuItem value="timeline">Timeline</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Sort By</InputLabel>
+											<Select
+												value={this.state.sortType}
+												onChange={this.sortChange}
+												label="Sort By"
+											>
+												<MenuItem value="none">None</MenuItem>
+												<MenuItem value="plannedStart">Planned Start</MenuItem>
+												<MenuItem value="plannedFinish">Planned End</MenuItem>
+												<MenuItem value="size">Size</MenuItem>
+												<MenuItem value="r_size">Size Rollup</MenuItem>
+												{this.state.mode === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
+												<MenuItem value="score">Score Total</MenuItem>
+												{this.state.mode === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
+
+												<MenuItem value="id">ID#</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item >
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Sort Direction</InputLabel>
+											<Select
+												value={this.state.sortDir}
+												onChange={this.sortDirChange}
+												label="Sort Direction"
+											>
+												<MenuItem value="ascending">Ascending</MenuItem>
+												<MenuItem value="descending">Descending</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Colours</InputLabel>
+											<Select
+												value={this.state.colouring}
+												onChange={this.colourChange}
+												label="Colours"
+											>
+												<MenuItem value="cool">Cool</MenuItem>
+												<MenuItem value="warm">Warm</MenuItem>
+												<MenuItem value="type">Card Type</MenuItem>
+												<MenuItem value="state">Card State</MenuItem>
+												<MenuItem value="l_user">Last Updater</MenuItem>
+												<MenuItem value="c_user">Creator</MenuItem>
+												<MenuItem value="a_user">First Assignee</MenuItem>
+												<MenuItem value="context">Context</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+									{this.state.mode === 'timeline' ? (
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Group By</InputLabel>
+												<Select
+													value={this.state.grouping}
+													onChange={this.groupChange}
+													label="Grouping"
+												>
+													<MenuItem value="level">Level</MenuItem>
+													<MenuItem value="context">Context</MenuItem>
+													<MenuItem value="type">Card Type</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+									) : null}
+									<Grid item>
+										<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+											<InputLabel>Error Bars</InputLabel>
+											<Select
+												value={this.state.showErrors}
+												onChange={this.errorChange}
+												label="Errors"
+											>
+												<MenuItem value="on">On</MenuItem>
+												<MenuItem value="off">Off</MenuItem>
+											</Select>
+										</FormControl>
+									</Grid>
+								</Grid>
+							</Grid>
+
+						</Grid>
+					</Box>
+				</Drawer>
+			</Stack >
+		)
 	}
 
 	childrenOf = (host, cards, depth) => {
@@ -1275,18 +1026,9 @@ export class APBoard extends App {
 			})
 		}
 
-		function collect(array, result) {
-			array.forEach(function (el) {
-				if (el.children) {
-					collect(el.children, result);
-				}
-				result.push(el);
-
-			});
-		}
 		function filterRootItems(root) {
 			var items = []
-			collect(root.children, items)
+			flattenTree(root.children, items)
 			console.log("flatted: ", items)
 			return items
 		}
@@ -1295,17 +1037,17 @@ export class APBoard extends App {
 			filterRootItems(this.root)
 		}
 
-		//this.setColouring({ colouring: this.state.colouring })
-		this.setState({ rootNode: d3.hierarchy(this.root) })
+		//
+		this.rootNode = d3.hierarchy(this.root)
 	}
 
 
 	componentDidMount = () => {
-		if (this.state.fetchActive) {
-			this.setData()
-			this.setState({ fetchActive: false })
-		}
 		this.setColouring({ colouring: this.state.colouring })
+		this.setData()
+
+		this.setState({ fetchActive: false })
+		this.update()
 		window.addEventListener('resize', this.resize);
 	}
 
@@ -1427,7 +1169,7 @@ export class APBoard extends App {
 
 		switch (command) {
 			case 'expand': {
-				var data = this.state.rootNode && this.state.rootNode.children
+				var data = this.rootNode && this.rootNode.children
 				if (data) data.forEach((item) => { this.resetChildren(item) })
 				break;
 			}
@@ -1524,7 +1266,8 @@ export class APBoard extends App {
 			root.children = allChildren
 			root.savedChildren = null;
 		}
-		this.setState({ rootNode: d3.hierarchy(root), topLevelList: valueList })
+		this.rootNode = d3.hierarchy(root)
+		this.setState({ topLevelList: valueList })
 	}
 
 	topLevelList = () => {

@@ -61,6 +61,16 @@ export const removeDuplicates = (cards) => {
 	return checkedCards
 }
 
+export const  flattenTree = (array, result) => {
+	array.forEach(function (el) {
+		if (el.children) {
+			flattenTree(el.children, result);
+		}
+		result.push(el);
+
+	});
+}
+
 export const findBoards = async (host, options) => {
 	var params = {
 		url: "/board",
