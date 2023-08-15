@@ -19,6 +19,8 @@ export class APTreeView extends App {
         this.colourise = this.props.colourise || function () { return "#666666" }
         this.errorColour = this.props.errorColour || function () { return "#cc6666" }
         this.nodeClicked = this.props.onClick || null;
+        this.errorMessage = this.props.errorMessage || function() { return "No Message"}
+
   
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring

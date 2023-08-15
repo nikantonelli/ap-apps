@@ -1,10 +1,10 @@
-import { union, unionBy } from "lodash";
+import { forEach, union, unionBy } from "lodash";
 import { shortDate } from "./Helpers";
 
 export class VIEW_TYPES {
 	static SUNBURST = 'sunburst'
 	static TREE = 'tree'
-	static PARTITION = 'parition'
+	static PARTITION = 'partition'
 	static TIMELINE = 'timeline'
 }
 
@@ -118,6 +118,15 @@ export const getBoardIcons = async (host, brdId) => {
 		url: "/board/" + brdId + "/customIcon"
 	}
 	return await doRequest(params);
+}
+
+export const partitionSize = (treeNode, sizFnc) => {
+	var myValue = sizFnc(treeNode);
+
+	forEach(treeNode.children, (item) => {
+		myValue += partitionSize(item, sizFnc)
+	}) 
+	return myValue
 }
 
 export const doRequest = async (params) => {

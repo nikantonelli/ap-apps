@@ -14,6 +14,7 @@ import { VIEW_TYPES, flattenTree, getCardHierarchy } from "../utils/Client/Sdk";
 import App from "./App";
 import { APTreeView } from "./TreeApp";
 import { APSunburstView } from "./SunburstApp";
+import { APPartitionView } from "./PartitionApp";
 
 export class APBoard extends App {
 
@@ -145,11 +146,10 @@ export class APBoard extends App {
 
 	stateColouring = (d) => {
 		this.opacityDrop = false;
-		switch (d.data.lane.cardStatus) {
-			case 'notStarted': return '#4989e4';
-			case 'started': return '#27a444';
-			case 'finished': return '#444444'
-		}
+		if (d.data.actualFinish) return '#444444'
+		if (d.data.actualStart) return '#27a444';
+		else return '#4989e4';
+		 
 	}
 
 	/**
@@ -306,6 +306,7 @@ export class APBoard extends App {
 				//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
 				d.colour = this.state.colourise(d);
 			}
+			d.opacity = 1.0
 		})
 	};
 
@@ -422,104 +423,11 @@ export class APBoard extends App {
 		 */
 		if (!this.state.board || !this.rootNode) return;
 
-		var svgEl = document.getElementById("svg_" + this.state.board.id)
-		if (!Boolean(svgEl)) return;
-		var svg = d3.select(svgEl);
-		svg.attr('class', 'rootSurface')
-		svgEl.replaceChildren()
-		var me = this;
-		var rowHeight = 30;
-
 		switch (this.state.mode) {
 			case 'table': {
 				break;
 			}
-			case VIEW_TYPES.PARTITION: {
-
-				var me = this;
-				var viewBox = this.setPartitionView(rowHeight)
-
-				d3.partition()
-					.size([viewBox[1], viewBox[0]])
-					(this.rootNode)
-
-				var nodes = d3.selectAll(".node")
-					.data(this.rootNode.descendants().slice(1))
-					.enter()
-
-				svg.attr("width", viewBox[0])
-				svg.attr("height", viewBox[1])
-				svg.attr('viewBox', [0, 0, viewBox[0], viewBox[1]])
-
-				const cell = svg
-					.selectAll("g")
-					.data(this.rootNode.descendants().slice(1))
-					.join("g")
-					.attr("transform", d => `translate(${d.y0},${d.x0})`);
-
-				const rect = cell.append("rect")
-					.attr("id", (d, idx) => "rect_" + idx)
-					.attr("width", d => d.y1 - d.y0 - 4)
-					.attr("height", d => rectHeight(d))
-					.attr("fill-opacity", d => ((d.children && me.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM))
-					.attr("fill", d => {
-						return me.state.colourise(d);
-					})
-					.style("cursor", "pointer")
-					.on("click", me.nodeClicked)
-
-				cell.join("g")
-					.append("path")
-					.attr("d", d => {
-						var height = _.min([d.x1 - d.x0, d.y1 - d.y0, 15])
-						var ax = d.y1 - d.y0;  //a == far corner
-						var ay = d.x1 - d.x0;
-						var bx = ax;			//b is up from a
-						var by = ay - height;
-						var cx = ax - height;	//c is over to the left from a
-						var cy = ay;
-						//The '- 4' is due to the margin in the css
-						return `M ${ax - 4} ${ay - 4} L ${bx - 4} ${by} L ${cx} ${cy - 4} z`
-					})
-					.attr("fill", d => {
-						var eColour = me.getErrorColour(d)
-						return eColour.length ? eColour : me.state.colourise(d)
-					})
-					.append("title").text(d => me.getErrorMessage(d))
-
-				cell.append("clipPath")
-					.attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })
-					.append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
-					.attr("width", d => d.y1 - d.y0 - 5)
-					.attr("height", d => rectHeight(d))
-
-				const text = cell.append("text")
-					.attr("clip-path", function (d, idx) { return "url(#clip_" + d.depth + "_" + d.data.id + '_' + idx + ")" })
-					.style("user-select", "none")
-					.attr("pointer-events", "none")
-					.attr("x", 4)
-					.attr("y", 12)
-					.attr("fill-opacity", d => +partlabel(d));
-
-				text.append("tspan")
-					.text(d => me.getLabel(me, d))
-
-
-				cell.append("title")
-					.text(d => me.getTitle(me, d));
-
-
-				function rectHeight(d) {
-					return d.x1 - d.x0 - Math.min(4, (d.x1 - d.x0) / 2);
-				}
-
-				function partlabel(d) {
-					return d.y1 <= window.innerWidth && d.y0 >= 0 && d.x1 - d.x0 > 16;
-				}
-				break;
-			}
-
-
+			
 			case VIEW_TYPES.TIMELINE: {
 
 				this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
@@ -539,6 +447,7 @@ export class APBoard extends App {
 			}
 
 			default: {
+				break;
 			}
 		}
 
@@ -653,6 +562,26 @@ export class APBoard extends App {
 								start={this.dateRangeStart}
 								colourise={this.state.colourise}
 								errorColour={this.getErrorColour}
+							/> : null}
+
+						{this.state.mode === VIEW_TYPES.PARTITION ?
+							<APPartitionView
+								size={
+									[
+										window.innerWidth,
+										window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+									]
+								}
+
+								target={document.getElementById("svg_" + this.state.board.id)}
+								board={this.state.board}
+								root={this.rootNode}
+								onClick={this.nodeClicked}
+								sort={this.state.sortType}
+								colouring={this.state.colouring}
+								colourise={this.state.colourise}
+								errorColour={this.getErrorColour}
+								errorMessage={this.getErrorMessage}
 							/> : null}
 
 						{this.state.mode === VIEW_TYPES.TREE ?
@@ -883,9 +812,7 @@ export class APBoard extends App {
 	componentDidMount = () => {
 		this.setColouring({ colouring: this.state.colouring })
 		this.setData()
-
 		this.setState({ fetchActive: false })
-		this.update()
 		window.addEventListener('resize', this.resize);
 	}
 
