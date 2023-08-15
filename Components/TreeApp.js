@@ -1,11 +1,11 @@
-import React from "react";
-import * as d3 from 'd3';
-import APBoard from "./APBoard";
+import { min, select, tree } from "d3";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
+import APBoard from "./APBoard";
 
 import { VIEW_TYPES } from "../utils/Client/Sdk";
+import App from "./App";
 
-export class APTreeView extends React.Component {
+export class APTreeView extends App {
     constructor(props) {
         super(props)
 		this.mode = VIEW_TYPES.TREE
@@ -14,23 +14,32 @@ export class APTreeView extends React.Component {
     }
 
     doit = () => {
-        var svgEl = document.getElementById("svg_" + this.props.board.id);
-		svgEl.replaceChildren()
-        var viewWidth = svgEl.getBoundingClientRect().width;
-        var svg = d3.select(svgEl);
+        var me = this;
 
-        var colWidth = (viewWidth / (this.props.root.height || 1))
+        this.colourise = this.props.colourise || function () { return "#666666" }
+        this.errorColour = this.props.errorColour || function () { return "#cc6666" }
+        this.nodeClicked = this.props.onClick || null;
+  
+        //These two are used by the routines in Sdk.js and not here
+        this.colouring = this.props.colouring
+        this.sort = this.props.sort
+       
+        var svgEl = this.props.target;
+        svgEl.replaceChildren()
+        var svg = select(svgEl)
+
+        var colWidth = (this.props.size[0] / (this.props.root.height || 1))
         var colMargin = 100
         var rowHeight = 30
 
-        var tree = d3.tree()
+        var nTree = tree()
             .nodeSize([rowHeight, colWidth])
             .separation(function (a, b) {
                 return (a.parent === b.parent ? 1 : 1);
             }
             );
 
-        tree(this.props.root);
+        nTree(this.props.root);
 
         var smallestY = 0;
         var biggestY = 0;
@@ -38,7 +47,7 @@ export class APTreeView extends React.Component {
             if (d.x < smallestY) smallestY = d.x
             if (d.x > biggestY) biggestY = d.x
         })
-        var viewBox = [viewWidth, (biggestY - smallestY) + rowHeight]
+        var viewBox = [this.props.size[0], (biggestY - smallestY) + rowHeight]
         svg.attr('width', viewBox[0] + (rowHeight / 2))
         svg.attr("height", viewBox[1] + rowHeight)
         svg.attr('viewBox', (colWidth).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
@@ -89,7 +98,7 @@ export class APTreeView extends React.Component {
         //Draw it twice so we can put it on top of the line
         nodes.selectAll("text").remove()
         nodes.each(function (p, idx, nodeArray) {
-            var node = d3.select(this);
+            var node = select(this);
             node.append("text")
                 .attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
                 .text(d => getLabel(this, d))
@@ -135,15 +144,15 @@ export class APTreeView extends React.Component {
         }
 
         nodes.each(function (d, idx, nodeArray) {
-            var node = d3.select(this);
+            var node = select(this);
             var opacity = me.opacityDrop ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM;
             var colour = me.props.colourise(d);
             var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
             var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
 
             var myWidth = (navigator.userAgent.indexOf("Firefox") >= 0) ?
-                d3.min([d.colWidth, Number(rEl.attributes["width"].value)]) :
-                d3.min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
+                min([d.colWidth, Number(rEl.attributes["width"].value)]) :
+                min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
 
             var eColour = me.props.errorColour(d);
 
@@ -217,7 +226,7 @@ export class APTreeView extends React.Component {
 
     paths = (nodes) => {
         nodes.each(function (d, idx, nodeArray) {
-            var node = d3.select(this);
+            var node = select(this);
             var pWidth = 0;
 
             var pEl = document.getElementById("rect_" + d.parent.depth + '_' + d.parent.data.id);

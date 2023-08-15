@@ -19,11 +19,12 @@ export default function Board({ board, cards, active, depth, colour, mode, sort,
 				dir={dir}
 				host={host}
 			/>
-			<svg
-				id={"svg_" + board.id}
-				width={"100%"}
-			/>
-
+			<div id={"surface_" + board.id} style={{ width:"100%", height:"100%"}}>
+				<svg
+					id={"svg_" + board.id}
+					width={"100%"}
+				/>
+			</div>
 		</>
 	)
 }

@@ -42,7 +42,7 @@ export default class App extends React.Component {
 			})
 		}
 		//Connect to endpoint to establish socket set up on server
-		fetch("http://" + this.props.host+"/api/socket");
+		fetch("/api/socket");
     }
     
 	resize = () => {
