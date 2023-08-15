@@ -149,7 +149,7 @@ export class APBoard extends App {
 		if (d.data.actualFinish) return '#444444'
 		if (d.data.actualStart) return '#27a444';
 		else return '#4989e4';
-		 
+
 	}
 
 	/**
@@ -225,8 +225,10 @@ export class APBoard extends App {
 					case 'count': {
 						return 1;
 					}
+					case 'size':
+						return (d.data && d.data.size) ? d.data.size : 1
 					case 'r_size': {
-						return d.size ? d.size : 1;
+						return d.size ? d.size : 0;
 					}
 				}
 			})
@@ -427,7 +429,7 @@ export class APBoard extends App {
 			case 'table': {
 				break;
 			}
-			
+
 			case VIEW_TYPES.TIMELINE: {
 
 				this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
