@@ -1,6 +1,13 @@
 import { union, unionBy } from "lodash";
 import { shortDate } from "./Helpers";
 
+export class VIEW_TYPES {
+	static SUNBURST = 'sunburst'
+	static TREE = 'tree'
+	static PARTITION = 'parition'
+	static TIMELINE = 'timeline'
+}
+
 export const getCardChildren = async (host, card) => {
 	var params = {
 		host: host,

@@ -9,7 +9,7 @@ import React from "react";
 import { APcard } from "../Components/APcard";
 import { APTimeLineView } from "../Components/TimeLineApp";
 import { shortDate } from "../utils/Client/Helpers";
-import { flattenTree, getCardHierarchy } from "../utils/Client/Sdk";
+import { VIEW_TYPES, flattenTree, getCardHierarchy } from "../utils/Client/Sdk";
 
 import App from "./App";
 import { APTreeView } from "./TreeApp";
@@ -31,7 +31,7 @@ export class APBoard extends App {
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			...this.state,
-			mode: this.props.mode || 'sunburst',
+			mode: this.props.mode || VIEW_TYPES.SUNBURST,
 			anchorEl: null,
 			drawerOpen: false,
 			menuOpen: false,
@@ -434,7 +434,7 @@ export class APBoard extends App {
 			case 'table': {
 				break;
 			}
-			case 'partition': {
+			case VIEW_TYPES.PARTITION: {
 
 				var me = this;
 				var viewBox = this.setPartitionView(rowHeight)
@@ -502,11 +502,11 @@ export class APBoard extends App {
 					.attr("fill-opacity", d => +partlabel(d));
 
 				text.append("tspan")
-					.text(d => me.getLabel(d))
+					.text(d => me.getLabel(me,d))
 
 
 				cell.append("title")
-					.text(d => me.getTitle(d));
+					.text(d => me.getTitle(me,d));
 
 
 				function rectHeight(d) {
@@ -520,7 +520,7 @@ export class APBoard extends App {
 			}
 
 
-			case 'timeline': {
+			case VIEW_TYPES.TIMELINE: {
 
 				this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
 				this.dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
@@ -535,99 +535,28 @@ export class APBoard extends App {
 					}
 
 				}
-
-				var nodes = d3.selectAll(".node")
-					.data(this.rootNode.descendants().slice(1))
-					.enter()
-
 				break;
 			}
 			
-			case 'sunburst':
-			case 'tree':
+			case VIEW_TYPES.SUNBURST:
+			case VIEW_TYPES.TREE:
 			default: {
 			}
 		}
 
 
 	}
-	getLabel = (d) => {
-		switch (this.state.mode) {
-			case 'sunburst': {
-				return d.data.id === "root" ? "" : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
-			}
-
-			default:
-			case 'tree':
-			case 'timeline':
-			case 'partition': {
-				return d.data.id === "root" ? "" : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.title
-			}
-		}
-	}
-
-	getTitle = (d) => {
-		switch (this.state.sortType) {
-			case 'plannedStart': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + shortDate(d.data.plannedStart) + ")")
-			}
-			case 'plannedStart': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + shortDate(d.data.plannedFinish) + ")")
-			}
-			case 'score': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.scoring.scoreTotal + ")")
-			}
-			case 'context': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
-			}
-			case 'a_user': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + (d.data.assignedUsers && d.data.assignedUsers.length ? d.data.assignedUsers[0].fullName : "No User") + ")")
-			}
-			case 'r_size':
-			case 'size': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
-			}
-			default: {
-				//Fall out and try something else - usally if set to 'none'
-			}
-		}
-
-		/** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
-		switch (this.state.colouring) {
-			case 'state': {
-				return (d.data.id === "root") ? "" :
-					(d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) :
-						(d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) :
-							"Not Started"
-			}
-			case 'context': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")
-			}
-			case 'type': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.type.title + ")")
-			}
-			case 'l_user': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.updatedBy.fullName + ")")
-			}
-			case 'c_user': {
-				return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.createdBy.fullName + ")")
-			}
-		}
-		return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
-	}
-
-
 
 	modeChange = (e) => {
 		var newMode = e.target.value;
 		this.setState((prev) => {
-			if (newMode === 'timeline') {
+			if (newMode === VIEW_TYPES.TIMELINE) {
 				return { mode: newMode, sortType: 'count' }
 			}
-			if ((prev.sortType === "title") && (newMode === 'sunburst')) {
+			if ((prev.sortType === "title") && (newMode === VIEW_TYPES.SUNBURST)) {
 				return { mode: newMode, sortType: 'count' }
 			}
-			else if ((prev.sortType === "count") && (newMode === 'tree')) {
+			else if ((prev.sortType === "count") && (newMode === VIEW_TYPES.TREE)) {
 				return { mode: newMode, sortType: 'size' }
 			}
 			return { mode: newMode }
@@ -715,7 +644,7 @@ export class APBoard extends App {
 					</Menu>
 
 
-					{this.state.mode === 'timeline' ?
+					{this.state.mode === VIEW_TYPES.TIMELINE ?
 						<APTimeLineView
 							data={this.rootNode ? this.rootNode : []}
 							end={this.dateRangeEnd}
@@ -724,7 +653,7 @@ export class APBoard extends App {
 							errorColour={this.getErrorColour}
 						/> : null}
 
-					{this.state.mode === 'tree' ?
+					{this.state.mode === VIEW_TYPES.TREE ?
 						<APTreeView
 							board={this.state.board}
 							root={this.rootNode}
@@ -734,7 +663,7 @@ export class APBoard extends App {
 							errorColour={this.getErrorColour}
 							errorMessage={this.getErrorMessage}
 						/> : null}
-						{this.state.mode === 'sunburst' ?
+						{this.state.mode === VIEW_TYPES.SUNBURST ?
 						<APSunburstView
 							board={this.state.board}
 							root={this.rootNode}
@@ -791,10 +720,10 @@ export class APBoard extends App {
 													onChange={this.modeChange}
 													label="Mode"
 												>
-													<MenuItem value="tree">Tree</MenuItem>
-													<MenuItem value="sunburst">Sunburst</MenuItem>
-													<MenuItem value="partition">Partition</MenuItem>
-													<MenuItem value="timeline">Timeline</MenuItem>
+													<MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
+													<MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>
+													<MenuItem value={VIEW_TYPES.PARTITION}>Partition</MenuItem>
+													<MenuItem value={VIEW_TYPES.TIMELINE}>Timeline</MenuItem>
 												</Select>
 											</FormControl>
 										</Grid>
@@ -811,9 +740,9 @@ export class APBoard extends App {
 													<MenuItem value="plannedFinish">Planned End</MenuItem>
 													<MenuItem value="size">Size</MenuItem>
 													<MenuItem value="r_size">Size Rollup</MenuItem>
-													{this.state.mode === 'sunburst' ? null : <MenuItem value="title">Title</MenuItem>}
+													{this.state.mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
 													<MenuItem value="score">Score Total</MenuItem>
-													{this.state.mode === 'tree' ? null : <MenuItem value="count">Card Count</MenuItem>}
+													{this.state.mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
 
 													<MenuItem value="id">ID#</MenuItem>
 												</Select>
@@ -851,7 +780,7 @@ export class APBoard extends App {
 												</Select>
 											</FormControl>
 										</Grid>
-										{this.state.mode === 'timeline' ? (
+										{this.state.mode === VIEW_TYPES.TIMELINE ? (
 											<Grid item>
 												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
 													<InputLabel>Group By</InputLabel>
@@ -1055,9 +984,9 @@ export class APBoard extends App {
 				if (data) data.forEach((item) => { this.resetChildren(item) })
 				break;
 			}
-			case 'tree':
-			case 'partition':
-			case 'sunburst': {
+			case VIEW_TYPES.TREE:
+			case VIEW_TYPES.PARTITION:
+			case VIEW_TYPES.SUNBURST: {
 				//Force a redraw as well
 				this.setState({ mode: e.target.getAttribute('value') })
 				break;

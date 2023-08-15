@@ -3,13 +3,19 @@ import * as d3 from 'd3';
 import APBoard from "./APBoard";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
+import { VIEW_TYPES } from "../utils/Client/Sdk";
+
 export class APTreeView extends React.Component {
     constructor(props) {
         super(props)
+		this.mode = VIEW_TYPES.TREE
+		this.colouring = this.props.colouring
+		this.sort = this.props.sort
     }
 
     doit = () => {
         var svgEl = document.getElementById("svg_" + this.props.board.id);
+		svgEl.replaceChildren()
         var viewWidth = svgEl.getBoundingClientRect().width;
         var svg = d3.select(svgEl);
 
@@ -35,11 +41,13 @@ export class APTreeView extends React.Component {
         var viewBox = [viewWidth, (biggestY - smallestY) + rowHeight]
         svg.attr('width', viewBox[0] + (rowHeight / 2))
         svg.attr("height", viewBox[1] + rowHeight)
-        svg.attr('viewBox', (colWidth - (rowHeight / 2)).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
+        svg.attr('viewBox', (colWidth).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
 
         svg.attr('preserveAspectRatio', 'none');
+		const g = svg.append("g")
+		.attr("transform", `translate(${rowHeight/2},${0})`);
 
-        var nodes = svg.selectAll("g")
+        var nodes = g.selectAll("g")
             .data(this.props.root.descendants().slice(1))
             .enter()
 
@@ -66,7 +74,7 @@ export class APTreeView extends React.Component {
         //drawn obliterates the text. We redraw below......
         nodes.append("text")
             .attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-            .text(d => getLabel(d))
+            .text(d => getLabel(this,d))
             .attr("height", rowHeight)
             .attr("id", function (d) {
                 return "text_" + d.depth + '_' + d.data.id
@@ -84,7 +92,7 @@ export class APTreeView extends React.Component {
             var node = d3.select(this);
             node.append("text")
                 .attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
-                .text(d => getLabel(d))
+                .text(d => getLabel(this, d))
                 .attr("height", rowHeight - 12)
                 .attr("id", function (d) {
                     return "text_" + d.depth + '_' + d.data.id
@@ -95,7 +103,7 @@ export class APTreeView extends React.Component {
                 .attr("y", function (d) { return d.x + (d.rowHeight / 8) })
                 .style('cursor', 'pointer')
                 .append("title")
-                .text(d => getTitle(d));
+                .text(d => getTitle(me,d));
         })
 
     }

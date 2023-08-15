@@ -4,10 +4,16 @@ import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
 import { forEach } from "lodash";
 import React from "react";
+import { VIEW_TYPES } from "../utils/Client/Sdk";
+
 export class APTimeLineView extends React.Component {
 
 	constructor(props) {
 		super(props);
+		this.mode = VIEW_TYPES.TIMELINE
+		this.colouring = this.props.colouring
+		this.sort = this.props.sort
+
 		this.state = {
 			errorColour : props.errorColour || this.nullErrorColour
 		}

@@ -1,5 +1,6 @@
-export const getLabel = (d) => {
-    switch (this.props.mode) {
+
+export const getLabel = (me, d) => {
+    switch (me.mode) {
         case 'sunburst': {
             return d.data.id === "root" ? "" : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
         }
@@ -13,8 +14,8 @@ export const getLabel = (d) => {
     }
 }
 
-export const getTitle = (d) => {
-    switch (this.props.sort) {
+export const getTitle = (me, d) => {
+    switch (me.sort) {
         case 'plannedStart': {
             return d.data.id === "root" ? "" : (d.data.title + " (" + shortDate(d.data.plannedStart) + ")")
         }
@@ -40,7 +41,7 @@ export const getTitle = (d) => {
     }
 
     /** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
-    switch (this.props.colouring) {
+    switch (me.colouring) {
         case 'state': {
             return (d.data.id === "root") ? "" :
                 (d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) :
