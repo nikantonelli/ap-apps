@@ -1,10 +1,8 @@
-import BoardService from "../../../services/BoardService";
-import DataProvider from "../../../utils/Server/DataProvider";
 import React from "react";
 import { APBoard } from "../../../Components/APBoard";
-import { getCardHierarchy } from "../../../utils/Client/Sdk";
+import BoardService from "../../../services/BoardService";
+import DataProvider from "../../../utils/Server/DataProvider";
 export default function Board({ board, cards, active, depth, colour, mode, sort, eb, dir, host }) {
-	for (var i = 0; i < cards.length; i++) getCardHierarchy(host, cards[i], 'children', depth)
 	return (
 		<>
 			<APBoard

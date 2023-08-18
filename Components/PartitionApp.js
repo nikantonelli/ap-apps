@@ -6,6 +6,8 @@ import APBoard from "./APBoard";
 import App from "./App";
 
 export class APPartitionView extends App {
+
+    static ROW_HEIGHT = 30;
     constructor(props) {
         super(props)
 
@@ -25,19 +27,20 @@ export class APPartitionView extends App {
         this.colouring = this.props.colouring
         this.sort = this.props.sort
 
-        var rowHeight = 30;
-
         var svgEl = this.props.target;
         svgEl.replaceChildren()
         var svg = select(svgEl);
 
         var sizing = partitionSize(this.props.root, function (d) {
             switch (me.sort) {
+                
+                case 'size':{
+                    return (d.data && d.data.size) ? d.data.size : 0
+                }
                 default:
-                case 'size':
-                    return (d.data && d.data.size) ? d.data.size : 1
-                case 'count':
-                    return rowHeight
+                case 'count':{
+                    return APPartitionView.ROW_HEIGHT;
+                }
                 case 'r_size':
                     return d.value
             }

@@ -15,34 +15,34 @@ export default class App extends React.Component {
             boards: []
         };
 
-        if (!globalThis.bc) {
-			globalThis.bc = new BroadcastChannel("nui_socket_ch")
-			this.bc = globalThis.bc;
+        // if (!globalThis.bc) {
+		// 	globalThis.bc = new BroadcastChannel("nui_socket_ch")
+		// 	this.bc = globalThis.bc;
 			
-		} else {
-			this.bc = new BroadcastChannel("nui_socket_ch");
-			this.bc.onmessage = (event) => {
-				console.log(event);
-			}
-		}
+		// } else {
+		// 	this.bc = new BroadcastChannel("nui_socket_ch");
+		// 	this.bc.onmessage = (event) => {
+		// 		console.log(event);
+		// 	}
+		// }
 
 	
-		if (!globalThis.ws) {
-			globalThis.ws = io()
+		// if (!globalThis.ws) {
+		// 	globalThis.ws = io()
 
-			globalThis.ws.on('connect', () => {
-				console.log('connected')
-			})
-			globalThis.ws.on('update-item', (msg) => {
-				console.log('update', msg)
-				globalThis.bc.postMessage({
-					type: "update",
-					data: msg
-				})
-			})
-		}
-		//Connect to endpoint to establish socket set up on server
-		fetch("/api/socket");
+		// 	globalThis.ws.on('connect', () => {
+		// 		console.log('connected')
+		// 	})
+		// 	globalThis.ws.on('update-item', (msg) => {
+		// 		console.log('update', msg)
+		// 		globalThis.bc.postMessage({
+		// 			type: "update",
+		// 			data: msg
+		// 		})
+		// 	})
+		// }
+		// //Connect to endpoint to establish socket set up on server
+		// fetch("/api/socket");
     }
     
 	resize = () => {

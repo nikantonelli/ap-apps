@@ -1,20 +1,19 @@
-import { Autocomplete, Box, Button, Chip, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
+import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
 import * as d3 from 'd3';
 import _, { forEach } from "lodash";
 
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
-import React from "react";
+import React, { Suspense } from "react";
 
 import { APcard } from "../Components/APcard";
 import { APTimeLineView } from "../Components/TimeLineApp";
-import { shortDate } from "../utils/Client/Helpers";
-import { VIEW_TYPES, flattenTree, getCardHierarchy } from "../utils/Client/Sdk";
+import { VIEW_TYPES, flattenTree, getCardHierarchy, getRealChildren } from "../utils/Client/Sdk";
 
 import App from "./App";
-import { APTreeView } from "./TreeApp";
-import { APSunburstView } from "./SunburstApp";
 import { APPartitionView } from "./PartitionApp";
+import { APSunburstView } from "./SunburstApp";
+import { APTreeView } from "./TreeApp";
 
 export class APBoard extends App {
 
@@ -32,7 +31,7 @@ export class APBoard extends App {
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			...this.state,
-			mode: this.props.mode || VIEW_TYPES.SUNBURST,
+			mode: this.props.mode || VIEW_TYPES.TREE,
 			anchorEl: null,
 			drawerOpen: false,
 			menuOpen: false,
@@ -80,9 +79,9 @@ export class APBoard extends App {
 
 	tempColouring = (d) => {
 		this.opacityDrop = true;
-		var mine = this.searchTree(this.root, d.data.id)
-		while (mine.parent && mine.parent.id != 'root') mine = mine.parent;
-		return this.colourFnc((mine ? mine.colour : 1) + 1);
+		var mine = this.searchTree(this.rootNode, d.data.id)
+		while (mine.parent && mine.parent.data.id != 'root') mine = mine.parent;
+		return this.colourFnc((mine ? mine.idx : 1) + 1);
 	}
 
 	typeColouring = (d) => {
@@ -226,7 +225,7 @@ export class APBoard extends App {
 						return 1;
 					}
 					case 'size':
-						return (d.data && d.data.size) ? d.data.size : 1
+						return (d.data && d.data.size) ? d.data.size : 0
 					case 'r_size': {
 						return d.size ? d.size : 0;
 					}
@@ -290,6 +289,20 @@ export class APBoard extends App {
 				rootNode.earliest = _.min([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.earliest])
 			}
 		})
+
+		this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
+		this.dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
+
+		if (this.rootNode.earliest) {
+			this.dateRangeStart = this.rootNode.earliest;
+			if (!this.rootNode.latest) {
+				this.dateRangeEnd = this.dateRangeStart + (1000 * 60 * 60 * 24 * 28)	//Go for 28 days onwards
+			}
+			else {
+				if (this.dateRangeEnd < this.rootNode.latest)
+					this.dateRangeEnd = this.rootNode.latest
+			}
+		}
 
 		rootNode.each((d) => {
 			if (d.data.assignedUsers && d.data.assignedUsers.length) {
@@ -432,19 +445,7 @@ export class APBoard extends App {
 
 			case VIEW_TYPES.TIMELINE: {
 
-				this.dateRangeStart = new Date().getTime() - (1000 * 60 * 60 * 24 * 14)	//14 days ago
-				this.dateRangeEnd = new Date().getTime() + (1000 * 60 * 60 * 24 * 14)	//14 days in future
 
-				if (this.rootNode.earliest) {
-					this.dateRangeStart = this.rootNode.earliest;
-					if (!this.rootNode.latest) {
-						this.dateRangeEnd = this.dateRangeStart + (1000 * 60 * 60 * 24 * 28)	//Go for 28 days onwards
-					}
-					else {
-						this.dateRangeEnd = this.rootNode.latest
-					}
-
-				}
 				break;
 			}
 
@@ -510,7 +511,7 @@ export class APBoard extends App {
 			var hdrBox = document.getElementById("header-box")
 			this.calcTreeData(this.rootNode)
 			return (
-				<>
+				<Suspense>
 					{this.addPortals()}
 					<Stack id="portalContainer" sx={{ width: '100%' }}>
 
@@ -532,13 +533,7 @@ export class APBoard extends App {
 
 								</Grid>
 							</Grid>
-							<Grid item xs={2} sx={{ alignItems: 'center' }}>
-								<Grid container style={{ justifyContent: 'flex-end' }} >
-									{this.state.pending ?
-										<Chip color="warning" label={"Queued: " + this.state.pending} />
-										: <Chip label={"Total loaded: " + this.state.total}></Chip>}
-								</Grid>
-							</Grid>
+
 						</Grid>
 						<Menu
 							open={Boolean(this.state.anchorEl)}
@@ -562,6 +557,7 @@ export class APBoard extends App {
 								data={this.rootNode ? this.rootNode : []}
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
+								onClick={this.nodeClicked}
 								colourise={this.state.colourise}
 								errorColour={this.getErrorColour}
 							/> : null}
@@ -578,7 +574,7 @@ export class APBoard extends App {
 								target={document.getElementById("svg_" + this.state.board.id)}
 								board={this.state.board}
 								root={this.rootNode}
-								onClick={this.nodeClicked}
+								onClick={this.svgNodeClicked}
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
 								colourise={this.state.colourise}
@@ -598,7 +594,7 @@ export class APBoard extends App {
 								target={document.getElementById("svg_" + this.state.board.id)}
 								board={this.state.board}
 								root={this.rootNode}
-								onClick={this.nodeClicked}
+								onClick={this.svgNodeClicked}
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
 								colourise={this.state.colourise}
@@ -616,7 +612,7 @@ export class APBoard extends App {
 								target={document.getElementById("svg_" + this.state.board.id)}
 								board={this.state.board}
 								root={this.rootNode}
-								onClick={this.nodeClicked}
+								onClick={this.svgNodeClicked}
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
 								colourise={this.state.colourise}
@@ -766,19 +762,9 @@ export class APBoard extends App {
 							</Box>
 						</Drawer>
 					</Stack >
-				</>
+				</Suspense>
 			)
 		}
-	}
-	childrenOf = (host, cards, depth) => {
-
-		var me = this;
-		for (var i = 0; i < cards.length; i++) {
-			getCardHierarchy(host, cards[i], 'children', depth)
-
-			me.setData()
-		}
-
 	}
 
 	sortData = (items) => {
@@ -790,7 +776,6 @@ export class APBoard extends App {
 	setData = () => {
 		function setChildIdx(item) {
 			item.children && item.children.forEach((child, idx) => {
-				child.parent = item;
 				child.colour = idx;
 				setChildIdx(child);
 			})
@@ -802,24 +787,29 @@ export class APBoard extends App {
 			return items
 		}
 		if (this.root) {
-			setChildIdx(this.root)
-			filterRootItems(this.root)
+			this.rootNode = d3.hierarchy(this.root)
+			setChildIdx(this.rootNode)
+			filterRootItems(this.rootNode)
 		}
 
 		//
-		this.rootNode = d3.hierarchy(this.root)
+
 	}
 
 
 	componentDidMount = () => {
+		Promise.all(getRealChildren(this.props.host, this.props.cards, this.state.depth)).then((result) => {
+			this.root.children = result
+
+			this.setData()
+			this.setState({ fetchActive: false })
+		})
 		this.setColouring({ colouring: this.state.colouring })
-		this.setData()
-		this.setState({ fetchActive: false })
 		window.addEventListener('resize', this.resize);
 	}
 
 	searchTree = (element, id) => {
-		if (element.id === id) {
+		if (element.data.id === id) {
 			return element;
 		}
 		else if (Boolean(element.children)) {
@@ -833,7 +823,12 @@ export class APBoard extends App {
 		return null;
 	}
 
-	nodeClicked = (ev, p) => {
+	nodeClicked = (ev) => {
+		debugger;
+		console.log(this.rootNode)
+	}
+
+	svgNodeClicked = (ev, p) => {
 		var me = this;
 		if (ev.ctrlKey) {
 			if (p.data.children && p.data.children.length) {
@@ -853,67 +848,45 @@ export class APBoard extends App {
 		}
 		else if (ev.shiftKey) {
 			if (p.data.id != 'root') {
-				var newRoot = this.searchTree(me.root, p.data.id);
-				var parent = this.searchTree(me.root, newRoot.parent.id);
+				var newRoot = this.searchTree(me.rootNode, p.data.id);
+				var parent = this.searchTree(me.rootNode, newRoot.parent.id);
 				if (me.focus === p.data.id) {
 					if (parent && (parent.id !== 'root')) {
 						me.focus = parent.id;
-						me.setState({
-							rootNode: d3.hierarchy(
-								{
-									id: 'root',
-									children: [parent]
-								}
-							)
-						});
+						me.setState(
+							{
+								rootNode: parent
+							}
+						)
 					} else {
 						me.focus = null;
-						me.setState({
-							rootNode: d3.hierarchy(
-								{
-									id: 'root',
-									children: me.root.children
-								}
-							)
-						})
+						me.setState({ rootNode: me.rootNode })
 					}
 
 				} else {
 					me.focus = newRoot.id;
-					me.setState({
-						rootNode: d3.hierarchy(
-							{
-								id: 'root',
-								children: [newRoot]
-							}
-						)
-					})
+					me.setState({ rootNode: newRoot })
 				}
+
+
 			} else {
 				me.focus = null;
-				me.setState({
-					rootNode: d3.hierarchy(
-						{
-							id: 'root',
-							children: me.root.children
-						}
-					)
+				me.setState({ rootNode: me.rootNode })
+
+
+				d3.select(".parentLabel").datum(p).text(d =>
+					(d.data.id === "root" ? "" : d.data.id));
+				d3.select(".parentTitle").datum(p).text(d => {
+					return d.data.title + " : " + d.data.size;
 				})
+
+				d3.select(".parentNode").datum(p || me.rootNode);
+
+
 			}
-
-			d3.select(".parentLabel").datum(p).text(d =>
-				(d.data.id === "root" ? "" : d.data.id));
-			d3.select(".parentTitle").datum(p).text(d => {
-				return d.data.title + " : " + d.data.size;
-			})
-
-			d3.select(".parentNode").datum(p || me.state.rootNode);
-
-		}
-		else {
-			console.log("setting popup to: ", p.data.id)
-			me.popUp = p.data.id
-			me.setState({ popUp: p.data.id })
+		}else {
+			this.popUp = p.data.id
+			this.setState({ popUp: p.data.id })
 		}
 	}
 

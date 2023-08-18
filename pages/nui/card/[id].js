@@ -17,36 +17,6 @@ export default class Item extends React.Component {
 		}
 	}
 
-	componentDidMount = () => {
-		var data = this.props.card;
-
-		//Get the connection info
-		getCardChildren(this.props.host, data).then(async (children) => {
-			var childArray = await children.json()
-			this.setState({ descendants: childArray.cards })
-			if (data.parentCards && data.parentCards.length) {
-				getListOfCards(this.props.host, data.parentCards.map((card) => card.cardId)).then(async (parents) => {
-					var parentArray = await parents.json()
-					this.setState({ parents: parentArray.cards })
-				})
-			}
-		})
-
-		//Get the context info
-		getBoard(this.props.host, data.board.id).then(async (info) => {
-			var board = await info.json()
-			this.setState({ context: board })
-		})
-		//Get the context info
-		// getBoardIcons(this.props.host, this.state.data.board.id).then(async (info) => {
-		// 	var icons = await info.json()
-		// 	this.setState({ contextIcons: icons })
-		// })
-
-
-	}
-
-
 	render() {
 
 		if (this.props.card != null) {

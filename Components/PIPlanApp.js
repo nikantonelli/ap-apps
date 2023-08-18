@@ -53,8 +53,7 @@ export class PIPlanApp extends App {
 					mode: "GET",
 					url: "/timebox/" + series.id
 				}
-				var cResponse = await doRequest(cParams)
-				var cResult = await cResponse.json()
+				var cResult = await doRequest(cParams)
 				allSeries.push(cResult)
 				this.setAllSeries(allSeries);
 			})
@@ -86,8 +85,7 @@ export class PIPlanApp extends App {
 			mode: "GET",
 			url: "/timebox/" + evt.target.value + "?incr=all"
 		}
-		var cResponse = await doRequest(cParams)
-		var cResult = await cResponse.json()
+		var cResult =await doRequest(cParams)
 		var increments = orderBy(cResult.increments, ["startDate"], ["desc"])
 		this.setCurrentSeries(find(this.state.planningSeries, { id: evt.target.value }))
 		this.setAllTimeboxes(increments)

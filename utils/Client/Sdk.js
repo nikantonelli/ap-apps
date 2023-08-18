@@ -8,50 +8,105 @@ export class VIEW_TYPES {
 	static TIMELINE = 'timeline'
 }
 
-export const getCardChildren = async (host, card) => {
+export const getCardChildren = (host, card) => {
 	var params = {
 		host: host,
 		mode: "GET",
 		url: "/card/" + card.id + "/connection/children?cardStatus=notStarted,started,finished",
 	}
-	return await doRequest(params);
+	return doRequest(params);
 }
 
 /** 
  * Coded like this because we usually have to 'refetch' the REAL version 
  * of a nonsense one back from a different api call.
 */
-export const getCard = async (host, card) => {
+export const getCard = (host, cardId) => {
 	var params = {
 		host: host,
 		mode: "GET",
-		url: "/card/" + card.id,
+		url: "/card/" + cardId,
 	}
-	return await doRequest(params);
+	return doRequest(params);
 }
 
+export const getCards = (host, cardIds) => {
+	var reqs = []
+	if (cardIds.constructor.toString().indexOf("Array") < 0) return null;
+	cardIds.forEach(async (crd) => {
+		var card = getCard(host, crd)
+		reqs.push(card)
+	})
+	return Promise.all(reqs).then((results) => {
+		var cards = [];
+		results.forEach((result) => {
+			cards.push(result)
+		})
+		return cards
+	})
+}
+
+
+/**
+ * 
+ * @param {*} host 
+ * @param {*} card 
+ * @param {*} type 
+ * @param {*} depth 
+ * @returns A partial Card
+ * 
+ * The AgilePlace API returns different card structures depending on what call you make
+ * This is a bit of a pain as it means that most times you have to get the card twice 
+ * if you want ALL the fields
+ * In the case that you want all the fields, flatten the tree and then get all the cards
+ * and replace each one back into the tree
+ */
 export const getCardHierarchy = async (host, card, type, depth) => {
-	if (depth < 0) return //We're done
-	
-	var level = depth - 1;
-	switch (type) {
-		case 'children':{
-			var result = await getCardChildren(host, card);
-			var children = await result.json()
-			if (children.cards && children.cards.length) {
-				if (!card.children) {
-					card.children = children.cards
+	if (depth < 0) return null //We're done
+	return new Promise(async (resolve, reject) => {
+
+		var level = depth - 1;
+		switch (type) {
+			case 'children': {
+				var result = await getCardChildren(host, card);
+
+				if (result.cards && result.cards.length) {
+					var cardIds = result.cards.map((card) => card.id)
+					var realCards = await getCards(host, cardIds)
+					var grc = Promise.all(getRealChildren(host, realCards, level)).then((results) => {
+
+						if (!card.children) {
+							card.children = realCards
+						} else {
+							card.children = unionBy(card.children, realCards, (card) => card.id)
+						}
+						resolve(card);
+					})
 				} else {
-					card.children = unionBy(card.children, children.cards, (card) => card.id)
+					resolve(card)
 				}
-				for (var i = 0; i < children.cards.length; i++) {
-					await getCardHierarchy(host, children.cards[i], type, level)
-				}
-				//children.cards.forEach((card) => { getCardHierarchy(host, card, type, level) })	
-			}		
+			}
 		}
-	}
-	return card
+		
+	})
+}
+
+
+export function getRealChildren(host, cards, depth) {
+
+	var reqs = [];
+	if (cards.constructor.toString().indexOf("Array") < 0) return [];
+	cards.forEach(async (card) => {
+		reqs.push(getCardHierarchy(host, card, 'children', depth))
+	})
+	// return Promise.all(reqs).then((results) => {
+	// 	var newCards = [];
+	// 	results.forEach((result) => {
+	// 		newCards.push(result)
+	// 	})
+	// 	return newCards;
+	// })
+	return reqs;
 }
 
 /** If a top level card is a child of something else in the hierarchy, then remove from the top layer */
@@ -68,7 +123,7 @@ export const removeDuplicates = (cards) => {
 	return checkedCards
 }
 
-export const  flattenTree = (array, result) => {
+export const flattenTree = (array, result) => {
 	array.forEach(function (el) {
 		if (el.children) {
 			flattenTree(el.children, result);
@@ -100,7 +155,7 @@ export const getListOfCards = async (host, cardList) => {
 		mode: 'GET',
 		url: "/card?cards=" + cardList.toString()
 	}
-	return await doRequest(params);
+	return doRequest(params);
 }
 
 export const getBoard = async (host, brdId) => {
@@ -109,7 +164,7 @@ export const getBoard = async (host, brdId) => {
 		mode: 'GET',
 		url: "/board/" + brdId
 	}
-	return await doRequest(params);
+	return doRequest(params);
 }
 export const getBoardIcons = async (host, brdId) => {
 	var params = {
@@ -117,7 +172,7 @@ export const getBoardIcons = async (host, brdId) => {
 		mode: 'GET',
 		url: "/board/" + brdId + "/customIcon"
 	}
-	return await doRequest(params);
+	return doRequest(params);
 }
 
 export const partitionSize = (treeNode, sizFnc) => {
@@ -125,7 +180,7 @@ export const partitionSize = (treeNode, sizFnc) => {
 
 	forEach(treeNode.children, (item) => {
 		myValue += partitionSize(item, sizFnc)
-	}) 
+	})
 	return myValue
 }
 
@@ -141,8 +196,16 @@ export const doRequest = async (params) => {
 	}
 	//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
 	var req = new Request("http://" + params.host + "/api" + params.url, ps);
-	var res = await fetch(req, { next: { revalidate: 30 } })
-	return res
+	var res = await fetch(req, { next: { revalidate: 30 } }).then(
+		async (response) => {
+			if (response.ok) {
+				return response
+			} else return null;
+		}
+	)
+	var data = null;
+	if (res) data = await res.json()
+	return data
 }
 
 /**
@@ -169,7 +232,7 @@ export const doMultiRequest = async (params, itemType) => {
 
 	while (moreItems) {
 		//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
-		var response = await fetch(new Request(encodeURI("http://" + params.host + "/api" + params.url + "?offset=" + currentItem + extras), ps))
+		var response = await fetch(new Request("http://" + params.host + "/api" + params.url + "?offset=" + currentItem + encodeURI(extras), ps))
 		var res = await response.json();
 		if (res) {
 			currentItem = res.pageMeta.endRow

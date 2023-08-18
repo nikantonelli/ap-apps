@@ -5,6 +5,7 @@ import { scaleLinear } from 'd3';
 import { forEach } from "lodash";
 import React from "react";
 import { VIEW_TYPES } from "../utils/Client/Sdk";
+import APBoard from "./APBoard";
 
 export class APTimeLineView extends React.Component {
 
@@ -100,7 +101,8 @@ export class APTimeLineView extends React.Component {
 
 				var nowPosn = dateToPosn(Date.now())
 
-				var colourBar = "#27a444"
+				var planBar = "#27a444"
+				var actualBar = "#ce7d05"
 				if (plannedStartPC !== undefined) {
 
 					if (plannedStartPC < 0) plannedStartPC = 0;
@@ -120,7 +122,8 @@ export class APTimeLineView extends React.Component {
 				}
 				else actualStartPC = 0;
 				if (actualEndPC !== undefined) {
-					colourBar = "#444444";
+					planBar = "#444444";
+					actualBar = planBar
 					if (actualEndPC < 0) actualEndPC = 0;
 					if (actualEndPC > 100) actualEndPC = 100;
 				} else {
@@ -131,27 +134,27 @@ export class APTimeLineView extends React.Component {
 				return (
 					<Box key={idx + 1} sx={{ width: "100%" }}>
 						<Grid container direction='row'>
-							<Grid container sx={{ borderTop: "3px double " + (eColour.length?eColour:"#aaaaaa"), width: "20%", maxWidth: 400, height: barHeight }}>
+							<Grid container sx={{ borderTop: "1px solid " + (eColour.length?eColour:"#aaaaaa"), width: "20%", maxWidth: 400, height: barHeight }}>
 								{
 									treeSymbols(node.depth)
 								}
-								<Grid xs>
+								<Grid xs onClick={this.props.onClick}>
 									<Tooltip title={node.data.title}>
-										<Typography key={idx} className="timeline-text" sx={{ backgroundColor: bCol, textAlign: "left", cursor: 'pointer' }} onClick={this.props.onClick}>
+										<Typography key={idx} id={node.data.id} className="timeline-text" sx={{ backgroundColor: bCol, textAlign: "left", cursor: 'pointer', opacity: APBoard.OPACITY_MEDIUM }} onClick={this.props.onClick}>
 											{node.data.title}
 										</Typography>
 									</Tooltip>
 								</Grid>
 
 							</Grid>
-							<Grid sx={{ borderTop: "3px double " + (eColour.length?eColour:"#aaaaaa"), width: "80%", height: barHeight }}>
+							<Grid sx={{ borderTop: "1px solid " + (eColour.length?eColour:"#aaaaaa"), width: "80%", height: barHeight }}>
 								
 									<Grid id="timelineRow" container direction='row'>
 										<Grid sx={{ width: plannedStartPC.toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 										</Grid>
 										<Grid sx={{ width: (plannedEndPC - plannedStartPC).toString() + "%" }}>
-											<Box sx={{height: "12px", backgroundColor: colourBar}} />
+											<Box sx={{height: "12px", backgroundColor: planBar}} />
 										</Grid>
 										<Grid sx={{ width: (100.0 - plannedEndPC).toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
@@ -163,7 +166,7 @@ export class APTimeLineView extends React.Component {
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 										</Grid>
 										<Grid sx={{ width: (actualEndPC - actualStartPC).toString() + "%" }}>
-											<Box sx={{ height: "12px", backgroundColor:  colourBar, opacity: 0.5}} />
+											<Box sx={{ height: "12px", backgroundColor:  actualBar}} />
 										</Grid>
 										<Grid sx={{ width: (100.0 - actualEndPC).toString() + "%" }}>
 											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
