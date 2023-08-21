@@ -18,7 +18,7 @@ import { APTreeView } from "./TreeApp";
 export class APBoard extends App {
 
 	static DEFAULT_TREE_DEPTH = 3;
-	static DEFAULT_SUNBURST_DEPTH = 2;	//Two rings of children
+	static DEFAULT_SUNBURST_DEPTH = 3;	//Three rings of children plus the root
 	static OPACITY_HIGH = 1.0;
 	static OPACITY_MEDIUM = 0.7;
 	static OPACITY_LOW = 0.3;
@@ -27,7 +27,7 @@ export class APBoard extends App {
 	constructor(props) {
 		super(props)
 
-		var stateDepth = 4
+		var stateDepth = this.props.depth
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			...this.state,
@@ -81,7 +81,7 @@ export class APBoard extends App {
 		this.opacityDrop = true;
 		var mine = this.searchTree(this.rootNode, d.data.id)
 		while (mine.parent && mine.parent.data.id != 'root') mine = mine.parent;
-		return this.colourFnc((mine ? mine.idx : 1) + 1);
+		return this.colourFnc((mine ? mine.colour : 1) + 1);
 	}
 
 	typeColouring = (d) => {
@@ -554,7 +554,7 @@ export class APBoard extends App {
 
 						{this.state.mode === VIEW_TYPES.TIMELINE ?
 							<APTimeLineView
-								data={this.rootNode ? this.rootNode : []}
+								data={this.state.rootNode ? this.state.rootNode : []}
 								end={this.dateRangeEnd}
 								start={this.dateRangeStart}
 								onClick={this.nodeClicked}
@@ -573,7 +573,7 @@ export class APBoard extends App {
 
 								target={document.getElementById("svg_" + this.state.board.id)}
 								board={this.state.board}
-								root={this.rootNode}
+								root={this.state.rootNode}
 								onClick={this.svgNodeClicked}
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
@@ -593,7 +593,7 @@ export class APBoard extends App {
 
 								target={document.getElementById("svg_" + this.state.board.id)}
 								board={this.state.board}
-								root={this.rootNode}
+								root={this.state.rootNode}
 								onClick={this.svgNodeClicked}
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
@@ -606,12 +606,13 @@ export class APBoard extends App {
 								size={
 									[
 										window.innerWidth,
-										window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60)
+										window.innerHeight
 									]
 								}
+								depth={this.state.depth}
 								target={document.getElementById("svg_" + this.state.board.id)}
 								board={this.state.board}
-								root={this.rootNode}
+								root={this.state.rootNode}
 								onClick={this.svgNodeClicked}
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
@@ -774,10 +775,10 @@ export class APBoard extends App {
 
 	}
 	setData = () => {
-		function setChildIdx(item) {
+		function setChildColour(item) {
 			item.children && item.children.forEach((child, idx) => {
 				child.colour = idx;
-				setChildIdx(child);
+				setChildColour(child);
 			})
 		}
 
@@ -786,11 +787,13 @@ export class APBoard extends App {
 			flattenTree(root.children, items)
 			return items
 		}
-		if (this.root) {
-			this.rootNode = d3.hierarchy(this.root)
-			setChildIdx(this.rootNode)
-			filterRootItems(this.rootNode)
-		}
+
+		this.rootNode = d3.hierarchy(this.root)
+		setChildColour(this.rootNode)
+		filterRootItems(this.rootNode)
+
+		this.setState({ rootNode: this.rootNode })
+
 
 		//
 
@@ -847,31 +850,44 @@ export class APBoard extends App {
 			document.open("/nui/card/" + p.data.id, "", "noopener=true")
 		}
 		else if (ev.shiftKey) {
+			ev.stopPropagation()
+			ev.preventDefault()
 			if (p.data.id != 'root') {
 				var newRoot = this.searchTree(me.rootNode, p.data.id);
-				var parent = this.searchTree(me.rootNode, newRoot.parent.id);
+				var parent = this.searchTree(me.rootNode, newRoot.parent.data.id);
 				if (me.focus === p.data.id) {
-					if (parent && (parent.id !== 'root')) {
-						me.focus = parent.id;
+					if (parent && (parent.data.id !== 'root')) {
+						me.focus = parent.data.id;
 						me.setState(
 							{
-								rootNode: parent
+								rootNode: d3.hierarchy({
+									id: 'root',
+									height: parent.height+1,
+									children: [parent.data]
+								})
 							}
 						)
 					} else {
 						me.focus = null;
-						me.setState({ rootNode: me.rootNode })
+						me.setState({ rootNode: d3.hierarchy(me.root) })
 					}
 
 				} else {
-					me.focus = newRoot.id;
-					me.setState({ rootNode: newRoot })
+					me.focus = newRoot.data.id;
+					me.setState({
+						rootNode: d3.hierarchy({
+							id: 'root',
+							height: newRoot.height+1,
+							children: [newRoot.data]
+						})
+					}
+					)
 				}
 
 
 			} else {
 				me.focus = null;
-				me.setState({ rootNode: me.rootNode })
+				me.setState({ rootNode: d3.hierarchy(me.root) })
 
 
 				d3.select(".parentLabel").datum(p).text(d =>
@@ -884,7 +900,7 @@ export class APBoard extends App {
 
 
 			}
-		}else {
+		} else {
 			this.popUp = p.data.id
 			this.setState({ popUp: p.data.id })
 		}

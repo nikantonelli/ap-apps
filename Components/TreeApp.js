@@ -110,6 +110,7 @@ export class APTreeView extends App {
                 })
                 .on('click', me.nodeClicked)
                 .style("text-anchor", "start")
+                .style("pointer-events", "none")
                 .attr("x", function (d) { return d.y + (d.rowHeight / 16) })
                 .attr("y", function (d) { return d.x + (d.rowHeight / 8) })
                 .style('cursor', 'pointer')
