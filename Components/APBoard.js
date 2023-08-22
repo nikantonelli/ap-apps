@@ -80,8 +80,10 @@ export class APBoard extends App {
 	tempColouring = (d) => {
 		this.opacityDrop = true;
 		var mine = this.searchTree(this.rootNode, d.data.id)
-		while (mine.parent && mine.parent.data.id != 'root') mine = mine.parent;
-		return this.colourFnc((mine ? mine.colour : 1) + 1);
+		while (mine.parent && mine.parent.data.id != 'root') {
+			mine = mine.parent;
+		}
+		return this.colourFnc((mine ? mine.index : 1) + 1);
 	}
 
 	typeColouring = (d) => {
@@ -136,7 +138,7 @@ export class APBoard extends App {
 		this.opacityDrop = false;
 		var boardid = d.data.board.id
 		var index = _.findIndex(this.contextList, function (context) {
-			return boardid === context;
+			return boardid === context.id;
 		})
 		if (index >= 0) return this.colourFnc(index);
 
@@ -163,12 +165,12 @@ export class APBoard extends App {
 	setColouring = (params) => {
 		switch (params.colouring) {
 			case 'cool': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.tempColouring });
 				break;
 			}
 			case 'warm': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.root.children && this.root.children.length) ? this.root.children.length + 1 : 2))
+				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.tempColouring });
 				break;
 			}
@@ -317,9 +319,11 @@ export class APBoard extends App {
 				this.updatedUserList = _.unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
 			}
 			if (d.data.id != 'root') {
-				this.contextList = _.union(this.contextList, [d.data.board.id])
+				console.log(`adding ${d.data.board.id}`)
+				this.contextList = _.unionWith(this.contextList, [d.data.board],function (a, b) { return b.id === a.id })
 				//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
 				d.colour = this.state.colourise(d);
+				
 			}
 			d.opacity = 1.0
 		})
@@ -423,40 +427,6 @@ export class APBoard extends App {
 		return msg;
 	}
 
-	setPartitionView = (rowHeight) => {
-
-		var treeBoxHeight = this.rootNode.value * rowHeight;
-		var hEl = document.getElementById("header-box")
-		treeBoxHeight = _.max([treeBoxHeight, window.innerHeight - hEl.getBoundingClientRect().height])
-		var svgEl = document.getElementById("svg_" + this.state.board.id)
-		return [svgEl.getBoundingClientRect().width, treeBoxHeight]
-	}
-
-	update = () => {
-		/**
-		 * If a network error has occurred that is unrecoverable, then we may still come here but without a board
-		 */
-		if (!this.state.board || !this.rootNode) return;
-
-		switch (this.state.mode) {
-			case 'table': {
-				break;
-			}
-
-			case VIEW_TYPES.TIMELINE: {
-
-
-				break;
-			}
-
-			default: {
-				break;
-			}
-		}
-
-
-	}
-
 	modeChange = (e) => {
 		var newMode = e.target.value;
 		this.setState((prev) => {
@@ -509,7 +479,6 @@ export class APBoard extends App {
 	render() {
 		if (!this.state.fetchActive) {
 			var hdrBox = document.getElementById("header-box")
-			this.calcTreeData(this.rootNode)
 			return (
 				<Suspense>
 					{this.addPortals()}
@@ -774,11 +743,12 @@ export class APBoard extends App {
 
 
 	}
+
 	setData = () => {
-		function setChildColour(item) {
+		function setChildColourIndex(item) {
 			item.children && item.children.forEach((child, idx) => {
-				child.colour = idx;
-				setChildColour(child);
+				child.index = idx;
+				setChildColourIndex(child);
 			})
 		}
 
@@ -789,11 +759,11 @@ export class APBoard extends App {
 		}
 
 		this.rootNode = d3.hierarchy(this.root)
-		setChildColour(this.rootNode)
+		setChildColourIndex(this.rootNode)
 		filterRootItems(this.rootNode)
 
 		this.setState({ rootNode: this.rootNode })
-
+		this.calcTreeData(this.rootNode)
 
 		//
 
@@ -806,8 +776,9 @@ export class APBoard extends App {
 
 			this.setData()
 			this.setState({ fetchActive: false })
+			this.setColouring({ colouring: this.state.colouring })
 		})
-		this.setColouring({ colouring: this.state.colouring })
+		
 		window.addEventListener('resize', this.resize);
 	}
 
