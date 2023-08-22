@@ -27,7 +27,9 @@ export class APSunburstView extends App {
         var svgEl = this.props.target;
         svgEl.replaceChildren()
         var svg = select(svgEl);
-        var ringCount = this.props.depth? parseInt(this.props.depth): min([APBoard.DEFAULT_SUNBURST_DEPTH, this.props.root.height]) 
+        var ringCount = this.props.depth ? 
+                min([parseInt(this.props.depth), this.props.root.height]) : 
+                min([APBoard.DEFAULT_SUNBURST_DEPTH, this.props.root.height]) 
 
         partition()
             .size([2 * Math.PI, this.props.root.height]) //Number of rings plus the centre
@@ -41,30 +43,31 @@ export class APSunburstView extends App {
             ]
         )
 
-        var ringDiameter = width / (ringCount*2)
+        var ringDiameter = 1.2 *(width / (ringCount*2))
 
         svg.attr("width", width)
         svg.attr("height", width)
-        svg.attr('viewBox', [0, 0, (ringCount)*ringDiameter, (ringCount)* ringDiameter])
+        svg.attr('viewBox', [0, 0, width, width])
 
         const g = svg.append("g")
-            .attr("transform", `translate(${((ringCount)*ringDiameter/2)},${(ringCount)*ringDiameter/2})`);
+            .attr("transform", `translate(${width/2},${width/2})`);
 
         //var ringCount = _.min([(this.props.root.height - this.props.root.depth), 3]); //Max can be three rings including the root due to the text length
         var nArc = arc()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
             .padAngle(d => Math.min((d.x1 - d.x0), 0.005))
-            .innerRadius(d => d.y0 * ringDiameter/2)
-            .outerRadius(d => Math.max(d.y0 * ringDiameter/2, d.y1 * ringDiameter/2))
+            .padRadius((width/ringCount)*1.5)
+            .innerRadius(d => d.y0 * ringDiameter)
+            .outerRadius(d => Math.max(d.y0 * ringDiameter, d.y1 * ringDiameter))
 
         var eArc = arc()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
             .padAngle(d => Math.min((d.x1 - d.x0), 0.005))
-         
-            .innerRadius(d => Math.max(d.y1 * ringDiameter, d.y0 * ringDiameter))
-            .outerRadius(d => d.y1 * ringDiameter)
+            .padRadius((width/ringCount)*1.5)
+            .innerRadius(d => Math.max((d.y1 * ringDiameter)-4, d.y0 * ringDiameter)) //Make the errorBar 4 pixels wide
+            .outerRadius(d => d.y1 * ringDiameter - 1)
 
         var path = g.append("g")
             .selectAll("path")
@@ -73,8 +76,8 @@ export class APSunburstView extends App {
             .attr("fill", d => {
                 return this.colourise(d);
             })
-            .attr("fill-opacity", d => arcVisible(d) ? ((d.children && this.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
-            .attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
+            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
+            .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
 
             .attr("d", d => nArc(d))
             .style("cursor", "pointer")
@@ -84,19 +87,20 @@ export class APSunburstView extends App {
             .text(d => getTitle(me, d))
             ;
 
-        // var ePath = g.append("g")
-        //     .selectAll("path")
-        //     .data(this.props.root.descendants().slice(1))
-        //     .join("path")
-        //     .attr("fill", d => {
-        //         var eColour = this.props.errorColour(d);
-        //         return eColour.length ? eColour : this.colourise(d);
-        //     })
-        //     .attr("fill-opacity", d => arcVisible(d) ? ((d.children && this.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
-        //     .attr("pointer-events", d => arcVisible(d) ? "auto" : "none")
-        //     .attr("d", d => eArc(d))
-        //     .append("title")
-        //     .text(d => this.props.errorMessage(d))
+        var ePath = g.append("g")
+            .selectAll("path")
+            .data(this.props.root.descendants().slice(1))
+            .join("path")
+            .attr("id", d => "epath_"+d.data.doit)
+            .attr("fill", d => {
+                var eColour = this.props.errorColour(d);
+                return eColour.length ? eColour : this.colourise(d);
+            })
+            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
+            .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
+            .attr("d", d => eArc(d))
+            .append("title")
+            .text(d => this.props.errorMessage(d))
 
         const label = g.append("g")
             .attr("pointer-events", "none")
@@ -108,7 +112,7 @@ export class APSunburstView extends App {
             //					.attr("fill-opacity", 1)
             .attr("fill-opacity", d => +sbLabel(d, this.props.root.depth))
             .attr("transform", d => labelTransform(d))
-            .style("font-size", (1.8/(ringCount+1)).toString() + "em")
+            .style("font-size", (2.5/ringCount).toString() + "em")
             .style("pointer-events", "none")
             .attr("text-anchor", d => labelAnchor(d))
             .text(d => getLabel(me, d));
@@ -116,7 +120,7 @@ export class APSunburstView extends App {
         const parent = g.append("circle")
             .attr("class", "parentNode")
             .datum(this.rootNode)
-            .attr("r", d => d.y1 * ringDiameter/2)
+            .attr("r", d => d.y1 * ringDiameter)
             .attr("fill", "#ccc")
             .on("click", this.nodeClicked)
 
@@ -127,15 +131,15 @@ export class APSunburstView extends App {
             .text(d => getLabel(me, d))	//Need 'this' for props
             .attr("text-anchor", "middle")
             .style("pointer-events", "none")
-            .style("font-size", (1.2/ringCount).toString() + "em");
+            .style("font-size", (3/ringCount).toString() + "em");
 
         // const parentTitle = g.append("title")
         //     .attr("class", "parentTitle")
         //     .datum(this.rootNode)
         //     .text(d => getTitle(me, d))
 
-        function arcVisible(d) {
-            return d.y1 < ((ringCount)) && d.y0 >= 0 && d.x1 > d.x0;
+        function arcVisible(me, d) {
+            return d.y1 < ((ringCount+me.rootNode.depth)) && d.y0 >= 0 && d.x1 > d.x0;
         }
 
         function sbLabel(d, currentDepth) {
@@ -156,7 +160,7 @@ export class APSunburstView extends App {
             // const x = d.x0  * 180 / Math.PI;
             const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
 
-            const y = (d.y1 * (ringDiameter/2)) - 2;
+            const y = (d.y1 * (ringDiameter)) - 5; //Subtract a bit to allow space for the error bar
             // const y = (d.y0 + d.y1) / 2 * (width / (2*ringCount));
             return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
         }

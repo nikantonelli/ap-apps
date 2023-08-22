@@ -479,6 +479,7 @@ export class APBoard extends App {
 	render() {
 		if (!this.state.fetchActive) {
 			var hdrBox = document.getElementById("header-box")
+			this.calcTreeData(this.state.rootNode)
 			return (
 				<Suspense>
 					{this.addPortals()}
@@ -575,7 +576,7 @@ export class APBoard extends App {
 								size={
 									[
 										window.innerWidth,
-										window.innerHeight
+										window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
 									]
 								}
 								depth={this.state.depth}
@@ -583,6 +584,7 @@ export class APBoard extends App {
 								board={this.state.board}
 								root={this.state.rootNode}
 								onClick={this.svgNodeClicked}
+								opacityDrop
 								sort={this.state.sortType}
 								colouring={this.state.colouring}
 								colourise={this.state.colourise}
@@ -763,10 +765,6 @@ export class APBoard extends App {
 		filterRootItems(this.rootNode)
 
 		this.setState({ rootNode: this.rootNode })
-		this.calcTreeData(this.rootNode)
-
-		//
-
 	}
 
 
@@ -804,6 +802,8 @@ export class APBoard extends App {
 
 	svgNodeClicked = (ev, p) => {
 		var me = this;
+		ev.stopPropagation()
+			ev.preventDefault()
 		if (ev.ctrlKey) {
 			if (p.data.children && p.data.children.length) {
 				p.data.savedChildren = _.union(p.data.children, p.data.savedChildren)
@@ -814,62 +814,39 @@ export class APBoard extends App {
 				p.data.savedChildren = [];
 			}
 			this.setState((prev) => {
-				return { rootNode: d3.hierarchy(this.root) }
+				var rNode = d3.hierarchy(this.root)
+				return { rootNode: rNode }
 			})
 		}
 		else if (ev.altKey) {
 			document.open("/nui/card/" + p.data.id, "", "noopener=true")
 		}
 		else if (ev.shiftKey) {
-			ev.stopPropagation()
-			ev.preventDefault()
+			
 			if (p.data.id != 'root') {
 				var newRoot = this.searchTree(me.rootNode, p.data.id);
 				var parent = this.searchTree(me.rootNode, newRoot.parent.data.id);
 				if (me.focus === p.data.id) {
 					if (parent && (parent.data.id !== 'root')) {
 						me.focus = parent.data.id;
-						me.setState(
-							{
-								rootNode: d3.hierarchy({
-									id: 'root',
-									height: parent.height+1,
-									children: [parent.data]
-								})
-							}
-						)
+						me.setState({ rootNode: this.rootNode })
 					} else {
 						me.focus = null;
-						me.setState({ rootNode: d3.hierarchy(me.root) })
+						me.setState({ rootNode: this.rootNode })
 					}
-
 				} else {
 					me.focus = newRoot.data.id;
-					me.setState({
-						rootNode: d3.hierarchy({
-							id: 'root',
-							height: newRoot.height+1,
-							children: [newRoot.data]
-						})
-					}
-					)
+					me.setState({ rootNode:  newRoot })
 				}
-
-
 			} else {
 				me.focus = null;
-				me.setState({ rootNode: d3.hierarchy(me.root) })
-
-
+				me.setState({ rootNode: this.rootNode })
 				d3.select(".parentLabel").datum(p).text(d =>
 					(d.data.id === "root" ? "" : d.data.id));
 				d3.select(".parentTitle").datum(p).text(d => {
 					return d.data.title + " : " + d.data.size;
 				})
-
 				d3.select(".parentNode").datum(p || me.rootNode);
-
-
 			}
 		} else {
 			this.popUp = p.data.id
