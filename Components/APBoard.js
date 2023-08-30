@@ -1005,6 +1005,7 @@ export class APBoard extends App {
 				id="root-child-selector"
 				disableClearable
 				onChange={this.handleChangeMultiple}
+				defaultValue={this.state.topLevelList}
 				options={cardList}
 				getOptionLabel={(option) => option.title}
 				renderOption={(props, option) => {
