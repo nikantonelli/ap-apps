@@ -7,9 +7,6 @@ export default function Home() {
 			<p>
 				Get started by getting a list of contexts from <Link href="/nui/context">here</Link>
 			</p>
-			<p>
-				Or look to do PI Planning <Link href="/nui/planning">here</Link>
-			</p>
 		</>
 	)
 }

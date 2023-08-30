@@ -1,6 +1,6 @@
 import { arc, partition, select } from "d3";
 import { min } from "lodash";
-import { VIEW_TYPES, partitionSize } from "../utils/Client/Sdk";
+import { VIEW_TYPES, visitTree } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 import APBoard from "./APBoard";
 import App from "./App";
@@ -20,7 +20,7 @@ export class APPartitionView extends App {
 
         this.colourise = this.props.colourise || function () { return "#666666" }
         this.errorColour = this.props.errorColour || function () { return "#cc6666" }
-        this.errorMessage = this.props.errorMessage || function () { return "No Message" }
+        this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
         this.nodeClicked = this.props.onClick || null;
 
         //These two are used by the routines in Sdk.js and not here
@@ -31,20 +31,25 @@ export class APPartitionView extends App {
         svgEl.replaceChildren()
         var svg = select(svgEl);
 
-        var sizing = partitionSize(this.props.root, function (d) {
+        var columnCount = this.props.depth ?
+            min([parseInt(this.props.depth), this.props.root.height]) :
+            min([APBoard.DEFAULT_TREE_DEPTH, this.props.root.height])
+
+        function sizeIt(d, prevSize) {
             switch (me.sort) {
-                
-                case 'size':{
-                    return (d.data && d.data.size) ? d.data.size : 0
+                case 'size': {
+                    return prevSize + ((d.data && d.data.size) ? d.data.size : 0)
                 }
                 default:
-                case 'count':{
-                    return APPartitionView.ROW_HEIGHT;
+                case 'count': {
+                    return prevSize + APPartitionView.ROW_HEIGHT;
                 }
                 case 'r_size':
-                    return d.value
+                    return prevSize + d.value
             }
-        })
+        }
+        
+        var sizing = visitTree(this.props.root, sizeIt, 0)
 
         partition()
             .size([sizing, this.props.size[0]])
@@ -69,7 +74,7 @@ export class APPartitionView extends App {
                 return this.colourise(d);
             })
             .style("cursor", "pointer")
-            .on("click", me.nodeClicked)
+            .on("click", (evt, d) => me.nodeClicked ? me.nodeClicked(evt, d) : null)
 
         cell.join("g")
             .append("path")
@@ -85,10 +90,10 @@ export class APPartitionView extends App {
                 return `M ${ax - 4} ${ay - 4} L ${bx - 4} ${by} L ${cx} ${cy - 4} z`
             })
             .attr("fill", d => {
-                var eColour = this.errorColour(d)
+                var eColour = this.errorData(d).colour
                 return eColour.length ? eColour : this.colourise(d)
             })
-            .append("title").text(d => me.errorMessage(d))
+            .append("title").text(d => me.errorData(d).msg)
 
         cell.append("clipPath")
             .attr("id", function (d, idx) { return "clip_" + d.depth + "_" + d.data.id + '_' + idx })

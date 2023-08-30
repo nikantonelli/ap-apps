@@ -44,10 +44,11 @@ export const getTitle = (me, d) => {
     /** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
     switch (me.colouring) {
         case 'state': {
-            return (d.data.id === "root") ? "" :
-                (d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) :
+            return (d.data.id === "root") ? "" :(d.data.title + " (" + 
+                ((d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) :
                     (d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) :
-                        "Not Started"
+                        ("Not Started: " + shortDate(d.data.plannedStart))
+                ) + ")")
         }
         case 'context': {
             return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.board.title + ")")

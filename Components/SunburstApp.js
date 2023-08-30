@@ -10,7 +10,7 @@ export class APSunburstView extends App {
         super(props)
 
         this.mode = VIEW_TYPES.SUNBURST
-       
+
     }
 
     doit = () => {
@@ -19,23 +19,24 @@ export class APSunburstView extends App {
         this.colourise = this.props.colourise || function () { return "#666666" }
         this.errorColour = this.props.errorColour || function () { return "#cc6666" }
         this.nodeClicked = this.props.onClick || null;
-  
+        this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
+
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring
         this.sort = this.props.sort
-       
+
         var svgEl = this.props.target;
         svgEl.replaceChildren()
         var svg = select(svgEl);
-        var ringCount = this.props.depth ? 
-                min([parseInt(this.props.depth), this.props.root.height]) : 
-                min([APBoard.DEFAULT_SUNBURST_DEPTH, this.props.root.height]) 
+        var levels = (this.props.depth ?
+                min([parseInt(this.props.depth), this.props.root.height]) :
+                min([APBoard.DEFAULT_SUNBURST_DEPTH, this.props.root.height])
+            ) //Number of rings plus the centre
 
         partition()
-            .size([2 * Math.PI, this.props.root.height]) //Number of rings plus the centre
+            .size([2 * Math.PI,levels]) 
             (this.props.root);
 
-        this.rootNode = this.props.root;
         var width = min(
             [
                 this.props.size[0],
@@ -43,33 +44,38 @@ export class APSunburstView extends App {
             ]
         )
 
-        var ringDiameter = 1.2 *(width / (ringCount*2))
+        var ringRadius = (width / (levels * 2)) *1.2
 
         svg.attr("width", width)
         svg.attr("height", width)
         svg.attr('viewBox', [0, 0, width, width])
 
         const g = svg.append("g")
-            .attr("transform", `translate(${width/2},${width/2})`);
+            .attr("transform", `translate(${width / 2},${width / 2})`);
 
         //var ringCount = _.min([(this.props.root.height - this.props.root.depth), 3]); //Max can be three rings including the root due to the text length
         var nArc = arc()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
             .padAngle(d => Math.min((d.x1 - d.x0), 0.005))
-            .padRadius((width/ringCount)*1.5)
-            .innerRadius(d => d.y0 * ringDiameter)
-            .outerRadius(d => Math.max(d.y0 * ringDiameter, d.y1 * ringDiameter))
+            .innerRadius(d => d.y0 * ringRadius)
+            .outerRadius(d => Math.max(
+                d.y0 * ringRadius,
+                d.y1 * ringRadius
+            ))
 
         var eArc = arc()
             .startAngle(d => d.x0)
             .endAngle(d => d.x1)
             .padAngle(d => Math.min((d.x1 - d.x0), 0.005))
-            .padRadius((width/ringCount)*1.5)
-            .innerRadius(d => Math.max((d.y1 * ringDiameter)-4, d.y0 * ringDiameter)) //Make the errorBar 4 pixels wide
-            .outerRadius(d => d.y1 * ringDiameter - 1)
+            .innerRadius(d => Math.max(
+                (d.y1 * ringRadius) - 4,  //Make the errorBar 4 pixels wide
+                d.y0 * ringRadius)
+            )
+            .outerRadius(d => (d.y1  * ringRadius) - 1)
 
         var path = g.append("g")
+            .attr("id", "arc_g")
             .selectAll("path")
             .data(this.props.root.descendants().slice(1))
             .join("path")
@@ -89,65 +95,66 @@ export class APSunburstView extends App {
 
         var ePath = g.append("g")
             .selectAll("path")
+            .attr("id", "epath_g")
             .data(this.props.root.descendants().slice(1))
             .join("path")
-            .attr("id", d => "epath_"+d.data.doit)
+            .attr("id", d => "epath_" + d.data.id)
             .attr("fill", d => {
-                var eColour = this.props.errorColour(d);
+                var eColour = me.props.errorData(d).colour;
                 return eColour.length ? eColour : this.colourise(d);
             })
             .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
             .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
             .attr("d", d => eArc(d))
             .append("title")
-            .text(d => this.props.errorMessage(d))
+            .text(d => this.props.errorData(d).msg)
 
         const label = g.append("g")
             .attr("pointer-events", "none")
             .style("user-select", "none")
             .selectAll("text")
-            .data(this.props.root.descendants())
+            .data(this.props.root.descendants().slice(1))
             .join("text")
             .attr("dy", "0.35em")
             //					.attr("fill-opacity", 1)
-            .attr("fill-opacity", d => +sbLabel(d, this.props.root.depth))
+            .attr("fill-opacity", d => +sbLabel(d))
             .attr("transform", d => labelTransform(d))
-            .style("font-size", (2.5/ringCount).toString() + "em")
+            .style("font-size", (2.8 / (levels+1)).toString() + "em")
             .style("pointer-events", "none")
             .attr("text-anchor", d => labelAnchor(d))
             .text(d => getLabel(me, d));
 
         const parent = g.append("circle")
             .attr("class", "parentNode")
-            .datum(this.rootNode)
-            .attr("r", d => d.y1 * ringDiameter)
+            .datum(this.props.root)
+            .attr("r", d => d.y1 * ringRadius)
             .attr("fill", "#ccc")
             .on("click", this.nodeClicked)
 
         const parentLabel = g.append("text")
             .attr("class", "parentLabel")
-            .datum(this.rootNode)
+            .datum(this.props.root)
             .attr("class", "nodeLabel")
             .text(d => getLabel(me, d))	//Need 'this' for props
             .attr("text-anchor", "middle")
             .style("pointer-events", "none")
-            .style("font-size", (3/ringCount).toString() + "em");
+            .style("font-size", (2.8 / (levels+1)).toString() + "em");
 
-        // const parentTitle = g.append("title")
-        //     .attr("class", "parentTitle")
-        //     .datum(this.rootNode)
-        //     .text(d => getTitle(me, d))
+        const parentTitle = g.append("title")
+            .attr("class", "parentTitle")
+            .datum(this.props.root)
+            .text(d => getTitle(me, d))
 
         function arcVisible(me, d) {
-            return d.y1 < ((ringCount+me.rootNode.depth)) && d.y0 >= 0 && d.x1 > d.x0;
+            return (d.y1 < levels) && d.y0 >= 0 && d.x1 > d.x0;
         }
 
-        function sbLabel(d, currentDepth) {
+        function sbLabel(d) {
             return (
                 // d.depth < (ringCount-1) &&
-                d.y1 < (ringCount) &&
+                (d.y1 < levels) &&
                 //d.y0 >= 0 &&
-                ((d.y1 - d.y0) * (d.x1 - d.x0)) > (0.06 / ( d.depth))
+                ((d.y1 - d.y0) * (d.x1 - d.x0)) > (0.06 / (d.depth))
             );
         }
 
@@ -160,7 +167,7 @@ export class APSunburstView extends App {
             // const x = d.x0  * 180 / Math.PI;
             const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
 
-            const y = (d.y1 * (ringDiameter)) - 5; //Subtract a bit to allow space for the error bar
+            const y = (d.y1 * (ringRadius)) - 5; //Subtract a bit to allow space for the error bar
             // const y = (d.y0 + d.y1) / 2 * (width / (2*ringCount));
             return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
         }

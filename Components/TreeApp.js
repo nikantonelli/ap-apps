@@ -8,24 +8,23 @@ import App from "./App";
 export class APTreeView extends App {
     constructor(props) {
         super(props)
-		this.mode = VIEW_TYPES.TREE
-		this.colouring = this.props.colouring
-		this.sort = this.props.sort
+        this.mode = VIEW_TYPES.TREE
+        this.colouring = this.props.colouring
+        this.sort = this.props.sort
     }
 
     doit = () => {
         var me = this;
 
         this.colourise = this.props.colourise || function () { return "#666666" }
-        this.errorColour = this.props.errorColour || function () { return "#cc6666" }
         this.nodeClicked = this.props.onClick || null;
-        this.errorMessage = this.props.errorMessage || function() { return "No Message"}
+        this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
 
-  
+
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring
         this.sort = this.props.sort
-       
+
         var svgEl = this.props.target;
         svgEl.replaceChildren()
         var svg = select(svgEl)
@@ -55,8 +54,8 @@ export class APTreeView extends App {
         svg.attr('viewBox', (colWidth).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
 
         svg.attr('preserveAspectRatio', 'none');
-		const g = svg.append("g")
-		.attr("transform", `translate(${rowHeight/2},${0})`);
+        const g = svg.append("g")
+            .attr("transform", `translate(${rowHeight / 2},${0})`);
 
         var nodes = g.selectAll("g")
             .data(this.props.root.descendants().slice(1))
@@ -85,7 +84,7 @@ export class APTreeView extends App {
         //drawn obliterates the text. We redraw below......
         nodes.append("text")
             .attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-            .text(d => getLabel(this,d))
+            .text(d => getLabel(this, d))
             .attr("height", rowHeight)
             .attr("id", function (d) {
                 return "text_" + d.depth + '_' + d.data.id
@@ -110,12 +109,10 @@ export class APTreeView extends App {
                 })
                 .on('click', me.nodeClicked)
                 .style("text-anchor", "start")
-                .style("pointer-events", "none")
                 .attr("x", function (d) { return d.y + (d.rowHeight / 16) })
                 .attr("y", function (d) { return d.x + (d.rowHeight / 8) })
                 .style('cursor', 'pointer')
-                .append("title")
-                .text(d => getTitle(me,d));
+
         })
 
     }
@@ -157,9 +154,11 @@ export class APTreeView extends App {
                 min([d.colWidth, Number(rEl.attributes["width"].value)]) :
                 min([tEl.getClientRects()[0].width, rEl.getClientRects()[0].width])
 
-            var eColour = me.props.errorColour(d);
+            var eColour = me.props.errorData(d).colour;
 
             var g = node.append("g")
+            g.append("title")
+                .text(d => getTitle(me, d));
 
             g.append("line")
                 .attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })
@@ -183,7 +182,7 @@ export class APTreeView extends App {
 
             if (eColour.length) {
                 g.append("line")
-                    .attr("stroke-width", 3)
+                    .attr("stroke-width", 5)
                     .attr("stroke", eColour)
                     .attr("opacity", opacity)
 
@@ -200,7 +199,7 @@ export class APTreeView extends App {
                     .attr("y2", function (d) {
                         return d.x + (d.rowHeight / 2)
                     })
-                    .append("title").text(d => me.props.errorMessage(d))
+                    .append("title").text(d => me.props.errorData(d).msg)
             }
 
             //Start semi-circle
@@ -223,7 +222,6 @@ export class APTreeView extends App {
                 })
                 .attr("opacity", function (d) { return opacity * d.opacity })
                 .attr("fill", colour)
-                .append("title").text(d => me.props.errorMessage(d))
         })
     }
 

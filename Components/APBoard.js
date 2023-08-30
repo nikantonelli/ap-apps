@@ -1,14 +1,14 @@
 import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
-import * as d3 from 'd3';
-import _, { forEach } from "lodash";
+import { hierarchy, stratify, select, scaleOrdinal, quantize, interpolateRainbow, interpolateCool, interpolateWarm, ascending, descending } from "d3";
+import _, { concat, forEach } from "lodash";
 
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
-import React, { Suspense } from "react";
+import React from "react";
 
 import { APcard } from "../Components/APcard";
 import { APTimeLineView } from "../Components/TimeLineApp";
-import { VIEW_TYPES, flattenTree, getCardHierarchy, getRealChildren } from "../utils/Client/Sdk";
+import { VIEW_TYPES, createTree, flattenTree, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 
 import App from "./App";
 import { APPartitionView } from "./PartitionApp";
@@ -27,7 +27,7 @@ export class APBoard extends App {
 	constructor(props) {
 		super(props)
 
-		var stateDepth = this.props.depth
+		var stateDepth = this.props.depth || APBoard.DEFAULT_TREE_DEPTH
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			...this.state,
@@ -79,7 +79,7 @@ export class APBoard extends App {
 
 	tempColouring = (d) => {
 		this.opacityDrop = true;
-		var mine = this.searchTree(this.rootNode, d.data.id)
+		var mine = this.searchNodeTree(this.rootNode, d.data.id)
 		while (mine.parent && mine.parent.data.id != 'root') {
 			mine = mine.parent;
 		}
@@ -165,17 +165,17 @@ export class APBoard extends App {
 	setColouring = (params) => {
 		switch (params.colouring) {
 			case 'cool': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateCool, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.tempColouring });
 				break;
 			}
 			case 'warm': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateWarm, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateWarm, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.tempColouring });
 				break;
 			}
 			case 'context': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.contextList.length ? this.contextList.length + 1 : 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.contextList.length ? this.contextList.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.contextColouring });
 				break;
 			}
@@ -188,23 +188,23 @@ export class APBoard extends App {
 				break;
 			}
 			case 'a_user': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.assignedUserList.length ? this.assignedUserList.length + 1 : 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.assignedUserList.length ? this.assignedUserList.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.aUserColouring });
 				break;
 			}
 			case 'l_user': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.updatedUserList.length ? this.updatedUserList.length + 1 : 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.updatedUserList.length ? this.updatedUserList.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.lUserColouring });
 				break;
 			}
 			case 'c_user': {
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, this.createdUserList.length ? this.createdUserList.length + 1 : 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.createdUserList.length ? this.createdUserList.length + 1 : 2))
 				this.setState({ colouring: params.colouring, colourise: this.cUserColouring });
 				break;
 			}
 			default: {
 				this.setState({ colouring: params.colouring })
-				this.colourFnc = d3.scaleOrdinal(d3.quantize(d3.interpolateCool, 2))
+				this.colourFnc = scaleOrdinal(quantize(interpolateCool, 2))
 			}
 		}
 
@@ -234,7 +234,7 @@ export class APBoard extends App {
 				}
 			})
 			.sort((a, b) => {
-				var dirFnc = me.state.sortDir === "ascending" ? d3.ascending : d3.descending
+				var dirFnc = me.state.sortDir === "ascending" ? ascending : descending
 				switch (me.state.sortType) {
 					case 'title': {
 						return dirFnc(a.data.title, b.data.title)
@@ -287,6 +287,9 @@ export class APBoard extends App {
 				var af = d.data.actualFinish ? new Date(d.data.actualFinish).getTime() : null;
 				var as = d.data.actualStart ? new Date(d.data.actualStart).getTime() : null;
 
+				d.parent.latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
+				d.parent.earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+
 				rootNode.latest = _.max([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.latest])
 				rootNode.earliest = _.min([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.earliest])
 			}
@@ -319,11 +322,10 @@ export class APBoard extends App {
 				this.updatedUserList = _.unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
 			}
 			if (d.data.id != 'root') {
-				console.log(`adding ${d.data.board.id}`)
-				this.contextList = _.unionWith(this.contextList, [d.data.board],function (a, b) { return b.id === a.id })
+				this.contextList = _.unionWith(this.contextList, [d.data.board], function (a, b) { return b.id === a.id })
 				//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
 				d.colour = this.state.colourise(d);
-				
+
 			}
 			d.opacity = 1.0
 		})
@@ -367,8 +369,13 @@ export class APBoard extends App {
 		return portals;
 	}
 
-	getErrorColour = (d) => {
-		var colour = ""
+	getErrorData = (d) => {
+		var data = {
+			colour: "",
+			msg: ""
+		}
+
+		d.opacity = 1.0
 
 		if (this.state.showErrors === 'on') {
 			//Compare dates
@@ -377,54 +384,30 @@ export class APBoard extends App {
 			var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
 			var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
 
-			if ((pf == null) || (ps == null)) {
-				colour = "red"
-				d.opacity = 0.7
+			if (d.data.blockedStatus.isBlocked) {
+				data.msg += "BLOCKED.\n"
+				data.colour = "red"
+			}
+
+			if ((pf === null) || (ps === null)) {
+				data.msg += "Incomplete schedule information for this item\n"
+				data.colour = "red"
 			} else {
 				if ((pf > pPF) || (ps >= pPF)) {
-					colour = "red"
-					d.opacity = 0.7
+					data.msg += "This item runs beyond parent dates\n"
+					data.colour = "red"
 				}
 				else if (ps < pPS) {
-					colour = "#e69500"
-					d.opacity = 0.7
-				}
-				else {
-					d.opacity = 1.0
+					data.msg += "This item starts before parent dates\n"
+					data.colour = "#e69500"
 				}
 			}
-		}
-		return colour;
-	}
 
-	getErrorMessage = (d) => {
-		var msg = "";
-		//Compare dates
-		var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
-		var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
-		var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
-		var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
-
-		var latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
-		var earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
-
-		if ((pf == null) || (ps == null)) {
-			msg += "Incomplete schedule information in hierarchy\n"
-		}
-		else {
-			if ((pf > pPF) || (ps >= pPF)) {
-				msg += "This child starts later\n"
-			}
-			if (ps < pPS) {
-				msg += "This child starts ealier\n"
+			if (data.msg.length) {
+				d.opacity = 0.7
 			}
 		}
-
-		d.parent.earliest = earliest;
-		d.parent.latest = latest;
-
-
-		return msg;
+		return data;
 	}
 
 	modeChange = (e) => {
@@ -480,261 +463,261 @@ export class APBoard extends App {
 		if (!this.state.fetchActive) {
 			var hdrBox = document.getElementById("header-box")
 			this.calcTreeData(this.state.rootNode)
-			return (
-				<Suspense>
-					{this.addPortals()}
-					<Stack id="portalContainer" sx={{ width: '100%' }}>
+			return (<>
+				{this.addPortals()}
+				<Stack id="portalContainer" sx={{ width: '100%' }}>
 
-						<Grid id="header-box" container direction={'row'}>
-							<Grid xs={10} item>
-								<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
-									<Grid item>
-										<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
-									</Grid>
-									<Grid item>
-										<TextField
-											variant="standard"
-											sx={{ m: 1, minWidth: 400 }}
-											size="small"
-											defaultValue={this.state.board.title}
-											label="Context"
-											InputProps={{ readOnly: true }} />
-									</Grid>
-
+					<Grid id="header-box" container direction={'row'}>
+						<Grid xs={10} item>
+							<Grid container sx={{ alignItems: 'center' }} direction={'row'}>
+								<Grid item>
+									<Settings sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer} />
 								</Grid>
+								<Grid item>
+									<TextField
+										variant="standard"
+										sx={{ m: 1, minWidth: 400 }}
+										size="small"
+										defaultValue={this.state.board.title}
+										label="Context"
+										InputProps={{ readOnly: true }} />
+								</Grid>
+
 							</Grid>
-
 						</Grid>
-						<Menu
-							open={Boolean(this.state.anchorEl)}
-							anchorEl={this.state.anchorEl}
-							onClose={this.closeMenu}
-							anchorOrigin={{
-								vertical: 'top',
-								horizontal: 'right',
-							}}
-						>
 
-							<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
-							{(this.state.active && this.state.active.length) ?
-								<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
-								: null}
-						</Menu>
+					</Grid>
+					<Menu
+						open={Boolean(this.state.anchorEl)}
+						anchorEl={this.state.anchorEl}
+						onClose={this.closeMenu}
+						anchorOrigin={{
+							vertical: 'top',
+							horizontal: 'right',
+						}}
+					>
+
+						<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
+						{(this.state.active && this.state.active.length) ?
+							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
+							: null}
+					</Menu>
 
 
-						{this.state.mode === VIEW_TYPES.TIMELINE ?
-							<APTimeLineView
-								data={this.state.rootNode ? this.state.rootNode : []}
-								end={this.dateRangeEnd}
-								start={this.dateRangeStart}
-								onClick={this.nodeClicked}
-								colourise={this.state.colourise}
-								errorColour={this.getErrorColour}
-							/> : null}
+					{this.state.mode === VIEW_TYPES.TIMELINE ?
+						<APTimeLineView
+							data={this.state.rootNode ? this.state.rootNode : []}
+							end={this.dateRangeEnd}
+							start={this.dateRangeStart}
+							onClick={this.nodeClicked}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorData}
+						/> : null}
 
-						{this.state.mode === VIEW_TYPES.PARTITION ?
-							<APPartitionView
-								size={
-									[
-										window.innerWidth,
-										window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-									]
-								}
+					{this.state.mode === VIEW_TYPES.PARTITION ?
+						<APPartitionView
+							size={
+								[
+									window.innerWidth - 20,	//Space for the scroll bar
+									window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+								]
+							}
 
-								target={document.getElementById("svg_" + this.state.board.id)}
-								board={this.state.board}
-								root={this.state.rootNode}
-								onClick={this.svgNodeClicked}
-								sort={this.state.sortType}
-								colouring={this.state.colouring}
-								colourise={this.state.colourise}
-								errorColour={this.getErrorColour}
-								errorMessage={this.getErrorMessage}
-							/> : null}
+							target={document.getElementById("svg_" + this.state.board.id)}
+							board={this.state.board}
+							root={this.state.rootNode}
+							onClick={this.svgNodeClicked}
+							sort={this.state.sortType}
+							colouring={this.state.colouring}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorData}
+							errorData={this.getErrorData}
+						/> : null}
 
-						{this.state.mode === VIEW_TYPES.TREE ?
-							<APTreeView
-								size={
-									[
-										window.innerWidth,
-										window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-									]
-								}
+					{this.state.mode === VIEW_TYPES.TREE ?
+						<APTreeView
+							size={
+								[
+									window.innerWidth,
+									//document.getElementById("svg_" + this.state.board.id).getBoundingClientRect().width,
+									window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+								]
+							}
 
-								target={document.getElementById("svg_" + this.state.board.id)}
-								board={this.state.board}
-								root={this.state.rootNode}
-								onClick={this.svgNodeClicked}
-								sort={this.state.sortType}
-								colouring={this.state.colouring}
-								colourise={this.state.colourise}
-								errorColour={this.getErrorColour}
-								errorMessage={this.getErrorMessage}
-							/> : null}
-						{this.state.mode === VIEW_TYPES.SUNBURST ?
-							<APSunburstView
-								size={
-									[
-										window.innerWidth,
-										window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-									]
-								}
-								depth={this.state.depth}
-								target={document.getElementById("svg_" + this.state.board.id)}
-								board={this.state.board}
-								root={this.state.rootNode}
-								onClick={this.svgNodeClicked}
-								opacityDrop
-								sort={this.state.sortType}
-								colouring={this.state.colouring}
-								colourise={this.state.colourise}
-								errorColour={this.getErrorColour}
-								errorMessage={this.getErrorMessage}
-							/> : null}
-						<Drawer
+							target={document.getElementById("svg_" + this.state.board.id)}
+							board={this.state.board}
+							root={this.state.rootNode}
+							onClick={this.svgNodeClicked}
+							sort={this.state.sortType}
+							colouring={this.state.colouring}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorData}
+							errorData={this.getErrorData}
+						/> : null}
+					{this.state.mode === VIEW_TYPES.SUNBURST ?
+						<APSunburstView
+							size={
+								[
+									window.innerWidth,
+									window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+								]
+							}
+							depth={this.state.depth}
+							target={document.getElementById("svg_" + this.state.board.id)}
+							board={this.state.board}
+							root={this.state.rootNode}
+							onClick={this.svgNodeClicked}
+							opacityDrop
+							sort={this.state.sortType}
+							colouring={this.state.colouring}
+							colourise={this.state.colourise}
+							errorColour={this.getErrorData}
+							errorData={this.getErrorData}
+						/> : null}
+					<Drawer
 
-							onClose={this.closeDrawer}
-							open={Boolean(this.state.drawerOpen)}
-							anchor='left'
-							sx={{
-								width: this.state.drawerWidth,
-								flexShrink: 0,
-								[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
-							}}
-						>
-							<Box>
-								<Grid container direction="column">
-									<Grid item>
-										<Grid container direction="row">
-											<Grid xs={6} item>
-												<Button
-													aria-label="Open As New Tab"
-													onClick={this.openAsActive}
-													endIcon={<OpenInNew />}
-												>
-													Open Copy
-												</Button>
-											</Grid>
-											<Grid xs={6} item>
-												<Grid sx={{ justifyContent: 'flex-end' }} container>
+						onClose={this.closeDrawer}
+						open={Boolean(this.state.drawerOpen)}
+						anchor='left'
+						sx={{
+							width: this.state.drawerWidth,
+							flexShrink: 0,
+							[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
+						}}
+					>
+						<Box>
+							<Grid container direction="column">
+								<Grid item>
+									<Grid container direction="row">
+										<Grid xs={6} item>
+											<Button
+												aria-label="Open As New Tab"
+												onClick={this.openAsActive}
+												endIcon={<OpenInNew />}
+											>
+												Open Copy
+											</Button>
+										</Grid>
+										<Grid xs={6} item>
+											<Grid sx={{ justifyContent: 'flex-end' }} container>
 
-													<Tooltip title='Close Settings'>
-														<HighlightOff onClick={this.closeDrawer} />
-													</Tooltip>
-												</Grid>
+												<Tooltip title='Close Settings'>
+													<HighlightOff onClick={this.closeDrawer} />
+												</Tooltip>
 											</Grid>
 										</Grid>
 									</Grid>
-									<Grid item>
-										{this.topLevelList()}
-									</Grid>
-									<Grid item>
-										<Grid container>
-											<Grid item>
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Mode</InputLabel>
-													<Select
-														value={this.state.mode}
-														onChange={this.modeChange}
-														label="Mode"
-													>
-														<MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
-														<MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>
-														<MenuItem value={VIEW_TYPES.PARTITION}>Partition</MenuItem>
-														<MenuItem value={VIEW_TYPES.TIMELINE}>Timeline</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-											<Grid item>
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Sort By</InputLabel>
-													<Select
-														value={this.state.sortType}
-														onChange={this.sortChange}
-														label="Sort By"
-													>
-														<MenuItem value="none">None</MenuItem>
-														<MenuItem value="plannedStart">Planned Start</MenuItem>
-														<MenuItem value="plannedFinish">Planned End</MenuItem>
-														<MenuItem value="size">Size</MenuItem>
-														<MenuItem value="r_size">Size Rollup</MenuItem>
-														{this.state.mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
-														<MenuItem value="score">Score Total</MenuItem>
-														{this.state.mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
-
-														<MenuItem value="id">ID#</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-											<Grid item >
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Sort Direction</InputLabel>
-													<Select
-														value={this.state.sortDir}
-														onChange={this.sortDirChange}
-														label="Sort Direction"
-													>
-														<MenuItem value="ascending">Ascending</MenuItem>
-														<MenuItem value="descending">Descending</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-											<Grid item>
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Colours</InputLabel>
-													<Select
-														value={this.state.colouring}
-														onChange={this.colourChange}
-														label="Colours"
-													>
-														<MenuItem value="cool">Cool</MenuItem>
-														<MenuItem value="warm">Warm</MenuItem>
-														<MenuItem value="type">Card Type</MenuItem>
-														<MenuItem value="state">Card State</MenuItem>
-														<MenuItem value="l_user">Last Updater</MenuItem>
-														<MenuItem value="c_user">Creator</MenuItem>
-														<MenuItem value="a_user">First Assignee</MenuItem>
-														<MenuItem value="context">Context</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-											{this.state.mode === VIEW_TYPES.TIMELINE ? (
-												<Grid item>
-													<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-														<InputLabel>Group By</InputLabel>
-														<Select
-															value={this.state.grouping}
-															onChange={this.groupChange}
-															label="Grouping"
-														>
-															<MenuItem value="level">Level</MenuItem>
-															<MenuItem value="context">Context</MenuItem>
-															<MenuItem value="type">Card Type</MenuItem>
-														</Select>
-													</FormControl>
-												</Grid>
-											) : null}
-											<Grid item>
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Error Bars</InputLabel>
-													<Select
-														value={this.state.showErrors}
-														onChange={this.errorChange}
-														label="Errors"
-													>
-														<MenuItem value="on">On</MenuItem>
-														<MenuItem value="off">Off</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-										</Grid>
-									</Grid>
-
 								</Grid>
-							</Box>
-						</Drawer>
-					</Stack >
-				</Suspense>
+								<Grid item>
+									{this.topLevelList()}
+								</Grid>
+								<Grid item>
+									<Grid container>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Mode</InputLabel>
+												<Select
+													value={this.state.mode}
+													onChange={this.modeChange}
+													label="Mode"
+												>
+													<MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
+													<MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>
+													<MenuItem value={VIEW_TYPES.PARTITION}>Partition</MenuItem>
+													<MenuItem value={VIEW_TYPES.TIMELINE}>Timeline</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Sort By</InputLabel>
+												<Select
+													value={this.state.sortType}
+													onChange={this.sortChange}
+													label="Sort By"
+												>
+													<MenuItem value="none">None</MenuItem>
+													<MenuItem value="plannedStart">Planned Start</MenuItem>
+													<MenuItem value="plannedFinish">Planned End</MenuItem>
+													<MenuItem value="size">Size</MenuItem>
+													<MenuItem value="r_size">Size Rollup</MenuItem>
+													{this.state.mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
+													<MenuItem value="score">Score Total</MenuItem>
+													{this.state.mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
+
+													<MenuItem value="id">ID#</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item >
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Sort Direction</InputLabel>
+												<Select
+													value={this.state.sortDir}
+													onChange={this.sortDirChange}
+													label="Sort Direction"
+												>
+													<MenuItem value="ascending">Ascending</MenuItem>
+													<MenuItem value="descending">Descending</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Colours</InputLabel>
+												<Select
+													value={this.state.colouring}
+													onChange={this.colourChange}
+													label="Colours"
+												>
+													<MenuItem value="cool">Cool</MenuItem>
+													<MenuItem value="warm">Warm</MenuItem>
+													<MenuItem value="type">Card Type</MenuItem>
+													<MenuItem value="state">Card State</MenuItem>
+													<MenuItem value="l_user">Last Updater</MenuItem>
+													<MenuItem value="c_user">Creator</MenuItem>
+													<MenuItem value="a_user">First Assignee</MenuItem>
+													<MenuItem value="context">Context</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+										{this.state.mode === VIEW_TYPES.TIMELINE ? (
+											<Grid item>
+												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+													<InputLabel>Group By</InputLabel>
+													<Select
+														value={this.state.grouping}
+														onChange={this.groupChange}
+														label="Grouping"
+													>
+														<MenuItem value="level">Level</MenuItem>
+														<MenuItem value="context">Context</MenuItem>
+														<MenuItem value="type">Card Type</MenuItem>
+													</Select>
+												</FormControl>
+											</Grid>
+										) : null}
+										<Grid item>
+											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+												<InputLabel>Error Bars</InputLabel>
+												<Select
+													value={this.state.showErrors}
+													onChange={this.errorChange}
+													label="Errors"
+												>
+													<MenuItem value="on">On</MenuItem>
+													<MenuItem value="off">Off</MenuItem>
+												</Select>
+											</FormControl>
+										</Grid>
+									</Grid>
+								</Grid>
+
+							</Grid>
+						</Box>
+					</Drawer>
+				</Stack >
+			</>
 			)
 		}
 	}
@@ -747,40 +730,46 @@ export class APBoard extends App {
 	}
 
 	setData = () => {
-		function setChildColourIndex(item) {
-			item.children && item.children.forEach((child, idx) => {
-				child.index = idx;
-				setChildColourIndex(child);
-			})
-		}
+		this.rootNode = hierarchy(this.root)
+		this.setRootNode(this.rootNode)
+	}
 
-		function filterRootItems(root) {
-			var items = []
-			flattenTree(root.children, items)
-			return items
-		}
+	setChildColourIndex = (item) => {
+		item.children && item.children.forEach((child, idx) => {
+			child.index = idx;
+			this.setChildColourIndex(child);
+		})
+	}
 
-		this.rootNode = d3.hierarchy(this.root)
-		setChildColourIndex(this.rootNode)
-		filterRootItems(this.rootNode)
-
+	setRootNode = (rootNode) => {
+		this.setChildColourIndex(this.rootNode)
 		this.setState({ rootNode: this.rootNode })
 	}
 
 
 	componentDidMount = () => {
+		var me = this;
 		Promise.all(getRealChildren(this.props.host, this.props.cards, this.state.depth)).then((result) => {
-			this.root.children = result
-
+			result.forEach((card) => {
+				card.parentId = 'root'	//For d3.stratify
+			})
+			if (me.props.dedupe) {
+				var flatted = []
+				flattenTree(result, flatted)
+				var reducedTree = removeDuplicates(flatted);
+				this.root.children = createTree(reducedTree)
+			} else {
+				this.root.children = result;
+			}
 			this.setData()
 			this.setState({ fetchActive: false })
 			this.setColouring({ colouring: this.state.colouring })
 		})
-		
+
 		window.addEventListener('resize', this.resize);
 	}
 
-	searchTree = (element, id) => {
+	searchNodeTree = (element, id) => {
 		if (element.data.id === id) {
 			return element;
 		}
@@ -788,9 +777,24 @@ export class APBoard extends App {
 			var i;
 			var result = null;
 			for (i = 0; result == null && i < element.children.length; i++) {
-				result = this.searchTree(element.children[i], id);
+				result = this.searchNodeTree(element.children[i], id);
 			}
-			return result;
+			return result
+		}
+		return null;
+	}
+
+	searchRootTree = (element, id) => {
+		if (element.id === id) {
+			return element;
+		}
+		else if (Boolean(element.children)) {
+			var i;
+			var result = null;
+			for (i = 0; result == null && i < element.children.length; i++) {
+				result = this.searchRootTree(element.children[i], id);
+			}
+			return result
 		}
 		return null;
 	}
@@ -800,58 +804,75 @@ export class APBoard extends App {
 		console.log(this.rootNode)
 	}
 
-	svgNodeClicked = (ev, p) => {
+	svgNodeClicked = (ev, target) => {
 		var me = this;
 		ev.stopPropagation()
-			ev.preventDefault()
+		ev.preventDefault()
 		if (ev.ctrlKey) {
-			if (p.data.children && p.data.children.length) {
-				p.data.savedChildren = _.union(p.data.children, p.data.savedChildren)
-				p.data.children = [];
+			if (target.data.children && target.data.children.length) {
+				target.data.savedChildren = _.union(target.data.children, target.data.savedChildren)
+				target.data.children = [];
 			}
-			else if (p.data.savedChildren && p.data.savedChildren.length) {
-				p.data.children = p.data.savedChildren;
-				p.data.savedChildren = [];
+			else if (target.data.savedChildren && target.data.savedChildren.length) {
+				target.data.children = target.data.savedChildren;
+				target.data.savedChildren = [];
 			}
 			this.setState((prev) => {
-				var rNode = d3.hierarchy(this.root)
+				var rNode = hierarchy(this.root)
 				return { rootNode: rNode }
 			})
 		}
 		else if (ev.altKey) {
-			document.open("/nui/card/" + p.data.id, "", "noopener=true")
+			document.open("/nui/card/" + target.data.id, "", "noopener=true")
 		}
 		else if (ev.shiftKey) {
-			
-			if (p.data.id != 'root') {
-				var newRoot = this.searchTree(me.rootNode, p.data.id);
-				var parent = this.searchTree(me.rootNode, newRoot.parent.data.id);
-				if (me.focus === p.data.id) {
-					if (parent && (parent.data.id !== 'root')) {
-						me.focus = parent.data.id;
-						me.setState({ rootNode: this.rootNode })
+
+			if (target.data.id != 'root') {
+				var newNode = this.searchNodeTree(me.rootNode, target.data.id)
+				var newRoot = this.searchRootTree(me.root, target.data.id);
+				var parent = this.searchRootTree(me.root, newNode.parent.data.id);
+				if (me.focus === target.data.id) {
+					if (parent && (parent.id !== 'root')) {
+						me.focus = parent.id;
+						me.setState({
+							rootNode: hierarchy(
+								parent
+							)
+						})
 					} else {
 						me.focus = null;
-						me.setState({ rootNode: this.rootNode })
+						me.setState({
+							rootNode: hierarchy(me.root)
+						})
 					}
 				} else {
-					me.focus = newRoot.data.id;
-					me.setState({ rootNode:  newRoot })
+					me.focus = newRoot.id;
+					me.setState({
+						rootNode: hierarchy(
+							newRoot
+						)
+					})
 				}
 			} else {
 				me.focus = null;
-				me.setState({ rootNode: this.rootNode })
-				d3.select(".parentLabel").datum(p).text(d =>
+				me.setState({
+					rootNode: hierarchy({
+						id: 'root',
+						children: [newRoot]
+					})
+				})
+				select(".parentLabel").datum(target).text(d =>
 					(d.data.id === "root" ? "" : d.data.id));
-				d3.select(".parentTitle").datum(p).text(d => {
+				select(".parentTitle").datum(target).text(d => {
 					return d.data.title + " : " + d.data.size;
 				})
-				d3.select(".parentNode").datum(p || me.rootNode);
+				select(".parentNode").datum(target || me.rootNode);
 			}
 		} else {
-			this.popUp = p.data.id
-			this.setState({ popUp: p.data.id })
+			this.popUp = target.data.id
+			this.setState({ popUp: target.data.id })
 		}
+		return true;
 	}
 
 	resetChildren = (node) => {
@@ -968,8 +989,8 @@ export class APBoard extends App {
 			root.children = allChildren
 			root.savedChildren = null;
 		}
-		this.rootNode = d3.hierarchy(root)
-		this.setState({ topLevelList: valueList })
+		this.rootNode = hierarchy(root)
+		this.setState({ rootNode: this.rootNode, topLevelList: valueList })
 	}
 
 	topLevelList = () => {

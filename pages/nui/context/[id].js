@@ -2,7 +2,7 @@ import React from "react";
 import { APBoard } from "../../../Components/APBoard";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
-export default function Board({ board, cards, active, depth, colour, mode, sort, eb, dir, host }) {
+export default function Board({ board, cards, active, depth, colour, mode, sort, eb, dir, host, dedupe }) {
 	return (
 		<>
 			<APBoard
@@ -16,11 +16,11 @@ export default function Board({ board, cards, active, depth, colour, mode, sort,
 				eb={eb}
 				dir={dir}
 				host={host}
+				dedupe={dedupe}
 			/>
 			<div id={"surface_" + board.id} style={{ width:"100%", height:"100%"}}>
 				<svg
 					id={"svg_" + board.id}
-					width={"100%"}
 				/>
 			</div>
 		</>
@@ -45,11 +45,17 @@ export async function getServerSideProps({ req, params, query }) {
 			mode = query.mode;
 		}
 
+		var dedupe = null;
+		if (query.dedupe) {
+			dedupe = true
+		}
+
 		var depth = null;
 		if (query.depth) {
 			depth = query.depth;
 		}
 		else {
+			//Limit the exponential explosion of fetches as you go down the tree
 			switch (mode) {
 				case 'sunburst': {
 					depth = APBoard.DEFAULT_SUNBURST_DEPTH //Rings are harder to fit in than the tree
@@ -57,7 +63,7 @@ export async function getServerSideProps({ req, params, query }) {
 				}
 				default:
 				case 'tree': {
-					depth = APBoard.DEFAULT_TREE_DEPTH	//Limit the exponential explosion of fetches as you go down the tree
+					depth = APBoard.DEFAULT_TREE_DEPTH	
 					break;
 				}
 			}
@@ -80,7 +86,7 @@ export async function getServerSideProps({ req, params, query }) {
 		if (query.dir) {
 			dir = query.dir;
 		}
-		return { props: { board: board, cards: cards, active: active, depth: depth, colour: colour, mode: mode, sort: sort, eb: eb, dir: dir, host: req.headers.host } }
+		return { props: { board: board, cards: cards, active: active, depth: depth, colour: colour, mode: mode, sort: sort, eb: eb, dir: dir, dedupe: dedupe, host: req.headers.host } }
 	}
-	return { props: { board: null, active: null, depth: null, colour: null, mode: null, sort: null, eb: null, dir: null, host: req.headers.host } }
+	return { props: { board: null, cards: [], active: null, depth: null, colour: null, mode: null, sort: null, eb: null, dir: null, dedupe: null, host: req.headers.host } }
 }

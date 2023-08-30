@@ -1,4 +1,4 @@
-import { forEach, union, unionBy } from "lodash";
+import { findIndex, forEach, pullAt, slice, union, unionBy } from "lodash";
 import { shortDate } from "./Helpers";
 
 export class VIEW_TYPES {
@@ -62,38 +62,48 @@ export const getCards = (host, cardIds) => {
  * and replace each one back into the tree
  */
 export const getCardHierarchy = async (host, card, type, depth) => {
-	if (depth < 0) return null //We're done
+
 	return new Promise(async (resolve, reject) => {
 
 		var level = depth - 1;
 		switch (type) {
 			case 'children': {
-				var result = await getCardChildren(host, card);
-
-				if (result.cards && result.cards.length) {
-					var cardIds = result.cards.map((card) => card.id)
-					var realCards = await getCards(host, cardIds)
-					var grc = Promise.all(getRealChildren(host, realCards, level)).then((results) => {
-
-						if (!card.children) {
-							card.children = realCards
-						} else {
-							card.children = unionBy(card.children, realCards, (card) => card.id)
-						}
-						resolve(card);
-					})
-				} else {
+				if (level < 0) {
 					resolve(card)
+				} else {
+					var result = await getCardChildren(host, card);
+
+					if (result.cards && result.cards.length) {
+						var cardIds = result.cards.map((c) => {
+							return c.id
+						})
+						var realCards = await getCards(host, cardIds)
+						var grc = Promise.all(getRealChildren(host, realCards, level)).then((results) => {
+
+							if (!card.children) {
+								card.children = realCards
+							} else {
+								card.children = unionBy(card.children, realCards, (c) => c.id)
+
+							}
+							card.children.forEach((c) => {
+								c.parentId = card.id	//We set this to recreate a tree from d3.stratify if needed
+							})
+							resolve(card);
+						})
+					} else {
+						resolve(card)
+					}
 				}
 			}
 		}
-		
+
 	})
 }
 
 
 export function getRealChildren(host, cards, depth) {
-
+	console.log("grc", depth, cards)
 	var reqs = [];
 	if (cards.constructor.toString().indexOf("Array") < 0) return [];
 	cards.forEach(async (card) => {
@@ -109,28 +119,61 @@ export function getRealChildren(host, cards, depth) {
 	return reqs;
 }
 
-/** If a top level card is a child of something else in the hierarchy, then remove from the top layer */
+/** If a top level card is a child of something else in the hierarchy, then remove from the upper layer
+ *  This relies on an array arranged by a nodes followed by their children in topological order as per
+ *  the d3 based: node.descendants()
+ */
 export const removeDuplicates = (cards) => {
-	var checkedCards = cards;
-
-	cards.forEach((card) => {
-		checkedCards = filter(checkedCards, (cc) => {
-			return !filter(card.children, (child) => {
-				return child.id === cc.id
-			})
-		})
+	var removeIndexes = []
+	cards.forEach((card, idx) => {
+		var cardsToCheck = slice(cards, 0, idx)
+		var pIdx = -1;
+		if (findIndex(cardsToCheck,
+			function (c,) {
+				return c.id === card.id
+			}) >= 0) {
+			removeIndexes.push(findIndex(cards, { id: card.id }))	// findIndex finds the original one first
+		}
 	})
-	return checkedCards
+	pullAt(cards, removeIndexes)
+	return cards
 }
 
 export const flattenTree = (array, result) => {
 	array.forEach(function (el) {
+
+		result.push({ ...el });
 		if (el.children) {
 			flattenTree(el.children, result);
 		}
-		result.push(el);
-
 	});
+}
+
+export const visitTree = (treeNode, sizFnc, previous) => {
+	var prev = previous;
+
+	forEach(treeNode.children, (item) => {
+		prev = visitTree(item, sizFnc, prev)
+	})
+	return sizFnc(treeNode, prev);
+}
+
+export const createTree = (cards) => {
+	var tree = {id: 'root'}
+	addChildrentoTree(tree, cards)
+	return tree.descendants;
+}
+
+const addChildrentoTree = (item, cards) => {
+	cards.forEach((c) => {
+		if (c.parentId === item.id){
+			addChildrentoTree(c, cards)
+			item.descendants = 
+			item.descendants? 
+			item.descendants = unionBy(item.descendants, [c]) : 
+			[c]
+		}
+	})
 }
 
 export const findBoards = async (host, options) => {
@@ -173,15 +216,6 @@ export const getBoardIcons = async (host, brdId) => {
 		url: "/board/" + brdId + "/customIcon"
 	}
 	return doRequest(params);
-}
-
-export const partitionSize = (treeNode, sizFnc) => {
-	var myValue = sizFnc(treeNode);
-
-	forEach(treeNode.children, (item) => {
-		myValue += partitionSize(item, sizFnc)
-	})
-	return myValue
 }
 
 export const doRequest = async (params) => {
