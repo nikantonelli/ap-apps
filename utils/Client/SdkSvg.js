@@ -45,8 +45,8 @@ export const getTitle = (me, d) => {
     switch (me.colouring) {
         case 'state': {
             return (d.data.id === "root") ? "" :(d.data.title + " (" + 
-                ((d.data.lane.cardStatus === 'finished') ? ('Finished ' + shortDate(d.data.actualFinish)) :
-                    (d.data.lane.cardStatus === 'started') ? ('Started ' + shortDate(d.data.actualStart)) :
+                ((d.data.lane.cardStatus === 'finished') ? ('Finished: ' + shortDate(d.data.actualFinish)) :
+                    (d.data.lane.cardStatus === 'started') ? ('Started: ' + shortDate(d.data.actualStart)) :
                         ("Not Started: " + shortDate(d.data.plannedStart))
                 ) + ")")
         }

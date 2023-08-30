@@ -1,42 +1,61 @@
 import { DragHandle, SubdirectoryArrowRight } from "@mui/icons-material";
-import { Box, Tooltip, Typography } from "@mui/material";
+import { Box, Popover, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
 import { forEach } from "lodash";
 import React from "react";
 import { VIEW_TYPES } from "../utils/Client/Sdk";
 import APBoard from "./APBoard";
+import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
 export class APTimeLineView extends React.Component {
 
 	constructor(props) {
 		super(props);
 		this.mode = VIEW_TYPES.TIMELINE
-		this.colouring = this.props.colouring
-		this.sort = this.props.sort
-
+		
 		this.state = {
-			errorColour : props.errorColour || this.nullErrorColour
+			popoverId: null,
+			popoverEl: null
 		}
+		this.errorData = props.errorData || this.nullErrorData
+
 	}
 
-	nullErrorColour = () => {
-		return "#ff0000"
+	nullErrorData = () => {
+		return {
+			msg: "",
+			colour: "#ff0000"
+		}
 	}
 
 	depthOrder = (tree) => {
 		var nodeArray = [];
 		var me = this;
-		forEach(tree.children, function (child) {
-			nodeArray.push(child)
-			nodeArray = _.union(nodeArray, me.depthOrder(child))
-		})
+		if (tree && tree.children) {
+			forEach(tree.children, function (child) {
+				nodeArray.push(child)
+				nodeArray = _.union(nodeArray, me.depthOrder(child))
+			})
+		}
 		return nodeArray
 	}
+
+	popoverOpen = (evt) => {
+		this.setState({ popoverEl: evt.currentTarget, popoverId: evt.currentTarget.id });
+	}
+
+	popoverClose = (evt) => {
+		this.setState({ popoverEl: null, popoverId: null });
+	}
+
 	render() {
+		var me = this;
+		this.colouring = this.props.colouring
+		this.sort = this.props.sort
 		//When the start and end are correct, we assume we have been given the correct data source
 		if (this.props.start && this.props.end) {
-			var nodes = this.depthOrder(this.props.data)
+			var nodes = this.depthOrder(this.props.root)
 
 
 			var dateToPosn = scaleLinear()
@@ -61,12 +80,12 @@ export class APTimeLineView extends React.Component {
 							<Grid id="timelineRow" container direction='row'>
 								{dateTicks.map((width, idx) => {
 									return <Grid key={idx} sx={{ width: "10%" }}>
-										
-											<Typography sx={{ textAlign: 'left', fontSize: "10px" }}>
-												{new Date(posnToDate(width)).toLocaleDateString("en-GB")}
-											</Typography>
-											<Box sx={{ height: "50%", width: "1px", backgroundColor: "black" }} />
-									
+
+										<Typography sx={{ textAlign: 'left', fontSize: "10px" }}>
+											{new Date(posnToDate(width)).toLocaleDateString("en-GB")}
+										</Typography>
+										<Box sx={{ height: "50%", width: "1px", backgroundColor: "black" }} />
+
 									</Grid>
 								})
 								}
@@ -79,13 +98,13 @@ export class APTimeLineView extends React.Component {
 				var boxList = []
 
 				for (var i = 2; i < depth; i++) {
-					boxList.push(<Grid  key={i} >
-						<DragHandle sx={{ opacity: 0.1 }} />
+					boxList.push(<Grid key={i} >
+						<DragHandle sx={{ opacity: 0 }} />
 					</Grid>)
 				}
 				if (depth > 1) {
-					boxList.push(<Grid  key={i}>
-						<SubdirectoryArrowRight sx={{ opacity: 0.1 }} />
+					boxList.push(<Grid key={i}>
+						<SubdirectoryArrowRight sx={{ opacity: 0.2 }} />
 					</Grid>)
 				}
 				return boxList;
@@ -129,49 +148,79 @@ export class APTimeLineView extends React.Component {
 				} else {
 					actualEndPC = nowPosn;
 				}
-				var bCol = this.props.colourise(node) ;
-				var eColour = this.state.errorColour(node);
+				var bCol = this.props.colourise(node);
+				var eColour = this.errorData(node).colour;
 				return (
 					<Box key={idx + 1} sx={{ width: "100%" }}>
 						<Grid container direction='row'>
-							<Grid container sx={{ borderTop: "1px solid " + (eColour.length?eColour:"#aaaaaa"), width: "20%", maxWidth: 400, height: barHeight }}>
+							<Grid container sx={
+								eColour.length ?
+									{ borderTop: "3px solid " + eColour, width: "20%", maxWidth: 400, height: barHeight }:
+									{ paddingTop: "3px", width: "20%", maxWidth: 400, height: barHeight }
+								}>
 								{
 									treeSymbols(node.depth)
 								}
 								<Grid xs onClick={this.props.onClick}>
-									<Tooltip title={node.data.title}>
-										<Typography key={idx} id={node.data.id} className="timeline-text" sx={{ backgroundColor: bCol, textAlign: "left", cursor: 'pointer', opacity: APBoard.OPACITY_MEDIUM }} onClick={this.props.onClick}>
-											{node.data.title}
-										</Typography>
-									</Tooltip>
+
+									<Typography variant="subtitle2"
+										key={idx}
+										id={node.data.id}
+										className="timeline-text"
+										sx={{ height: "24px", backgroundColor: bCol, textAlign: "left", cursor: 'pointer', opacity: APBoard.OPACITY_MEDIUM }}
+										onClick={this.props.onClick}
+										onMouseEnter={this.popoverOpen}
+										onMouseLeave={this.popoverClose}
+									>
+										{getLabel(me, node)}
+									</Typography>
+									<Popover
+										sx={{
+											pointerEvents: 'none'
+										}}
+										anchorEl={this.state.popoverEl}
+										anchorOrigin={{
+											vertical: 'top',
+											horizontal: 'right'
+										}}
+										transformOrigin={{
+											vertical: 'bottom',
+											horizontal: 'left'
+										}}
+										open={this.state.popoverId === node.data.id}
+										onClose={this.popoverClose}
+										disableRestoreFocus>
+										<Typography sx={{height:"30px"}} align='center' variant="subtitle2">{getTitle(me, node)}</Typography>
+									</Popover>
+
 								</Grid>
 
 							</Grid>
-							<Grid sx={{ borderTop: "1px solid " + (eColour.length?eColour:"#aaaaaa"), width: "80%", height: barHeight }}>
-								
-									<Grid id="timelineRow" container direction='row'>
-										<Grid sx={{ width: plannedStartPC.toString() + "%" }}>
-											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
-										</Grid>
-										<Grid sx={{ width: (plannedEndPC - plannedStartPC).toString() + "%" }}>
-											<Box sx={{height: "12px", backgroundColor: planBar}} />
-										</Grid>
-										<Grid sx={{ width: (100.0 - plannedEndPC).toString() + "%" }}>
-											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
-										</Grid>
+							<Grid sx={{ paddingTop: "3px", width: "80%", height: barHeight }}>
+
+								<Grid id="timelineRow" container direction='row'>
+									<Grid sx={{ width: plannedStartPC.toString() + "%" }}>
+										<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
 									</Grid>
-								
-									<Grid id="timelineRow" container direction='row'>
-										<Grid sx={{ width: actualStartPC.toString() + "%" }}>
-											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
-										</Grid>
-										<Grid sx={{ width: (actualEndPC - actualStartPC).toString() + "%" }}>
-											<Box sx={{ height: "12px", backgroundColor:  actualBar}} />
-										</Grid>
-										<Grid sx={{ width: (100.0 - actualEndPC).toString() + "%" }}>
-											<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
-										</Grid>
+									<Grid sx={{ width: (plannedEndPC - plannedStartPC).toString() + "%" }}>
+										<Box sx={{ height: "12px", backgroundColor: planBar }} />
 									</Grid>
+									<Grid sx={{ width: (100.0 - plannedEndPC).toString() + "%" }}>
+										<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
+									</Grid>
+								</Grid>
+
+								<Grid id="timelineRow" container direction='row'>
+									<Grid sx={{ width: actualStartPC.toString() + "%" }}>
+										<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
+									</Grid>
+									<Grid sx={{ width: (actualEndPC - actualStartPC).toString() + "%" }}>
+										<Box sx={{ height: "12px", backgroundColor: actualBar }} />
+									</Grid>
+									<Grid sx={{ width: (100.0 - actualEndPC).toString() + "%" }}>
+										<Box sx={{ height: "100%", backgroundColor: 'lightgrey' }} />
+									</Grid>
+								</Grid>
 							</Grid>
 						</Grid>
 					</Box>

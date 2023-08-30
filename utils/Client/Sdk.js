@@ -103,7 +103,6 @@ export const getCardHierarchy = async (host, card, type, depth) => {
 
 
 export function getRealChildren(host, cards, depth) {
-	console.log("grc", depth, cards)
 	var reqs = [];
 	if (cards.constructor.toString().indexOf("Array") < 0) return [];
 	cards.forEach(async (card) => {
@@ -286,7 +285,6 @@ export const statusString = (card) => {
 		" Finished (" + shortDate(card.actualFinish) + ")" :
 		(card.actualStart?.length) ?
 			" Started (" + shortDate(card.actualStart) + ")" :
-			" Not Started"
-
+			(" Not Started: " + shortDate(card.plannedStart))
 	)
 }

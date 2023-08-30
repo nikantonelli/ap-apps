@@ -506,12 +506,14 @@ export class APBoard extends App {
 
 					{this.state.mode === VIEW_TYPES.TIMELINE ?
 						<APTimeLineView
-							data={this.state.rootNode ? this.state.rootNode : []}
 							end={this.dateRangeEnd}
 							start={this.dateRangeStart}
+							root={this.state.rootNode}
 							onClick={this.nodeClicked}
+							sort={this.state.sortType}
+							colouring={this.state.colouring}
 							colourise={this.state.colourise}
-							errorColour={this.getErrorData}
+							errorData={this.getErrorData}
 						/> : null}
 
 					{this.state.mode === VIEW_TYPES.PARTITION ?
@@ -530,7 +532,6 @@ export class APBoard extends App {
 							sort={this.state.sortType}
 							colouring={this.state.colouring}
 							colourise={this.state.colourise}
-							errorColour={this.getErrorData}
 							errorData={this.getErrorData}
 						/> : null}
 
@@ -551,7 +552,6 @@ export class APBoard extends App {
 							sort={this.state.sortType}
 							colouring={this.state.colouring}
 							colourise={this.state.colourise}
-							errorColour={this.getErrorData}
 							errorData={this.getErrorData}
 						/> : null}
 					{this.state.mode === VIEW_TYPES.SUNBURST ?
@@ -800,8 +800,8 @@ export class APBoard extends App {
 	}
 
 	nodeClicked = (ev) => {
-		debugger;
-		console.log(this.rootNode)
+		var node = this.searchNodeTree(this.rootNode, ev.currentTarget.id)
+		this.svgNodeClicked(ev, node)
 	}
 
 	svgNodeClicked = (ev, target) => {
