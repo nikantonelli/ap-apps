@@ -2,9 +2,9 @@ import { DragHandle, SubdirectoryArrowRight } from "@mui/icons-material";
 import { Box, Popover, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
-import { forEach } from "lodash";
+import { forEach, sortBy } from "lodash";
 import React from "react";
-import { VIEW_TYPES } from "../utils/Client/Sdk";
+import { VIEW_TYPES, flattenTree } from "../utils/Client/Sdk";
 import APBoard from "./APBoard";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
@@ -30,17 +30,23 @@ export class APTimeLineView extends React.Component {
 	}
 
 	depthOrder = (tree) => {
-		var nodeArray = [];
-		var me = this;
-		if (tree && tree.children) {
-			forEach(tree.children, function (child) {
-				nodeArray.push(child)
-				nodeArray = _.union(nodeArray, me.depthOrder(child))
-			})
-		}
+		var nodeArray = []
+		flattenTree(tree, nodeArray)
 		return nodeArray
 	}
 
+	typeOrder = (tree) => {
+		var nodeArray = []
+		flattenTree(tree, nodeArray)
+		return sortBy(nodeArray,[function(c) { return c.data.type.title}])
+	}
+
+	contextOrder = (tree) => {
+		var nodeArray = []
+		flattenTree(tree, nodeArray)
+		return sortBy(nodeArray,[function(c) { return c.data.board.title}])
+	}
+	
 	popoverOpen = (evt) => {
 		this.setState({ popoverEl: evt.currentTarget, popoverId: evt.currentTarget.id });
 	}
@@ -55,7 +61,25 @@ export class APTimeLineView extends React.Component {
 		this.sort = this.props.sort
 		//When the start and end are correct, we assume we have been given the correct data source
 		if (this.props.start && this.props.end) {
-			var nodes = this.depthOrder(this.props.root)
+
+			var nodes = []
+			switch (this.props.grouping) {
+				default:
+				case 'level': {
+					nodes = this.depthOrder(this.props.root.children)
+					break;
+				}
+				case 'context': {
+					nodes = this.contextOrder(this.props.root.children)
+					this.colouring = this.props.grouping
+					break;
+				}
+				case 'type': {
+					nodes = this.typeOrder(this.props.root.children)
+					this.colouring = this.props.grouping
+					break;
+				}
+			}
 
 
 			var dateToPosn = scaleLinear()
@@ -159,7 +183,7 @@ export class APTimeLineView extends React.Component {
 									{ paddingTop: "3px", width: "20%", maxWidth: 400, height: barHeight }
 								}>
 								{
-									treeSymbols(node.depth)
+									this.props.grouping === 'level' ? treeSymbols(node.depth): null
 								}
 								<Grid xs onClick={this.props.onClick}>
 

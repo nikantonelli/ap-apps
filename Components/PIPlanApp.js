@@ -185,7 +185,7 @@ export class PIPlanApp extends App {
 			as += ex + "srs=" + this.state.currentSeries.id
 			if (this.state.currentTimebox) as += "&tmb=" + this.state.currentTimebox.id
 		}
-		as += "sort=" + this.state.sortType
+		as += "&sort=" + this.state.sortType
 		as += "&mode=" + this.state.mode
 		as += "&dir=" + this.state.sortDir
 		as += "&colour=" + this.state.colouring

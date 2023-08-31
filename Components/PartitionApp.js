@@ -26,10 +26,8 @@ export class APPartitionView extends App {
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring
         this.sort = this.props.sort
-
-        var svgEl = this.props.target;
-        svgEl.replaceChildren()
-        var svg = select(svgEl);
+        var svg = select(this.props.target);
+        if (!Boolean(svg)) throw new Error("No valid svg given to PartitionApp")
 
         var columnCount = this.props.depth ?
             min([parseInt(this.props.depth), this.props.root.height]) :

@@ -1,6 +1,6 @@
-import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, Menu, MenuItem, Select, Stack, TextField, Tooltip } from "@mui/material";
+import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, LinearProgress, Menu, MenuItem, Select, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { hierarchy, stratify, select, scaleOrdinal, quantize, interpolateRainbow, interpolateCool, interpolateWarm, ascending, descending } from "d3";
-import _, { concat, forEach } from "lodash";
+import _, { concat, forEach, max } from "lodash";
 
 import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
@@ -8,7 +8,7 @@ import React from "react";
 
 import { APcard } from "../Components/APcard";
 import { APTimeLineView } from "../Components/TimeLineApp";
-import { VIEW_TYPES, createTree, flattenTree, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
+import { VIEW_TYPES, createTree, flattenTree, getCard, getCards, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 
 import App from "./App";
 import { APPartitionView } from "./PartitionApp";
@@ -30,7 +30,7 @@ export class APBoard extends App {
 		var stateDepth = this.props.depth || APBoard.DEFAULT_TREE_DEPTH
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
-			...this.state,
+			...this.state,	//Bring state in from App
 			mode: this.props.mode || VIEW_TYPES.TREE,
 			anchorEl: null,
 			drawerOpen: false,
@@ -47,14 +47,14 @@ export class APBoard extends App {
 			sortType: this.props.sort || 'none',
 			sortDir: this.props.dir || 'ascending',
 			clickCount: 0,
+			clickMax: 0,
 			colouring: this.props.colour || 'type',
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
 			colourise: this.typeColouring,
+			portals: []
 		}
 	}
-
-	popUp = null
 
 	root = {
 		id: 'root',
@@ -211,7 +211,6 @@ export class APBoard extends App {
 	}
 
 	closePopUp = () => {
-		this.popUp = null
 		this.setState({ popUp: null })
 	}
 
@@ -331,44 +330,6 @@ export class APBoard extends App {
 		})
 	};
 
-	addPortals = () => {
-		var portals = [];
-		var allItems = []
-		flattenTree(this.root.children, allItems)
-		var me = this;
-		allItems.forEach(function (item, idx) {
-
-			var parents = []	//TODO: add parents to children
-
-			//Create a load of popups to show card details
-			portals.push(
-				<Drawer
-					onClose={me.closePopUp}
-					key={idx}
-					id={"portal_" + item.id}
-					open={
-						Boolean(me.state.popUp === item.id)
-					}
-				>
-					<Box>
-						<APcard
-							descendants={item.children}
-							parents={parents}
-							cardProps={{ maxWidth: 700, flexGrow: 1 }}
-							host={me.props.host}
-							card={item}
-							context={me.state.context}
-							onClose={me.closePopUp}
-							readOnly
-						/>
-					</Box>
-				</Drawer>
-
-			)
-		})
-		return portals;
-	}
-
 	getErrorData = (d) => {
 		var data = {
 			colour: "",
@@ -448,7 +409,8 @@ export class APBoard extends App {
 
 	groupChange = (e) => {
 		var value = e.target.value;
-		this.setState({ grouping: value });
+		this.setColouring({ colouring: value })
+		this.setState({ grouping: value, colouring: value });
 		if (this.props.groupChange) this.props.groupChange(value);
 	}
 
@@ -463,9 +425,33 @@ export class APBoard extends App {
 		if (!this.state.fetchActive) {
 			var hdrBox = document.getElementById("header-box")
 			this.calcTreeData(this.state.rootNode)
+			var svgTarget = document.getElementById("svg_" + this.state.board.id)
+			svgTarget.replaceChildren()
+			var item = this.state.popUp ? this.searchRootTree(this.root, this.state.popUp) : null
 			return (<>
-				{this.addPortals()}
 				<Stack id="portalContainer" sx={{ width: '100%' }}>
+					{Boolean(item) ?
+						<Drawer
+							onClose={this.closePopUp}
+							id={"portal_" + item.id}
+							open={
+								Boolean(this.state.popUp)
+							}
+						>
+							<Box>
+								<APcard
+									descendants={item.children}
+									parents={[]}
+									cardProps={{ maxWidth: 700, flexGrow: 1 }}
+									host={this.props.host}
+									card={item}
+									context={this.state.context}
+									onClose={this.closePopUp}
+									readOnly
+								/>
+							</Box>
+						</Drawer>
+						: null}
 
 					<Grid id="header-box" container direction={'row'}>
 						<Grid xs={10} item>
@@ -508,6 +494,7 @@ export class APBoard extends App {
 						<APTimeLineView
 							end={this.dateRangeEnd}
 							start={this.dateRangeStart}
+							grouping={this.state.grouping}
 							root={this.state.rootNode}
 							onClick={this.nodeClicked}
 							sort={this.state.sortType}
@@ -525,7 +512,7 @@ export class APBoard extends App {
 								]
 							}
 
-							target={document.getElementById("svg_" + this.state.board.id)}
+							target={svgTarget}
 							board={this.state.board}
 							root={this.state.rootNode}
 							onClick={this.svgNodeClicked}
@@ -545,7 +532,7 @@ export class APBoard extends App {
 								]
 							}
 
-							target={document.getElementById("svg_" + this.state.board.id)}
+							target={svgTarget}
 							board={this.state.board}
 							root={this.state.rootNode}
 							onClick={this.svgNodeClicked}
@@ -563,7 +550,7 @@ export class APBoard extends App {
 								]
 							}
 							depth={this.state.depth}
-							target={document.getElementById("svg_" + this.state.board.id)}
+							target={svgTarget}
 							board={this.state.board}
 							root={this.state.rootNode}
 							onClick={this.svgNodeClicked}
@@ -719,14 +706,26 @@ export class APBoard extends App {
 				</Stack >
 			</>
 			)
+		} else {
+			return (
+				<Grid container direction='column' sx={{ display: 'flex', alignItems: 'center' }}>
+					<Grid>
+						<Typography variant="h6">Loading, please wait</Typography>
+					</Grid>
+					<Grid sx={{ width: '100%' }}>
+						<Grid container direction="row">
+							<Grid xs={10} item>
+								<LinearProgress variant="determinate" value={Math.round((this.state.clickMax - this.state.clickCount) / (this.state.clickMax ? this.state.clickMax : 1) * 100)} />
+							</Grid>
+							<Grid xs={2} item>
+								<Typography variant="body2" color="text.secondary">{`${this.state.clickMax}`}</Typography>
+							</Grid>
+						</Grid>
+					</Grid>
+
+				</Grid>
+			)
 		}
-	}
-
-	sortData = (items) => {
-		var sortField = "state";
-		var sortDir = "asc"
-
-
 	}
 
 	setData = () => {
@@ -743,13 +742,28 @@ export class APBoard extends App {
 
 	setRootNode = (rootNode) => {
 		this.setChildColourIndex(this.rootNode)
-		this.setState({ rootNode: this.rootNode })
+		var me = this;
+		this.setState((prev) => {
+			return { rootNode: this.rootNode }
+		})
 	}
 
+	countInc = () => {
+		this.setState((prev) => {
+			var next = prev.clickCount + 1
+			return { clickCount: next, clickMax: max([prev.clickMax, next]) }
+		})
+	}
+
+	countDec = () => {
+		this.setState((prev) => {
+			return { clickCount: prev.clickCount - 1 }
+		})
+	}
 
 	componentDidMount = () => {
 		var me = this;
-		Promise.all(getRealChildren(this.props.host, this.props.cards, this.state.depth)).then((result) => {
+		Promise.all(getRealChildren(this.props.host, this.props.cards, this.state.depth, this.countInc, this.countDec)).then((result) => {
 			result.forEach((card) => {
 				card.parentId = 'root'	//For d3.stratify
 			})
@@ -869,7 +883,6 @@ export class APBoard extends App {
 				select(".parentNode").datum(target || me.rootNode);
 			}
 		} else {
-			this.popUp = target.data.id
 			this.setState({ popUp: target.data.id })
 		}
 		return true;

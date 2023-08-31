@@ -61,14 +61,16 @@ export const getCards = (host, cardIds) => {
  * In the case that you want all the fields, flatten the tree and then get all the cards
  * and replace each one back into the tree
  */
-export const getCardHierarchy = async (host, card, type, depth) => {
+export const getCardHierarchy = async (host, card, type, depth, up, down) => {
 
 	return new Promise(async (resolve, reject) => {
 
+		if (up) up()
 		var level = depth - 1;
 		switch (type) {
 			case 'children': {
 				if (level < 0) {
+					if (down) down()
 					resolve(card)
 				} else {
 					var result = await getCardChildren(host, card);
@@ -78,8 +80,9 @@ export const getCardHierarchy = async (host, card, type, depth) => {
 							return c.id
 						})
 						var realCards = await getCards(host, cardIds)
-						var grc = Promise.all(getRealChildren(host, realCards, level)).then((results) => {
+						var grc = Promise.all(getRealChildren(host, realCards, level, up, down)).then((results) => {
 
+							
 							if (!card.children) {
 								card.children = realCards
 							} else {
@@ -89,9 +92,11 @@ export const getCardHierarchy = async (host, card, type, depth) => {
 							card.children.forEach((c) => {
 								c.parentId = card.id	//We set this to recreate a tree from d3.stratify if needed
 							})
+							if (down) down()
 							resolve(card);
 						})
 					} else {
+						if (down) down()
 						resolve(card)
 					}
 				}
@@ -102,11 +107,11 @@ export const getCardHierarchy = async (host, card, type, depth) => {
 }
 
 
-export function getRealChildren(host, cards, depth) {
+export function getRealChildren(host, cards, depth, up, down) {
 	var reqs = [];
 	if (cards.constructor.toString().indexOf("Array") < 0) return [];
 	cards.forEach(async (card) => {
-		reqs.push(getCardHierarchy(host, card, 'children', depth))
+		reqs.push(getCardHierarchy(host, card, 'children', depth, up, down))
 	})
 	// return Promise.all(reqs).then((results) => {
 	// 	var newCards = [];

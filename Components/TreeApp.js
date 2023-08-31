@@ -24,10 +24,8 @@ export class APTreeView extends App {
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring
         this.sort = this.props.sort
-
-        var svgEl = this.props.target;
-        svgEl.replaceChildren()
-        var svg = select(svgEl)
+        var svg = select(this.props.target)
+        if (!Boolean(svg)) throw new Error("No valid svg given to TreeApp")
 
         var colWidth = (this.props.size[0] / (this.props.root.height || 1))
         var colMargin = 100
