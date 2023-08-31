@@ -12,6 +12,7 @@ import { ConnectionTable } from "./ConnectionTable";
 import React from "react";
 import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 import { APChildStats } from "./ChildStats";
+import { getCard } from "../utils/Client/Sdk";
 
 
 export class APcard extends React.Component {
@@ -33,7 +34,8 @@ export class APcard extends React.Component {
 			contextIcons: null,
 			openAll: true,
 			blocked: props.card || props.card.blockedStatus.isBlocked,
-			loadSource: props.loadType || 'card'
+			loadSource: props.loadType || 'card',
+			parents: []
 		}
 		this.state[APcard.CONNECTIONS_PANEL_NAME] = false;
 		this.state[APcard.PEOPLE_PANEL_NAME] = false;
@@ -68,6 +70,16 @@ export class APcard extends React.Component {
 		this.setState({ data: data });
 		this.isChanged = true;
 
+	}
+
+	componentDidMount() {
+		var me = this;
+		var gc = this.props.card.parentCards.map((p) => getCard(this.props.host, p.cardId))
+		if (gc.length) {
+			Promise.all(gc).then((results) => {
+				me.setState({ parents : results})
+			})
+		}
 	}
 
 	/**
@@ -428,9 +440,9 @@ export class APcard extends React.Component {
 
 							</AccordionSummary>
 							<AccordionDetails>
-								{this.props.parents?.length ?
+								{this.state.parents?.length ?
 									<ConnectionTable
-										items={this.props.parents}
+										items={this.state.parents}
 										title="Parents"
 										titleType={fieldHeaderType}
 									/> : null}
