@@ -8,6 +8,7 @@ import APBoard from "./APBoard";
 import Column from "./Column";
 import App from "./App";
 import PlanItem from "./PlanningItem";
+import { APAllocationView } from "./AllocationApp";
 
 export class PIPlanApp extends App {
 
@@ -339,8 +340,23 @@ export class PIPlanApp extends App {
 						<li className="column-li">
 							<input className="column-input" id={this.ALLOC_PANEL} type="radio" name={this.ALLOC_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.ALLOC_PANEL} />
 							<label className="column-label" htmlFor={this.ALLOC_PANEL} ><div>Allocation</div></label>
-							<div className="accslide">
-								<div className="content">
+							<div className="accslide" name={this.PLAN_PANEL} onTransitionEnd={this.transitionDone}>
+							<div id={this.ALLOC_PANEL} className="content">
+									{(this.state.currentPanel === this.ALLOC_PANEL && this.state.transitionDone) ?
+										<APAllocationView
+											target={this.ALLOC_PANEL}
+											board={this.state.context}
+											cards={this.state.topLevelList.active}
+											depth={this.props.depth}
+											colour={this.state.colouring}
+											mode={this.state.mode}
+											sort={this.state.sortType}
+											eb={this.state.showErrors}
+											sortDir={this.state.sortDir}
+											host={this.props.host}
+											timebox={this.state.currentTimebox}
+										/>
+										: null}
 								</div>
 							</div>
 						</li>

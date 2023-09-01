@@ -1,9 +1,8 @@
+import React from "react";
 import CardService from "../../../services/CardService";
 import DataProvider from "../../../utils/Server/DataProvider";
-import React from "react";
 
-import { APcard } from "../../../Components/APcard";
-import { getBoard, getCardChildren, getListOfCards } from "../../../utils/Client/Sdk"
+import { APCard } from "../../../Components/APCard";
 
 export default class Item extends React.Component {
 
@@ -21,7 +20,7 @@ export default class Item extends React.Component {
 
 		if (this.props.card != null) {
 			return (
-				<APcard
+				<APCard
 					cardProps={{ margin: "10px" }}
 					loadSource='card'
 					readOnly={false}

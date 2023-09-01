@@ -17,7 +17,7 @@ export class APTreeView extends App {
         var me = this;
 
         this.colourise = this.props.colourise || function () { return "#666666" }
-        this.nodeClicked = this.props.onClick || null;
+        this.nodeClicked = this.props.onSvgClick || null;
         this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
 
 

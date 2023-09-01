@@ -4,7 +4,7 @@ import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
 import { forEach, sortBy } from "lodash";
 import React from "react";
-import { VIEW_TYPES, flattenTree } from "../utils/Client/Sdk";
+import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import APBoard from "./APBoard";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
@@ -31,19 +31,19 @@ export class APTimeLineView extends React.Component {
 
 	depthOrder = (tree) => {
 		var nodeArray = []
-		flattenTree(tree, nodeArray)
+		flattenChildren(tree, nodeArray)
 		return nodeArray
 	}
 
 	typeOrder = (tree) => {
 		var nodeArray = []
-		flattenTree(tree, nodeArray)
+		flattenChildren(tree, nodeArray)
 		return sortBy(nodeArray,[function(c) { return c.data.type.title}])
 	}
 
 	contextOrder = (tree) => {
 		var nodeArray = []
-		flattenTree(tree, nodeArray)
+		flattenChildren(tree, nodeArray)
 		return sortBy(nodeArray,[function(c) { return c.data.board.title}])
 	}
 	

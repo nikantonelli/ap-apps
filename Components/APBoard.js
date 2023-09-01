@@ -6,9 +6,9 @@ import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
 
 import React from "react";
 
-import { APcard } from "../Components/APcard";
+import { APCard } from "./APCard";
 import { APTimeLineView } from "../Components/TimeLineApp";
-import { VIEW_TYPES, createTree, flattenTree, getCard, getCards, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
+import { VIEW_TYPES, createTree, flattenChildren, getCard, getCards, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 
 import App from "./App";
 import { APPartitionView } from "./PartitionApp";
@@ -422,12 +422,38 @@ export class APBoard extends App {
 	}
 
 	render() {
+		if (Boolean(document)) {
+			var svgTarget = document.getElementById("svg_" + this.state.board.id)
+			if (Boolean(svgTarget)) svgTarget.replaceChildren()
+		}
 		if (!this.state.fetchActive) {
 			var hdrBox = document.getElementById("header-box")
 			this.calcTreeData(this.state.rootNode)
-			var svgTarget = document.getElementById("svg_" + this.state.board.id)
-			svgTarget.replaceChildren()
+
 			var item = this.state.popUp ? this.searchRootTree(this.root, this.state.popUp) : null
+			var appProps = {
+				end: this.dateRangeEnd,
+				start: this.dateRangeStart,
+				grouping: this.state.grouping,
+				size:
+					[
+						window.innerWidth,
+						//document.getElementById("svg_" + this.state.board.id).getBoundingClientRect().width,
+						window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+					]
+				,
+
+				target: svgTarget,
+				board: this.state.board,
+				root: this.state.rootNode,
+				onClick: this.nodeClicked,
+				onSvgClick: this.svgNodeClicked,
+				sort: this.state.sortType,
+				colouring: this.state.colouring,
+				colourise: this.state.colourise,
+				errorData: this.getErrorData,
+			}
+
 			return (<>
 				<Stack id="portalContainer" sx={{ width: '100%' }}>
 					{Boolean(item) ?
@@ -439,7 +465,7 @@ export class APBoard extends App {
 							}
 						>
 							<Box>
-								<APcard
+								<APCard
 									descendants={item.children}
 									parents={[]}
 									cardProps={{ maxWidth: 700, flexGrow: 1 }}
@@ -473,7 +499,7 @@ export class APBoard extends App {
 						</Grid>
 
 					</Grid>
-					<Menu
+					{/* <Menu
 						open={Boolean(this.state.anchorEl)}
 						anchorEl={this.state.anchorEl}
 						onClose={this.closeMenu}
@@ -487,80 +513,25 @@ export class APBoard extends App {
 						{(this.state.active && this.state.active.length) ?
 							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
 							: null}
-					</Menu>
+					</Menu> */}
 
 
 					{this.state.mode === VIEW_TYPES.TIMELINE ?
-						<APTimeLineView
-							end={this.dateRangeEnd}
-							start={this.dateRangeStart}
-							grouping={this.state.grouping}
-							root={this.state.rootNode}
-							onClick={this.nodeClicked}
-							sort={this.state.sortType}
-							colouring={this.state.colouring}
-							colourise={this.state.colourise}
-							errorData={this.getErrorData}
+						<APTimeLineView {...appProps}
 						/> : null}
 
 					{this.state.mode === VIEW_TYPES.PARTITION ?
-						<APPartitionView
-							size={
-								[
-									window.innerWidth - 20,	//Space for the scroll bar
-									window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-								]
-							}
-
-							target={svgTarget}
-							board={this.state.board}
-							root={this.state.rootNode}
-							onClick={this.svgNodeClicked}
-							sort={this.state.sortType}
-							colouring={this.state.colouring}
-							colourise={this.state.colourise}
-							errorData={this.getErrorData}
+						<APPartitionView {...appProps}
 						/> : null}
 
 					{this.state.mode === VIEW_TYPES.TREE ?
-						<APTreeView
-							size={
-								[
-									window.innerWidth,
-									//document.getElementById("svg_" + this.state.board.id).getBoundingClientRect().width,
-									window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-								]
-							}
+						<APTreeView {...appProps}
 
-							target={svgTarget}
-							board={this.state.board}
-							root={this.state.rootNode}
-							onClick={this.svgNodeClicked}
-							sort={this.state.sortType}
-							colouring={this.state.colouring}
-							colourise={this.state.colourise}
-							errorData={this.getErrorData}
 						/> : null}
 					{this.state.mode === VIEW_TYPES.SUNBURST ?
-						<APSunburstView
-							size={
-								[
-									window.innerWidth,
-									window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-								]
-							}
-							depth={this.state.depth}
-							target={svgTarget}
-							board={this.state.board}
-							root={this.state.rootNode}
-							onClick={this.svgNodeClicked}
-							opacityDrop
-							sort={this.state.sortType}
-							colouring={this.state.colouring}
-							colourise={this.state.colourise}
-							errorColour={this.getErrorData}
-							errorData={this.getErrorData}
+						<APSunburstView {...appProps}
 						/> : null}
+
 					<Drawer
 
 						onClose={this.closeDrawer}
@@ -769,7 +740,7 @@ export class APBoard extends App {
 			})
 			if (me.props.dedupe) {
 				var flatted = []
-				flattenTree(result, flatted)
+				flattenChildren(result, flatted)
 				var reducedTree = removeDuplicates(flatted);
 				this.root.children = createTree(reducedTree)
 			} else {

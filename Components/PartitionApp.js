@@ -21,7 +21,7 @@ export class APPartitionView extends App {
         this.colourise = this.props.colourise || function () { return "#666666" }
         this.errorColour = this.props.errorColour || function () { return "#cc6666" }
         this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
-        this.nodeClicked = this.props.onClick || null;
+        this.nodeClicked = this.props.onSvgClick || null;
 
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring

@@ -6,6 +6,7 @@ export class VIEW_TYPES {
 	static TREE = 'tree'
 	static PARTITION = 'partition'
 	static TIMELINE = 'timeline'
+	static ALLOCATION = 'allocation'	//Only exists in the PIPlanningApp so far.
 }
 
 export const getCardChildren = (host, card) => {
@@ -143,12 +144,17 @@ export const removeDuplicates = (cards) => {
 	return cards
 }
 
-export const flattenTree = (array, result) => {
+export const flattenTree = (item, result) => {
+	flattenChildren([item], result)
+	return result;
+}
+
+export const flattenChildren = (array, result) => {
 	array.forEach(function (el) {
 
 		result.push({ ...el });
 		if (el.children) {
-			flattenTree(el.children, result);
+			flattenChildren(el.children, result);
 		}
 	});
 }

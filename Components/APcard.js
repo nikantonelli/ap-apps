@@ -15,7 +15,7 @@ import { APChildStats } from "./ChildStats";
 import { getCard } from "../utils/Client/Sdk";
 
 
-export class APcard extends React.Component {
+export class APCard extends React.Component {
 
 	static CONNECTIONS_PANEL_NAME = "connectionsSection";
 	static PEOPLE_PANEL_NAME = "peopleSection";
@@ -37,11 +37,11 @@ export class APcard extends React.Component {
 			loadSource: props.loadType || 'card',
 			parents: []
 		}
-		this.state[APcard.CONNECTIONS_PANEL_NAME] = false;
-		this.state[APcard.PEOPLE_PANEL_NAME] = false;
-		this.state[APcard.DETAILS_PANEL_NAME] = true;
-		this.state[APcard.SCHEDULE_PANEL_NAME] = false;
-		this.state[APcard.PROGRESS_PANEL_NAME] = false;
+		this.state[APCard.CONNECTIONS_PANEL_NAME] = false;
+		this.state[APCard.PEOPLE_PANEL_NAME] = false;
+		this.state[APCard.DETAILS_PANEL_NAME] = true;
+		this.state[APCard.SCHEDULE_PANEL_NAME] = false;
+		this.state[APCard.PROGRESS_PANEL_NAME] = false;
 
 		this.savedData = props.card;
 	}
@@ -144,11 +144,11 @@ export class APcard extends React.Component {
 	changeSection = (evt) => {
 		var ed = {}
 
-		ed[APcard.DETAILS_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
-		ed[APcard.PROGRESS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APCard.DETAILS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APCard.PEOPLE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APCard.CONNECTIONS_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APCard.SCHEDULE_PANEL_NAME] = evt.currentTarget.id === "openAll";
+		ed[APCard.PROGRESS_PANEL_NAME] = evt.currentTarget.id === "openAll";
 
 		if ((evt.currentTarget.id !== "openAll") && (evt.currentTarget.id !== "closeAll")) {
 			ed[evt.currentTarget.id] = true;
@@ -185,29 +185,29 @@ export class APcard extends React.Component {
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Details">
-									<IconButton id={APcard.DETAILS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APCard.DETAILS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<List />
 									</IconButton>
 								</Tooltip>
 								{this.state.data.connectedCardStats ?
 									<Tooltip title="Child Progress">
-										<IconButton id={APcard.PROGRESS_PANEL_NAME} size='large' className="options-button-icon" aria-label='progress panel' onClick={this.changeSection}>
+										<IconButton id={APCard.PROGRESS_PANEL_NAME} size='large' className="options-button-icon" aria-label='progress panel' onClick={this.changeSection}>
 											<BarChart />
 										</IconButton>
 									</Tooltip>
 									: null}
 								<Tooltip title="Schedule">
-									<IconButton id={APcard.SCHEDULE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APCard.SCHEDULE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<CalendarToday />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="Connections">
-									<IconButton id={APcard.CONNECTIONS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APCard.CONNECTIONS_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<SettingsEthernet />
 									</IconButton>
 								</Tooltip>
 								<Tooltip title="People">
-									<IconButton id={APcard.PEOPLE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
+									<IconButton id={APCard.PEOPLE_PANEL_NAME} size='large' className="options-button-icon" aria-label='details panel' onClick={this.changeSection}>
 										<People />
 									</IconButton>
 								</Tooltip>
@@ -271,9 +271,9 @@ export class APcard extends React.Component {
 					</Grid>
 
 					<CardContent sx={{ backgroundColor: typeColour }}>
-						<Accordion expanded={this.state[APcard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="details-content" id={APcard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state[APcard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
+						<Accordion expanded={this.state[APCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="details-content" id={APCard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
+								<Typography variant={sectionHeaderType}>{this.state[APCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
 							</AccordionSummary>
 							<Grid container direction="column" >
 								<Grid item>
@@ -376,8 +376,8 @@ export class APcard extends React.Component {
 							</Grid>
 						</Accordion>
 						{this.state.data.connectedCardStats ?
-							<Accordion expanded={this.state[APcard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
-								<AccordionSummary aria-controls="progress-content" id={APcard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
+							<Accordion expanded={this.state[APCard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+								<AccordionSummary aria-controls="progress-content" id={APCard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
 									<Typography variant={sectionHeaderType}>Child Progress</Typography>
 								</AccordionSummary>
 								<AccordionDetails>
@@ -404,8 +404,8 @@ export class APcard extends React.Component {
 								</AccordionDetails>
 							</Accordion>
 							: null}
-						<Accordion expanded={this.state[APcard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="schedule-content" id={APcard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[APCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="schedule-content" id={APCard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType} color={(Boolean(this.state.data.plannedStart) && Boolean(this.state.data.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
@@ -434,8 +434,8 @@ export class APcard extends React.Component {
 								</Grid>
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state[APcard.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="connections-content" id={APcard.CONNECTIONS_PANEL_NAME} expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[APCard.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="connections-content" id={APCard.CONNECTIONS_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Connections</Typography>
 
 							</AccordionSummary>
@@ -454,8 +454,8 @@ export class APcard extends React.Component {
 									/> : null}
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state[APcard.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange}>
-							<AccordionSummary aria-controls="people-content" id={APcard.PEOPLE_PANEL_NAME} expandIcon={<ExpandMore />}>
+						<Accordion expanded={this.state[APCard.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<AccordionSummary aria-controls="people-content" id={APCard.PEOPLE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
