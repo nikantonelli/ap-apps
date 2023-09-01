@@ -422,7 +422,8 @@ export class APBoard extends App {
 	}
 
 	render() {
-		if (Boolean(document)) {
+		if (typeof document !== "undefined") {
+			console.log(typeof document)
 			var svgTarget = document.getElementById("svg_" + this.state.board.id)
 			if (Boolean(svgTarget)) svgTarget.replaceChildren()
 		}
