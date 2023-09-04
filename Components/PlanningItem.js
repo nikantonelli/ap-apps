@@ -1,5 +1,5 @@
-import { CheckBox, OpenInNew } from "@mui/icons-material";
-import { Button, Card, CardActions, CardContent, CardHeader, Grid, IconButton, Switch, Typography } from "@mui/material";
+import { OpenInNew } from "@mui/icons-material";
+import { Card, CardActions, CardContent, CardHeader, Grid, IconButton, Switch, Tooltip, Typography } from "@mui/material";
 import React from "react";
 
 /**
@@ -26,28 +26,38 @@ export default class PlanItem extends React.Component {
 	render() {
 		const label = { inputProps: { 'aria-label': 'Include in Plan Switch' } };
 		return (
-			<Card sx={{ minWidth: 200, maxWidth: 400 }}>
-				<CardHeader sx={{backgroundColor:this.props.card.color}} subheader=
+			<Card sx={{ minWidth: 200, maxWidth: 400, opacity: this.props.selected ? 1 : 0.3 }}>
+				<CardHeader sx={{ backgroundColor: this.props.card.color }} subheader=
 					{(this.props.card.customId && this.props.card.customId.value && this.props.card.customId.value.length) ?
 						this.props.card.customId.value
 						: null}>
+
 				</CardHeader>
-				<CardContent sx={{ background: "lightgrey", opacity: this.props.selected ? 1 : 0.3 }}>
+				<CardContent sx={{ background: "lightgrey" }}>
 					<Typography sx={{ fontSize: 14 }} colour="text.secondary" gutterBottom>
-						{this.props.card.title}
+						<Grid container>
+							<Grid item xs>
+								{this.props.card.title}
+							</Grid>
+							<Grid item xs={1}>
+								<Tooltip title="Open Card in AgilePlace">
+									<IconButton
+										size="small"
+										onClick={this.openInNew}
+									>
+										<OpenInNew />
+									</IconButton>
+								</Tooltip>
+							</Grid>
+						</Grid>
 					</Typography>
 				</CardContent>
-				<CardActions sx={{backgroundColor:this.props.card.color}} >
-					<Grid container direction={'row'}>
-						<Grid xs={6} item>
-							<IconButton
-								size="small"
-								onClick={this.openInNew}
-							>
-								<OpenInNew/>
-							</IconButton>
+				<CardActions sx={{ backgroundColor: this.props.card.color }} >
+					<Grid container direction={'row'} alignItems={"center"}>
+						<Grid item>
+							<Typography>In Scope:</Typography>
 						</Grid>
-						<Grid item xs={6} alignContent={'right'}>
+						<Grid item >
 							{this.props.showSelector ? <Switch
 								{...label}
 								checked={this.props.selected}

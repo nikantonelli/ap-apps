@@ -5,7 +5,7 @@ import { scaleLinear } from 'd3';
 import { forEach, sortBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import APBoard from "./APBoard";
+import APBoard from "../Components/APBoard";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
 export class APTimeLineView extends React.Component {

@@ -1,4 +1,4 @@
-import { PIPlanApp } from "../../../Components/PIPlanApp";
+import { PIPlanApp } from "../../../Apps/PIPlanApp";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
 

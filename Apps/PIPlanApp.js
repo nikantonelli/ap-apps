@@ -1,14 +1,13 @@
 import { OpenInNew } from "@mui/icons-material";
-import { Grid, IconButton, Typography } from "@mui/material";
+import { Button, Grid, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import { filter, find, forEach, orderBy } from "lodash";
 import React from "react";
+import { APtimebox } from "../Components/AP-Fields/timebox";
+import APBoard from "../Components/APBoard";
+import { APAllocationView } from "../Apps/AllocationApp";
+import App from "../Components/App";
+import PlanItem from "../Components/PlanningItem";
 import { doRequest, getCardHierarchy } from "../utils/Client/Sdk";
-import { APtimebox } from "./AP-Fields/timebox";
-import APBoard from "./APBoard";
-import Column from "./Column";
-import App from "./App";
-import PlanItem from "./PlanningItem";
-import { APAllocationView } from "./AllocationApp";
 
 export class PIPlanApp extends App {
 
@@ -86,7 +85,7 @@ export class PIPlanApp extends App {
 			mode: "GET",
 			url: "/timebox/" + evt.target.value + "?incr=all"
 		}
-		var cResult =await doRequest(cParams)
+		var cResult = await doRequest(cParams)
 		var increments = orderBy(cResult.increments, ["startDate"], ["desc"])
 		this.setCurrentSeries(find(this.state.planningSeries, { id: evt.target.value }))
 		this.setAllTimeboxes(increments)
@@ -221,153 +220,161 @@ export class PIPlanApp extends App {
 	render() {
 		if (this.state.context) {
 			return (
-				<Column>
-					<ul className="column-ul">
-						<li className="column-li">
-							<input className="column-input" id={this.CONFIG_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.CONFIG_PANEL} type="radio" name={this.CONFIG_PANEL} />
-							<label className="column-label" htmlFor={this.CONFIG_PANEL}>
-								<div>
-									{"Configuration" + ((this.state.currentSeries && this.state.currentTimebox) ? (": " + this.state.currentSeries.label + " -> " + this.state.currentTimebox.label) : "")}
+				<>
+					<Paper>
+						<Button size="small" variant={this.state.currentPanel === this.CONFIG_PANEL ? "contained" : "text"} name={this.CONFIG_PANEL} onClick={this.panelChange}>
+							Configuration
+						</Button>
 
-								</div>
-							</label>
-							<div className="accslide">
-								<div className="content">
-									<h1>
-										Configuration
+						{(this.state.currentSeries && this.state.currentTimebox) ?
+							<>
+								<Button size="small" variant={this.state.currentPanel === this.PLAN_PANEL ? "contained" : "text"} name={this.PLAN_PANEL} onClick={this.panelChange}>
+									Planning
+								</Button>
+								<Button size="small" variant={this.state.currentPanel === this.ALLOC_PANEL ? "contained" : "text"} name={this.ALLOC_PANEL} onClick={this.panelChange}>
+									Allocation
+								</Button>
+							</> :
+							null}
+						<Button disabled>
+							<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.context.title + " :"}</Typography>
+							{this.state.currentSeries ?
+								<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.currentSeries.label + " :"}</Typography>
+								: null}
+							{this.state.currentTimebox ?
+								<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.currentTimebox.label}</Typography>
+								: null}
+						</Button>
+					</Paper>
+					{this.state.currentPanel === this.CONFIG_PANEL ?
+						<div className="content">
+							<Grid container>
+								<Grid item sx={{ margin: "2px" }}>
+									<APtimebox
+										title="Planning Series"
+										timeBoxChange={this.seriesChange}
+										timeboxes={this.state.planningSeries}
+										initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
+									/>
+								</Grid>
+								<Grid item sx={{ margin: "2px" }}>
+									<APtimebox
+										title="Planning Timebox"
+										timeBoxChange={this.timeboxChange}
+										timeboxes={this.state.seriesIncrements}
+										initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
+									/>
+								</Grid>
+								<Grid item sx={{ margin: "2px" }}>
+									<Tooltip title="Open Timebox In New Tab">
 										<IconButton onClick={this.openInTab}>
 											<OpenInNew />
 										</IconButton>
-									</h1>
+									</Tooltip>
+								</Grid>
+							</Grid>
 
-									<Grid container>
+							<Grid container direction="column" className="board-grid">
+								{this.state.topLevelList.active.length ?
+									<>
 										<Grid item>
-											<APtimebox
-												title="Planning Series"
-												timeBoxChange={this.seriesChange}
-												timeboxes={this.state.planningSeries}
-												initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
-											/>
+											<Typography>Considering:</Typography>
 										</Grid>
-										<Grid item>
-											<APtimebox
-												title="Planning Timebox"
-												timeBoxChange={this.timeboxChange}
-												timeboxes={this.state.seriesIncrements}
-												initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
-											/>
-										</Grid>
-									</Grid>
-
-									<Grid container direction="column" className="board-grid">
-										{this.state.topLevelList.active.length ?
-											<>
-												<Grid item>
-													<Typography>Considering:</Typography>
-												</Grid>
-												<Grid item><Grid container direction="row">
-													{this.state.topLevelList.active.map((card, idx) => {
-														return (
-															<Grid key={idx + 1} item>
-																<PlanItem
-																	card={card}
-																	showSelector
-																	selected={true}
-																	selectChange={this.cardSelectChange} />
-															</Grid>
-														)
-													})}
-												</Grid>
-												</Grid>
-											</>
-											: null}
-									</Grid>
-									<Grid container direction="column" className="board-grid">
-										{this.state.topLevelList.passive.length ?
-											<>
-												<Grid item>
-													<Typography>Out of Scope:</Typography>
-												</Grid>
-												<Grid item>
-													<Grid container direction="row">
-														{this.state.topLevelList.passive.map((card, idx) => {
-															return (
-																<Grid key={idx + 1} item>
-
-																	<PlanItem
-																		card={card}
-																		showSelector
-																		selected={false}
-																		selectChange={this.cardSelectChange} />
-																</Grid>
-															)
-														})}
+										<Grid item><Grid container direction="row">
+											{this.state.topLevelList.active.map((card, idx) => {
+												return (
+													<Grid key={idx + 1} item sx={{ margin: "2px" }}>
+														<PlanItem
+															card={card}
+															showSelector
+															selected={true}
+															selectChange={this.cardSelectChange} />
 													</Grid>
-												</Grid>
-											</>
-											: null}
+												)
+											})}
+										</Grid>
+										</Grid>
+									</>
+									: null}
+							</Grid>
+							<Grid container direction="column" className="board-grid">
+								{this.state.topLevelList.passive.length ?
+									<>
+										<Grid item>
+											<Typography>Out of Scope:</Typography>
+										</Grid>
+										<Grid item>
+											<Grid container direction="row">
+												{this.state.topLevelList.passive.map((card, idx) => {
+													return (
+														<Grid key={idx + 1} item>
 
-									</Grid>
+															<PlanItem
+																card={card}
+																showSelector
+																selected={false}
+																selectChange={this.cardSelectChange} />
+														</Grid>
+													)
+												})}
+											</Grid>
+										</Grid>
+									</>
+									: null}
+
+							</Grid>
 
 
 
-								</div>
-							</div>
-						</li>
-						<li className="column-li">
-							<input className="column-input" id={this.PLAN_PANEL} type="radio" name={this.PLAN_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.PLAN_PANEL} />
-							<label className="column-label" htmlFor={this.PLAN_PANEL} ><div>PI Planning</div></label>
-							<div className="accslide" name={this.PLAN_PANEL} onTransitionEnd={this.transitionDone}>
-								<div id={this.PLAN_PANEL} className="content">
-									{(this.state.currentPanel === this.PLAN_PANEL && this.state.transitionDone) ?
-										<APBoard
-											target={this.PLAN_PANEL}
-											board={this.state.context}
-											cards={this.state.topLevelList.active}
-											depth={this.props.depth}
-											colour={this.state.colouring}
-											mode={this.state.mode}
-											sort={this.state.sortType}
-											eb={this.state.showErrors}
-											sortDir={this.state.sortDir}
-											host={this.props.host}
-										/>
-										: null}
-									<svg id={"svg_" + this.state.context.id} />
-								</div>
-							</div>
-						</li>
-						<li className="column-li">
-							<input className="column-input" id={this.ALLOC_PANEL} type="radio" name={this.ALLOC_PANEL} onChange={this.panelChange} checked={this.state.currentPanel === this.ALLOC_PANEL} />
-							<label className="column-label" htmlFor={this.ALLOC_PANEL} ><div>Allocation</div></label>
-							<div className="accslide" name={this.PLAN_PANEL} onTransitionEnd={this.transitionDone}>
-							<div id={this.ALLOC_PANEL} className="content">
-									{(this.state.currentPanel === this.ALLOC_PANEL && this.state.transitionDone) ?
-										<APAllocationView
-											target={this.ALLOC_PANEL}
-											board={this.state.context}
-											cards={this.state.topLevelList.active}
-											depth={this.props.depth}
-											colour={this.state.colouring}
-											mode={this.state.mode}
-											sort={this.state.sortType}
-											eb={this.state.showErrors}
-											sortDir={this.state.sortDir}
-											host={this.props.host}
-											timebox={this.state.currentTimebox}
-										/>
-										: null}
-								</div>
-							</div>
-						</li>
-					</ul>
-				</Column>)
+						</div>
+						: null}
+					{this.state.currentPanel === this.PLAN_PANEL ?
+						<div id={this.PLAN_PANEL} className="content">
+							{this.getPanelType()}
+						</div>
+						: null}
+					{this.state.currentPanel === this.PLAN_PANEL ?
+						<div id={this.ALLOC_PANEL} className="content">
+							<APAllocationView
+								target={this.ALLOC_PANEL}
+								board={this.state.context}
+								cards={this.state.topLevelList.active}
+								depth={this.props.depth}
+								colour={this.state.colouring}
+								mode={this.state.mode}
+								sort={this.state.sortType}
+								eb={this.state.showErrors}
+								sortDir={this.state.sortDir}
+								host={this.props.host}
+								timebox={this.state.currentTimebox}
+							/>
+						</div>
+						: null}
+				</>)
 		}
 		else {
 			return null
 		}
 	}
 
+	getPanelType = () => {
+		return (
+			<>
+				<APBoard
+					target={this.PLAN_PANEL}
+					board={this.state.context}
+					cards={this.state.topLevelList.active}
+					depth={this.props.depth}
+					colour={this.state.colouring}
+					mode={this.state.mode}
+					sort={this.state.sortType}
+					eb={this.state.showErrors}
+					sortDir={this.state.sortDir}
+					host={this.props.host}
+				/>
+				<svg id={"svg_" + this.state.context.id} />
+			</>)
+	}
 	modeChange = (mode) => {
 		this.setState({ mode: mode })
 	}

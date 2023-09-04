@@ -1,9 +1,9 @@
 import { min, select, tree } from "d3";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import APBoard from "./APBoard";
+import APBoard from "../Components/APBoard";
 
 import { VIEW_TYPES } from "../utils/Client/Sdk";
-import App from "./App";
+import App from "../Components/App";
 
 export class APTreeView extends App {
     constructor(props) {
@@ -237,7 +237,7 @@ export class APTreeView extends App {
                 .attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
                 .attr("class", function (d) { return "local--link"; })
                 .attr("d", function (d) {
-                    var startPointH = d.parent.y + pWidth + (d.rowHeight / 2);
+                    var startPointH = d.parent.y + pWidth + ((d.rowHeight-4) / 2);
                     var startApex = (d.y - (d.parent.y + pWidth)) / 2
                     var startPointV = d.parent.x;
                     var endPointH = d.y - (d.rowHeight / 2);

@@ -1,6 +1,7 @@
 import { sortBy, unionBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
+import { Grid } from "@mui/material";
 
 export class APAllocationView extends React.Component {
 
@@ -88,9 +89,13 @@ export class APAllocationView extends React.Component {
             }
         }
         return (
-            <pre>
-                {JSON.stringify(items, undefined, 2)}
-            </pre>
+            <Grid container>
+                <Grid id="unallocated">
+
+                </Grid>
+
+            </Grid>
+           
         )
 
     }
