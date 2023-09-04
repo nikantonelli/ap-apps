@@ -1,9 +1,10 @@
+import { Grid } from "@mui/material";
 import { sortBy, unionBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import { Grid } from "@mui/material";
+import App from "./App";
 
-export class APAllocationView extends React.Component {
+export class APAllocationView extends App {
 
     constructor(props) {
         super(props);

@@ -1,6 +1,6 @@
-import { Autocomplete, Box, Drawer, Grid, LinearProgress, Stack, TextField, Typography } from "@mui/material";
-import { ascending, descending, hierarchy, interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal, select } from "d3";
-import _, { forEach, max } from "lodash";
+import { Box, Drawer, Grid, LinearProgress, Stack, TextField, Typography } from "@mui/material";
+import { ascending, descending, hierarchy, select } from "d3";
+import { filter, max, min, reject, union, unionWith } from "lodash";
 
 import { Settings } from "@mui/icons-material";
 
@@ -10,10 +10,10 @@ import { APTimeLineView } from "../Apps/TimeLineApp";
 import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 import { APCard } from "./APCard";
 
+import App from "../Apps/App";
 import { APPartitionView } from "../Apps/PartitionApp";
 import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
-import App from "./App";
 import { ConfigDrawer } from "./ConfigDrawer";
 
 export class APBoard extends App {
@@ -27,33 +27,15 @@ export class APBoard extends App {
 
 	constructor(props) {
 		super(props)
-
-		var stateDepth = this.props.depth || APBoard.DEFAULT_TREE_DEPTH
-		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		this.state = {
 			...this.state,	//Bring state in from App
-			mode: this.props.mode || VIEW_TYPES.TREE,
-			anchorEl: null,
-			drawerOpen: false,
-			menuOpen: false,
 			board: this.props.board,
 			fetchActive: true,
 			active: props.active,
-			drawerWidth: this.props.drawerWidth || 400,
-			depth: stateDepth,
-			pending: 0,
-			total: 0,
+
 			topLevelList: props.topLevelList || [],
-			popUp: null,
-			sortType: this.props.sort || 'none',
-			sortDir: this.props.dir || 'ascending',
-			clickCount: 0,
-			clickMax: 0,
-			colouring: this.props.colour || 'type',
-			grouping: this.props.group || 'level',
-			showErrors: this.props.eb || 'off',
-			colourise: this.typeColouring,
-			portals: []
+			pending: 0,
+			total: 0
 		}
 	}
 
@@ -66,154 +48,6 @@ export class APBoard extends App {
 	updatedUserList = [];
 	contextList = [];
 
-
-	/**
-	 * Two stage colour fetching:
-	 * 1. Optional: Set up a function to convert a value to a colour
-	 * 2. Call a function (that could call that previous function) with the 'd' parameter
-	 * 	that converts d to a value.
-	 * 
-	 * You could, of course, only have one function that converts 'd' to a colour
-	 */
-	opacityDrop = true;
-	colourFnc = null;
-
-	tempColouring = (d) => {
-		this.opacityDrop = true;
-		var mine = this.searchNodeTree(this.rootNode, d.data.id)
-		while (mine.parent && mine.parent.data.id != 'root') {
-			mine = mine.parent;
-		}
-		return this.colourFnc((mine ? mine.index : 1) + 1);
-	}
-
-	typeColouring = (d) => {
-		this.opacityDrop = false;
-		if (d.data) return d.data.type.cardColor
-		else return "#ccc"
-	}
-
-	//Get first assigned user only
-	aUserColouring = (d) => {
-		this.opacityDrop = false;
-		var user = null;
-		//Assigned users is always returned and empty if there are none
-		if (d.data.assignedUsers.length) {
-			user = d.data.assignedUsers[0];
-			var index = _.findIndex(this.assignedUserList, function (assignee) {
-				return user.id === assignee.id;
-			})
-			if (index >= 0) return this.colourFnc(index);
-		}
-		return this.colourFnc(0);
-	}
-
-	lUserColouring = (d) => {
-		this.opacityDrop = false;
-		var user = null;
-		//last update users is always returned and empty if there are none
-		if (d.data.updatedBy) {
-			user = d.data.updatedBy;
-			var index = _.findIndex(this.updatedUserList, function (assignee) {
-				return user.id === assignee.id;
-			})
-			if (index >= 0) return this.colourFnc(index);
-		}
-		return this.colourFnc(0);
-	}
-
-	cUserColouring = (d) => {
-		this.opacityDrop = false;
-		var index = -1;
-		//creator users is always returned and empty if there are none
-		if (d.data.createdBy) {
-			index = _.findIndex(this.createdUserList, function (user) {
-				return d.data.createdBy.id === user.id;
-			})
-		}
-		var colour = this.colourFnc((index >= 0) ? index : 0);
-		return colour
-	}
-
-	contextColouring = (d) => {
-		this.opacityDrop = false;
-		var boardid = d.data.board.id
-		var index = _.findIndex(this.contextList, function (context) {
-			return boardid === context.id;
-		})
-		if (index >= 0) return this.colourFnc(index);
-
-		return this.colourFnc(0);
-	}
-
-	stateColouring = (d) => {
-		this.opacityDrop = false;
-		if (d.data.actualFinish) return '#444444'
-		if (d.data.actualStart) return '#27a444';
-		else return '#4989e4';
-
-	}
-
-	/**
-	 * 
-	 * @param {
-	 * 	type: string
-	 * 	method: function
-	 * 	config: object
-	 * 
-	 * } params 
-	 */
-	setColouring = (params) => {
-		switch (params.colouring) {
-			case 'cool': {
-				this.colourFnc = scaleOrdinal(quantize(interpolateCool, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
-				this.setState({ colouring: params.colouring, colourise: this.tempColouring });
-				break;
-			}
-			case 'warm': {
-				this.colourFnc = scaleOrdinal(quantize(interpolateWarm, (this.rootNode.children && this.rootNode.children.length) ? this.rootNode.children.length + 1 : 2))
-				this.setState({ colouring: params.colouring, colourise: this.tempColouring });
-				break;
-			}
-			case 'context': {
-				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.contextList.length ? this.contextList.length + 1 : 2))
-				this.setState({ colouring: params.colouring, colourise: this.contextColouring });
-				break;
-			}
-			case 'type': {
-				this.setState({ colouring: params.colouring, colourise: this.typeColouring });
-				break;
-			}
-			case 'state': {
-				this.setState({ colouring: params.colouring, colourise: this.stateColouring });
-				break;
-			}
-			case 'a_user': {
-				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.assignedUserList.length ? this.assignedUserList.length + 1 : 2))
-				this.setState({ colouring: params.colouring, colourise: this.aUserColouring });
-				break;
-			}
-			case 'l_user': {
-				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.updatedUserList.length ? this.updatedUserList.length + 1 : 2))
-				this.setState({ colouring: params.colouring, colourise: this.lUserColouring });
-				break;
-			}
-			case 'c_user': {
-				this.colourFnc = scaleOrdinal(quantize(interpolateRainbow, this.createdUserList.length ? this.createdUserList.length + 1 : 2))
-				this.setState({ colouring: params.colouring, colourise: this.cUserColouring });
-				break;
-			}
-			default: {
-				this.setState({ colouring: params.colouring })
-				this.colourFnc = scaleOrdinal(quantize(interpolateCool, 2))
-			}
-		}
-
-	}
-
-	closePopUp = () => {
-		this.setState({ popUp: null })
-	}
 
 	calcTreeData = (rootNode) => {
 		var me = this;
@@ -287,11 +121,11 @@ export class APBoard extends App {
 				var af = d.data.actualFinish ? new Date(d.data.actualFinish).getTime() : null;
 				var as = d.data.actualStart ? new Date(d.data.actualStart).getTime() : null;
 
-				d.parent.latest = _.max([pPF, pPS, pf, ps, d.parent.latest])
-				d.parent.earliest = _.min([pPF, pPS, pf, ps, d.parent.earliest])
+				d.parent.latest = max([pPF, pPS, pf, ps, d.parent.latest])
+				d.parent.earliest = min([pPF, pPS, pf, ps, d.parent.earliest])
 
-				rootNode.latest = _.max([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.latest])
-				rootNode.earliest = _.min([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.earliest])
+				rootNode.latest = max([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.latest])
+				rootNode.earliest = min([pPF, pPS, pf, ps, aPF, aPS, af, as, rootNode.earliest])
 			}
 		})
 
@@ -311,18 +145,18 @@ export class APBoard extends App {
 
 		rootNode.each((d) => {
 			if (d.data.assignedUsers && d.data.assignedUsers.length) {
-				_.forEach(d.data.assignedUsers, (user) => {
-					this.assignedUserList = _.unionWith(this.assignedUserList, [user], function (a, b) { return b.id === a.id })
+				d.data.assignedUsers.forEach( (user) => {
+					this.assignedUserList = unionWith(this.assignedUserList, [user], function (a, b) { return b.id === a.id })
 				})
 			}
 			if (d.data.createdBy) {
-				this.createdUserList = _.unionWith(this.createdUserList, [d.data.createdBy], function (a, b) { return b.id === a.id })
+				this.createdUserList = unionWith(this.createdUserList, [d.data.createdBy], function (a, b) { return b.id === a.id })
 			}
 			if (d.data.updatedBy) {
-				this.updatedUserList = _.unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
+				this.updatedUserList = unionWith(this.updatedUserList, [d.data.updatedBy], function (a, b) { return b.id === a.id })
 			}
 			if (d.data.id != 'root') {
-				this.contextList = _.unionWith(this.contextList, [d.data.board], function (a, b) { return b.id === a.id })
+				this.contextList = unionWith(this.contextList, [d.data.board], function (a, b) { return b.id === a.id })
 				//Ensure that the colouring function is called in a consistent order. You can end up with different colour if you don't
 				d.colour = this.state.colourise(d);
 
@@ -424,7 +258,6 @@ export class APBoard extends App {
 
 	render() {
 		if (typeof document !== "undefined") {
-			console.log(typeof document)
 			var svgTarget = document.getElementById("svg_" + this.state.board.id)
 			if (Boolean(svgTarget)) svgTarget.replaceChildren()
 		}
@@ -501,23 +334,7 @@ export class APBoard extends App {
 						</Grid>
 
 					</Grid>
-					{/* <Menu
-						open={Boolean(this.state.anchorEl)}
-						anchorEl={this.state.anchorEl}
-						onClose={this.closeMenu}
-						anchorOrigin={{
-							vertical: 'top',
-							horizontal: 'right',
-						}}
-					>
-
-						<MenuItem value='expand' onClick={this.closeMenu}>Restore All</MenuItem>
-						{(this.state.active && this.state.active.length) ?
-							<MenuItem value='reloadAll' onClick={this.closeMenu}>Reload All</MenuItem>
-							: null}
-					</Menu> */}
-
-
+					
 					{this.state.mode === VIEW_TYPES.TIMELINE ?
 						<APTimeLineView {...appProps}
 						/> : null}
@@ -539,7 +356,7 @@ export class APBoard extends App {
 						onChange={this.handleChangeMultiple}
 						openInNew={this.openAsActive}
 						width={this.state.drawerWidth}
-						open={this.state.drawerOpen}
+						open={this.state.configOpen}
 						items={this.state.topLevelList}
 						allItems={this.root.children}
 						mode={this.state.mode}
@@ -568,10 +385,10 @@ export class APBoard extends App {
 					<Grid sx={{ width: '100%' }}>
 						<Grid container direction="row">
 							<Grid xs={10} item>
-								<LinearProgress variant="determinate" value={Math.round((this.state.clickMax - this.state.clickCount) / (this.state.clickMax ? this.state.clickMax : 1) * 100)} />
+								<LinearProgress variant="determinate" value={Math.round((this.state.total - this.state.pending) / (this.state.total ? this.state.total : 1) * 100)} />
 							</Grid>
 							<Grid xs={2} item>
-								<Typography variant="body2" color="text.secondary">{`${this.state.clickMax}`}</Typography>
+								<Typography variant="body2" color="text.secondary">{`${this.state.total}`}</Typography>
 							</Grid>
 						</Grid>
 					</Grid>
@@ -603,14 +420,14 @@ export class APBoard extends App {
 
 	countInc = () => {
 		this.setState((prev) => {
-			var next = prev.clickCount + 1
-			return { clickCount: next, clickMax: max([prev.clickMax, next]) }
+			var next = prev.pending + 1
+			return { pending: next, total: max([prev.total, next]) }
 		})
 	}
 
 	countDec = () => {
 		this.setState((prev) => {
-			return { clickCount: prev.clickCount - 1 }
+			return { pending: prev.pending - 1 }
 		})
 	}
 
@@ -677,7 +494,7 @@ export class APBoard extends App {
 		ev.preventDefault()
 		if (ev.ctrlKey) {
 			if (target.data.children && target.data.children.length) {
-				target.data.savedChildren = _.union(target.data.children, target.data.savedChildren)
+				target.data.savedChildren = union(target.data.children, target.data.savedChildren)
 				target.data.children = [];
 			}
 			else if (target.data.savedChildren && target.data.savedChildren.length) {
@@ -741,67 +558,6 @@ export class APBoard extends App {
 		return true;
 	}
 
-	resetChildren = (node) => {
-		node.children = _.union(node.children || [], node.savedChildren || [])
-		node.savedChildren = [];
-		node.children.forEach((child) => {
-			this.resetChildren(child)
-		})
-	}
-
-	enableMenu = (e) => {
-		this.setState({ anchorEl: e.currentTarget })
-	}
-
-	closeMenu = async (e) => {
-		var command = e.target.getAttribute('value');
-
-		switch (command) {
-			case 'expand': {
-				var data = this.rootNode && this.rootNode.children
-				if (data) data.forEach((item) => { this.resetChildren(item) })
-				break;
-			}
-			case VIEW_TYPES.TREE:
-			case VIEW_TYPES.PARTITION:
-			case VIEW_TYPES.SUNBURST: {
-				//Force a redraw as well
-				this.setState({ mode: e.target.getAttribute('value') })
-				break;
-			}
-			case 'reloadAll': {
-				this.reloadInProgress = true;
-				this.load();
-				break;
-			}
-
-			case 'savePDF': {
-				// 	var doc = new jsPDF(
-				// 		{
-				// 			orientation: "l",
-				// 			unit: 'px',
-				// 			format: "a4",
-				// 			hotfixes: ["px_scaling"]
-				// 		}
-				// 	);
-				// 	var svg = document.getElementById("svg_" + this.state.board.id);
-				// 	var svgAsXml = new XMLSerializer().serializeToString(svg)
-				// 	await doc.addSvgAsImage(svgAsXml, 0, 0, svg.getBoundingClientRect().width, svg.getBoundingClientRect().height)
-				// 	doc.save(this.state.board.id + ".pdf")
-				break;
-			}
-		}
-
-		this.setState({ anchorEl: null })
-	}
-
-	openDrawer = () => {
-		this.setState({ drawerOpen: true })
-	}
-
-	closeDrawer = () => {
-		this.setState({ drawerOpen: false })
-	}
 
 	openAsActive = () => {
 		var activeList = this.state.topLevelList;
@@ -832,19 +588,19 @@ export class APBoard extends App {
 	handleChangeMultiple = (evt, valueList) => {
 		var root = { ...this.root };
 		var allChildren = root.children
-		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = _.union(allChildren, root.savedChildren)
+		if (root.savedChildren && (root.savedChildren.length > 0)) allChildren = union(allChildren, root.savedChildren)
 		if (valueList.length > 0) {
-			root.children = _.filter(allChildren, function (child) {
+			root.children = filter(allChildren, function (child) {
 				var result = (
-					_.filter(valueList, function (value) {
+					filter(valueList, function (value) {
 						var eqv = value.id === child.id;
 						return eqv
 					}))
 				return (result.length > 0)
 			})
-			root.savedChildren = _.reject(allChildren, function (child) {
+			root.savedChildren =reject(allChildren, function (child) {
 				var result = (
-					_.filter(valueList, function (value) {
+					filter(valueList, function (value) {
 						var eqv = value.id === child.id;
 						return eqv
 					})
@@ -857,54 +613,6 @@ export class APBoard extends App {
 		}
 		this.rootNode = hierarchy(root)
 		this.setState({ rootNode: this.rootNode, topLevelList: valueList })
-	}
-
-	topLevelList = () => {
-		//Top level list is the children of root
-
-		var cardList = this.root.children
-		return (cardList && cardList.length) ? (
-			<Autocomplete
-				freeSolo
-				multiple
-				clearOnEscape
-				id="root-child-selector"
-				disableClearable
-				onChange={this.handleChangeMultiple}
-				value={this.state.topLevelList}
-				options={cardList}
-				getOptionLabel={(option) => option.title}
-				renderOption={(props, option) => {
-					return (
-						<li {...props} key={option.id}>
-							{option.title}
-						</li>
-					);
-				}}
-				renderInput={(params) => (
-					<TextField
-						{...params}
-						label="Click here to search cards"
-						InputProps={{
-							...params.InputProps,
-							type: 'search',
-						}}
-					/>
-				)}
-			/>
-
-		) : null
-	}
-
-	saveLowerChildren = (cnt, depth, node) => {
-		if (cnt < depth) {
-			forEach(node.children, (child) => this.saveLowerChildren(cnt + 1, depth, child))
-		} else {
-			node.hiddenChildren = _.union(node.savedChildren, node.children)
-			node.children = null;
-			node.savedChildren = null;
-		}
-
 	}
 
 }

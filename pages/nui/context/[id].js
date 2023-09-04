@@ -1,7 +1,7 @@
 import React from "react";
-import { APBoard } from "../../../Components/APBoard";
 import BoardService from "../../../services/BoardService";
 import DataProvider from "../../../utils/Server/DataProvider";
+import APBoard from "../../../Components/APBoard";
 export default function Board({ board, cards, active, depth, colour, mode, sort, eb, dir, host, dedupe, group }) {
 	return (
 		<>

@@ -1,11 +1,11 @@
 import { DragHandle, SubdirectoryArrowRight } from "@mui/icons-material";
-import { Box, Popover, Tooltip, Typography } from "@mui/material";
+import { Box, Popover, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
-import { forEach, sortBy } from "lodash";
+import { sortBy } from "lodash";
 import React from "react";
-import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import APBoard from "../Components/APBoard";
+import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
 export class APTimeLineView extends React.Component {
@@ -19,7 +19,6 @@ export class APTimeLineView extends React.Component {
 			popoverEl: null
 		}
 		this.errorData = props.errorData || this.nullErrorData
-
 	}
 
 	nullErrorData = () => {

@@ -59,6 +59,7 @@ export function ConfigDrawer({
                         </Grid>
                     </Grid>
                     <Grid item>
+                        {onChange?
                         <Autocomplete
                             freeSolo
                             multiple
@@ -87,6 +88,7 @@ export function ConfigDrawer({
                                 />
                             )}
                         />
+                        :null}
                     </Grid>
                     <Grid item>
                         <Grid container>

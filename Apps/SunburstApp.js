@@ -1,9 +1,9 @@
 import { arc, partition, select } from "d3";
 import { min } from "lodash";
+import APBoard from "../Components/APBoard";
 import { VIEW_TYPES } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import APBoard from "../Components/APBoard";
-import App from "../Components/App";
+import App from "./App";
 
 export class APSunburstView extends App {
     constructor(props) {

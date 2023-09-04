@@ -1,6 +1,9 @@
-import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInBrowser, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
+import React from "react";
+import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
+import { getCard } from "../utils/Client/Sdk";
 import { APBlocked } from "./AP-Fields/blocked";
 import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";
@@ -8,11 +11,8 @@ import { APPriority } from "./AP-Fields/priority";
 import { APSize } from "./AP-Fields/size";
 import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
-import { ConnectionTable } from "./ConnectionTable";
-import React from "react";
-import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 import { APChildStats } from "./ChildStats";
-import { getCard } from "../utils/Client/Sdk";
+import { ConnectionTable } from "./ConnectionTable";
 
 
 export class APCard extends React.Component {

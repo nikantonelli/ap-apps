@@ -1,13 +1,14 @@
-import { OpenInNew } from "@mui/icons-material";
+import { Settings } from "@mui/icons-material";
 import { Button, Grid, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import { filter, find, forEach, orderBy } from "lodash";
 import React from "react";
-import { APtimebox } from "../Components/AP-Fields/timebox";
-import APBoard from "../Components/APBoard";
 import { APAllocationView } from "../Apps/AllocationApp";
-import App from "../Components/App";
+import { APtimebox } from "../Components/AP-Fields/timebox";
+import App from "./App";
+import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
-import { doRequest, getCardHierarchy } from "../utils/Client/Sdk";
+import { VIEW_TYPES, doRequest, getCardHierarchy } from "../utils/Client/Sdk";
+import APBoard from "../Components/APBoard";
 
 export class PIPlanApp extends App {
 
@@ -17,8 +18,10 @@ export class PIPlanApp extends App {
 
 	constructor(props) {
 		super(props);
+		this.mode = VIEW_TYPES.TREE;	//Default view type
 		var splitActive = this.props.active ? this.props.active.split(',') : []
 		this.state = {
+			...this.state,
 			context: props.board,
 			cards: props.cards || [],
 			planningSeries: [],
@@ -31,14 +34,10 @@ export class PIPlanApp extends App {
 			},
 
 			currentPanel: this.props.panel || 'config',
-			mode: this.props.mode || 'tree',
-			colouring: this.props.colour || 'type',
-			grouping: this.props.group || 'level',
-			showErrors: this.props.eb || 'off',
-			sortType: this.props.sort || 'none',
-			sortDir: this.props.dir || 'ascending',
-			depth: this.props.depth || 3,
-			transitionDone: true
+			
+			
+			transitionDone: true,
+			drawerWidth: this.props.drawerWidth || 400,
 		}
 	}
 
@@ -163,7 +162,7 @@ export class PIPlanApp extends App {
 		this.updateTimeBox(this.state.seriesIncrements, evt.target.value)
 	}
 
-	openInTab = () => {
+	openAsActive = () => {
 		var activeList = this.state.topLevelList.active;
 		var as = ""
 		var ex = ""
@@ -266,11 +265,34 @@ export class PIPlanApp extends App {
 									/>
 								</Grid>
 								<Grid item sx={{ margin: "2px" }}>
-									<Tooltip title="Open Timebox In New Tab">
-										<IconButton onClick={this.openInTab}>
-											<OpenInNew />
-										</IconButton>
-									</Tooltip>
+									<>
+										<Tooltip title="Configure Settings">
+											<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer}>
+												<Settings />
+											</IconButton>
+										</Tooltip>
+										<ConfigDrawer
+											onClose={this.closeDrawer}
+											openInNew={this.openAsActive}
+											width={this.state.drawerWidth}
+											open={this.state.configOpen}
+											items={this.state.topLevelList}
+											allItems={this.props.cards}
+											mode={this.state.mode}
+											modeChange={this.modeChange}
+											sort={this.state.sortType}
+											sortChange={this.sortChange}
+											sortDir={this.state.sortDir}
+											sortDirChange={this.sortDirChange}
+											colour={this.state.colouring}
+											colourChange={this.colourChange}
+											group={this.state.grouping}
+											groupChange={this.groupChange}
+											errors={this.state.showErrors}
+											errorChange={this.errorChange}
+
+										/>
+									</>
 								</Grid>
 							</Grid>
 
@@ -326,30 +348,35 @@ export class PIPlanApp extends App {
 
 
 
-						</div>
-						: null}
-					{this.state.currentPanel === this.PLAN_PANEL ?
-						<div id={this.PLAN_PANEL} className="content">
-							{this.getPanelType()}
-						</div>
-						: null}
-					{this.state.currentPanel === this.PLAN_PANEL ?
-						<div id={this.ALLOC_PANEL} className="content">
-							<APAllocationView
-								target={this.ALLOC_PANEL}
-								board={this.state.context}
-								cards={this.state.topLevelList.active}
-								depth={this.props.depth}
-								colour={this.state.colouring}
-								mode={this.state.mode}
-								sort={this.state.sortType}
-								eb={this.state.showErrors}
-								sortDir={this.state.sortDir}
-								host={this.props.host}
-								timebox={this.state.currentTimebox}
-							/>
-						</div>
-						: null}
+						</div >
+						: null
+					}
+					{
+						this.state.currentPanel === this.PLAN_PANEL ?
+							<div id={this.PLAN_PANEL} className="content">
+								{this.getPanelType()}
+							</div>
+							: null
+					}
+					{
+						this.state.currentPanel === this.PLAN_PANEL ?
+							<div id={this.ALLOC_PANEL} className="content">
+								<APAllocationView
+									target={this.ALLOC_PANEL}
+									board={this.state.context}
+									cards={this.state.topLevelList.active}
+									depth={this.props.depth}
+									colour={this.state.colouring}
+									mode={this.state.mode}
+									sort={this.state.sortType}
+									eb={this.state.showErrors}
+									sortDir={this.state.sortDir}
+									host={this.props.host}
+									timebox={this.state.currentTimebox}
+								/>
+							</div>
+							: null
+					}
 				</>)
 		}
 		else {

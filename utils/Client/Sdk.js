@@ -66,24 +66,23 @@ export const getCardHierarchy = async (host, card, type, depth, up, down) => {
 
 	return new Promise(async (resolve, reject) => {
 
-		if (up) up()
 		var level = depth - 1;
 		switch (type) {
 			case 'children': {
 				if (level < 0) {
-					if (down) down()
 					resolve(card)
 				} else {
 					var result = await getCardChildren(host, card);
 
 					if (result.cards && result.cards.length) {
 						var cardIds = result.cards.map((c) => {
+							if (up) up()
 							return c.id
 						})
 						var realCards = await getCards(host, cardIds)
 						var grc = Promise.all(getRealChildren(host, realCards, level, up, down)).then((results) => {
 
-							
+
 							if (!card.children) {
 								card.children = realCards
 							} else {
@@ -91,13 +90,12 @@ export const getCardHierarchy = async (host, card, type, depth, up, down) => {
 
 							}
 							card.children.forEach((c) => {
+								if (down) down()
 								c.parentId = card.id	//We set this to recreate a tree from d3.stratify if needed
 							})
-							if (down) down()
 							resolve(card);
 						})
 					} else {
-						if (down) down()
 						resolve(card)
 					}
 				}
@@ -114,14 +112,7 @@ export function getRealChildren(host, cards, depth, up, down) {
 	cards.forEach(async (card) => {
 		reqs.push(getCardHierarchy(host, card, 'children', depth, up, down))
 	})
-	// return Promise.all(reqs).then((results) => {
-	// 	var newCards = [];
-	// 	results.forEach((result) => {
-	// 		newCards.push(result)
-	// 	})
-	// 	return newCards;
-	// })
-	return reqs;
+	return reqs
 }
 
 /** If a top level card is a child of something else in the hierarchy, then remove from the upper layer
@@ -169,20 +160,29 @@ export const visitTree = (treeNode, sizFnc, previous) => {
 }
 
 export const createTree = (cards) => {
-	var tree = {id: 'root'}
+	var tree = { id: 'root' }
 	addChildrentoTree(tree, cards)
 	return tree.descendants;
 }
 
 const addChildrentoTree = (item, cards) => {
 	cards.forEach((c) => {
-		if (c.parentId === item.id){
+		if (c.parentId === item.id) {
 			addChildrentoTree(c, cards)
-			item.descendants = 
-			item.descendants? 
-			item.descendants = unionBy(item.descendants, [c]) : 
-			[c]
+			item.descendants =
+				item.descendants ?
+					item.descendants = unionBy(item.descendants, [c]) :
+					[c]
 		}
+	})
+}
+
+
+export const resetChildren = (node) => {
+	node.children = _.union(node.children || [], node.savedChildren || [])
+	node.savedChildren = [];
+	node.children.forEach((child) => {
+		this.resetChildren(child)
 	})
 }
 
