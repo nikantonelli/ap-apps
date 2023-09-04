@@ -1,19 +1,20 @@
-import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, LinearProgress, Menu, MenuItem, Select, Stack, TextField, Tooltip, Typography } from "@mui/material";
-import { hierarchy, stratify, select, scaleOrdinal, quantize, interpolateRainbow, interpolateCool, interpolateWarm, ascending, descending } from "d3";
-import _, { concat, forEach, max } from "lodash";
+import { Autocomplete, Box, Drawer, Grid, LinearProgress, Stack, TextField, Typography } from "@mui/material";
+import { ascending, descending, hierarchy, interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal, select } from "d3";
+import _, { forEach, max } from "lodash";
 
-import { HighlightOff, OpenInNew, Settings } from "@mui/icons-material";
+import { Settings } from "@mui/icons-material";
 
 import React from "react";
 
+import { APTimeLineView } from "../Apps/TimeLineApp";
+import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 import { APCard } from "./APCard";
-import { APTimeLineView } from "../Components/TimeLineApp";
-import { VIEW_TYPES, createTree, flattenChildren, getCard, getCards, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 
+import { APPartitionView } from "../Apps/PartitionApp";
+import { APSunburstView } from "../Apps/SunburstApp";
+import { APTreeView } from "../Apps/TreeApp";
 import App from "./App";
-import { APPartitionView } from "./PartitionApp";
-import { APSunburstView } from "./SunburstApp";
-import { APTreeView } from "./TreeApp";
+import { ConfigDrawer } from "./ConfigDrawer";
 
 export class APBoard extends App {
 
@@ -533,148 +534,28 @@ export class APBoard extends App {
 						<APSunburstView {...appProps}
 						/> : null}
 
-					<Drawer
-
+					<ConfigDrawer
 						onClose={this.closeDrawer}
-						open={Boolean(this.state.drawerOpen)}
-						anchor='left'
-						sx={{
-							width: this.state.drawerWidth,
-							flexShrink: 0,
-							[`& .MuiDrawer-paper`]: { width: this.state.drawerWidth, boxSizing: 'border-box' },
-						}}
-					>
-						<Box>
-							<Grid container direction="column">
-								<Grid item>
-									<Grid container direction="row">
-										<Grid xs={6} item>
-											<Button
-												aria-label="Open As New Tab"
-												onClick={this.openAsActive}
-												endIcon={<OpenInNew />}
-											>
-												Open Copy
-											</Button>
-										</Grid>
-										<Grid xs={6} item>
-											<Grid sx={{ justifyContent: 'flex-end' }} container>
+						onChange={this.handleChangeMultiple}
+						openInNew={this.openAsActive}
+						width={this.state.drawerWidth}
+						open={this.state.drawerOpen}
+						items={this.state.topLevelList}
+						allItems={this.root.children}
+						mode={this.state.mode}
+						modeChange={this.modeChange}
+						sort={this.state.sortType}
+						sortChange={this.sortChange}
+						sortDir={this.state.sortDir}
+						sortDirChange={this.sortDirChange}
+						colour={this.state.colouring}
+						colourChange={this.colourChange}
+						group={this.state.grouping}
+						groupChange={this.groupChange}
+						errors={this.state.showErrors}
+						errorChange={this.errorChange}
 
-												<Tooltip title='Close Settings'>
-													<HighlightOff onClick={this.closeDrawer} />
-												</Tooltip>
-											</Grid>
-										</Grid>
-									</Grid>
-								</Grid>
-								<Grid item>
-									{this.topLevelList()}
-								</Grid>
-								<Grid item>
-									<Grid container>
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Mode</InputLabel>
-												<Select
-													value={this.state.mode}
-													onChange={this.modeChange}
-													label="Mode"
-												>
-													<MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
-													<MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>
-													<MenuItem value={VIEW_TYPES.PARTITION}>Partition</MenuItem>
-													<MenuItem value={VIEW_TYPES.TIMELINE}>Timeline</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Sort By</InputLabel>
-												<Select
-													value={this.state.sortType}
-													onChange={this.sortChange}
-													label="Sort By"
-												>
-													<MenuItem value="none">None</MenuItem>
-													<MenuItem value="plannedStart">Planned Start</MenuItem>
-													<MenuItem value="plannedFinish">Planned End</MenuItem>
-													<MenuItem value="size">Size</MenuItem>
-													<MenuItem value="r_size">Size Rollup</MenuItem>
-													{this.state.mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
-													<MenuItem value="score">Score Total</MenuItem>
-													{this.state.mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
-
-													<MenuItem value="id">ID#</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										<Grid item >
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Sort Direction</InputLabel>
-												<Select
-													value={this.state.sortDir}
-													onChange={this.sortDirChange}
-													label="Sort Direction"
-												>
-													<MenuItem value="ascending">Ascending</MenuItem>
-													<MenuItem value="descending">Descending</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Colours</InputLabel>
-												<Select
-													value={this.state.colouring}
-													onChange={this.colourChange}
-													label="Colours"
-												>
-													<MenuItem value="cool">Cool</MenuItem>
-													<MenuItem value="warm">Warm</MenuItem>
-													<MenuItem value="type">Card Type</MenuItem>
-													<MenuItem value="state">Card State</MenuItem>
-													<MenuItem value="l_user">Last Updater</MenuItem>
-													<MenuItem value="c_user">Creator</MenuItem>
-													<MenuItem value="a_user">First Assignee</MenuItem>
-													<MenuItem value="context">Context</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-										{this.state.mode === VIEW_TYPES.TIMELINE ? (
-											<Grid item>
-												<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-													<InputLabel>Group By</InputLabel>
-													<Select
-														value={this.state.grouping}
-														onChange={this.groupChange}
-														label="Grouping"
-													>
-														<MenuItem value="level">Level</MenuItem>
-														<MenuItem value="context">Context</MenuItem>
-														<MenuItem value="type">Card Type</MenuItem>
-													</Select>
-												</FormControl>
-											</Grid>
-										) : null}
-										<Grid item>
-											<FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-												<InputLabel>Error Bars</InputLabel>
-												<Select
-													value={this.state.showErrors}
-													onChange={this.errorChange}
-													label="Errors"
-												>
-													<MenuItem value="on">On</MenuItem>
-													<MenuItem value="off">Off</MenuItem>
-												</Select>
-											</FormControl>
-										</Grid>
-									</Grid>
-								</Grid>
-
-							</Grid>
-						</Box>
-					</Drawer>
+					/>
 				</Stack >
 			</>
 			)
