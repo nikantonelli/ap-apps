@@ -4,7 +4,7 @@ import { filter, find, forEach, orderBy } from "lodash";
 import React from "react";
 import { APAllocationView } from "../Apps/AllocationApp";
 import { APtimebox } from "../Components/AP-Fields/timebox";
-import App from "./App";
+import { App } from "./App";
 import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
 import { VIEW_TYPES, doRequest, getCardHierarchy } from "../utils/Client/Sdk";
@@ -34,8 +34,6 @@ export class PIPlanApp extends App {
 			},
 
 			currentPanel: this.props.panel || 'config',
-			
-			
 			transitionDone: true,
 			drawerWidth: this.props.drawerWidth || 400,
 		}

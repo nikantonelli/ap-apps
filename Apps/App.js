@@ -1,10 +1,10 @@
-import { BroadcastChannel } from "broadcast-channel";
+import { interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal } from "d3";
+import { findIndex } from "lodash";
 import React from "react";
-import { io } from "socket.io-client";
-import { VIEW_TYPES } from "../utils/Client/Sdk";
 import APBoard from "../Components/APBoard";
+import { VIEW_TYPES } from "../utils/Client/Sdk";
 
-export default class App extends React.Component {
+export class App extends React.Component {
     constructor(props) {
         super(props);
 
@@ -107,7 +107,7 @@ export default class App extends React.Component {
 		//Assigned users is always returned and empty if there are none
 		if (d.data.assignedUsers.length) {
 			user = d.data.assignedUsers[0];
-			var index = _.findIndex(this.assignedUserList, function (assignee) {
+			var index = findIndex(this.assignedUserList, function (assignee) {
 				return user.id === assignee.id;
 			})
 			if (index >= 0) return this.colourFnc(index);
@@ -120,7 +120,7 @@ export default class App extends React.Component {
 		//last update users is always returned and empty if there are none
 		if (d.data.updatedBy) {
 			user = d.data.updatedBy;
-			var index = _.findIndex(this.updatedUserList, function (assignee) {
+			var index = findIndex(this.updatedUserList, function (assignee) {
 				return user.id === assignee.id;
 			})
 			if (index >= 0) return this.colourFnc(index);
@@ -132,7 +132,7 @@ export default class App extends React.Component {
 		var index = -1;
 		//creator users is always returned and empty if there are none
 		if (d.data.createdBy) {
-			index = _.findIndex(this.createdUserList, function (user) {
+			index = findIndex(this.createdUserList, function (user) {
 				return d.data.createdBy.id === user.id;
 			})
 		}
@@ -142,7 +142,7 @@ export default class App extends React.Component {
 
 	contextColouring = (d) => {
 		var boardid = d.data.board.id
-		var index = _.findIndex(this.contextList, function (context) {
+		var index = findIndex(this.contextList, function (context) {
 			return boardid === context.id;
 		})
 		if (index >= 0) return this.colourFnc(index);

@@ -3,16 +3,14 @@ import { min } from "lodash";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, visitTree } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import App from "./App";
+import { App } from "./App";
 
 export class APPartitionView extends App {
 
     static ROW_HEIGHT = 30;
     constructor(props) {
         super(props)
-
         this.mode = VIEW_TYPES.PARTITION
-
     }
 
     doit = () => {

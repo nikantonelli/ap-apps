@@ -1,4 +1,4 @@
-import { findIndex, forEach, pullAt, slice, union, unionBy } from "lodash";
+import { findLastIndex, forEach, orderBy, pullAt, slice, unionBy, uniqBy } from "lodash";
 import { shortDate } from "./Helpers";
 
 export class VIEW_TYPES {
@@ -67,19 +67,22 @@ export const getCardHierarchy = async (host, card, type, depth, up, down) => {
 	return new Promise(async (resolve, reject) => {
 
 		var level = depth - 1;
+
+		if (!card.appData) card.appData = {}
+		card.appData['level'] = depth	//This card is found at this depth - gets reset to lowest value possible.
 		switch (type) {
 			case 'children': {
 				if (level < 0) {
 					resolve(card)
 				} else {
-					var result = await getCardChildren(host, card);
+					var result = await getCardChildren(host, card);	//Only fetches a partial record
 
 					if (result.cards && result.cards.length) {
 						var cardIds = result.cards.map((c) => {
 							if (up) up()
 							return c.id
 						})
-						var realCards = await getCards(host, cardIds)
+						var realCards = await getCards(host, cardIds)	//Gets the whole thing!
 						var grc = Promise.all(getRealChildren(host, realCards, level, up, down)).then((results) => {
 
 
@@ -91,7 +94,9 @@ export const getCardHierarchy = async (host, card, type, depth, up, down) => {
 							}
 							card.children.forEach((c) => {
 								if (down) down()
-								c.parentId = card.id	//We set this to recreate a tree from d3.stratify if needed
+								if (!c.appData) c.appData = {}
+								c.appData['parentId'] = card.id	//We set this to recreate a tree from d3.stratify if needed
+								c.appData['level'] = level
 							})
 							resolve(card);
 						})
@@ -108,10 +113,11 @@ export const getCardHierarchy = async (host, card, type, depth, up, down) => {
 
 export function getRealChildren(host, cards, depth, up, down) {
 	var reqs = [];
-	if (cards.constructor.toString().indexOf("Array") < 0) return [];
-	cards.forEach(async (card) => {
-		reqs.push(getCardHierarchy(host, card, 'children', depth, up, down))
-	})
+	if (cards.length) {
+		cards.forEach(async (card) => {
+			reqs.push(getCardHierarchy(host, card, 'children', depth, up, down))
+		})
+	}
 	return reqs
 }
 
@@ -119,20 +125,10 @@ export function getRealChildren(host, cards, depth, up, down) {
  *  This relies on an array arranged by a nodes followed by their children in topological order as per
  *  the d3 based: node.descendants()
  */
-export const removeDuplicates = (cards) => {
-	var removeIndexes = []
-	cards.forEach((card, idx) => {
-		var cardsToCheck = slice(cards, 0, idx)
-		var pIdx = -1;
-		if (findIndex(cardsToCheck,
-			function (c,) {
-				return c.id === card.id
-			}) >= 0) {
-			removeIndexes.push(findIndex(cards, { id: card.id }))	// findIndex finds the original one first
-		}
-	})
-	pullAt(cards, removeIndexes)
-	return cards
+export const removeDuplicates = (rawCards) => {
+	var cards = orderBy(rawCards,[(card) => card.id, (card) => card.appData.level], ['asc','asc'])
+	var currentCards = uniqBy(cards,(card) => card.id)
+	return currentCards
 }
 
 export const flattenTree = (item, result) => {
@@ -167,7 +163,7 @@ export const createTree = (cards) => {
 
 const addChildrentoTree = (item, cards) => {
 	cards.forEach((c) => {
-		if (c.parentId === item.id) {
+		if (c.appData && (c.appData.parentId === item.id)) {
 			addChildrentoTree(c, cards)
 			item.descendants =
 				item.descendants ?

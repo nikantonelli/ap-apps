@@ -2,7 +2,7 @@ import { min, select, tree } from "d3";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
 import { VIEW_TYPES } from "../utils/Client/Sdk";
-import App from "./App";
+import { App } from "./App";
 import APBoard from "../Components/APBoard";
 
 export class APTreeView extends App {

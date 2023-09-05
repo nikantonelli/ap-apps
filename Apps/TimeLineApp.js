@@ -7,8 +7,9 @@ import React from "react";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
+import { App } from "./App";
 
-export class APTimeLineView extends React.Component {
+export class APTimeLineView extends App {
 
 	constructor(props) {
 		super(props);

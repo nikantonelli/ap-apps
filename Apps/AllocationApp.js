@@ -2,7 +2,7 @@ import { Grid } from "@mui/material";
 import { sortBy, unionBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import App from "./App";
+import { App } from "./App";
 
 export class APAllocationView extends App {
 

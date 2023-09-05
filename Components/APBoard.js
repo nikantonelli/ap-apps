@@ -10,7 +10,7 @@ import { APTimeLineView } from "../Apps/TimeLineApp";
 import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 import { APCard } from "./APCard";
 
-import App from "../Apps/App";
+import { App } from "../Apps/App";
 import { APPartitionView } from "../Apps/PartitionApp";
 import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
@@ -435,7 +435,9 @@ export class APBoard extends App {
 		var me = this;
 		Promise.all(getRealChildren(this.props.host, this.props.cards, this.state.depth, this.countInc, this.countDec)).then((result) => {
 			result.forEach((card) => {
-				card.parentId = 'root'	//For d3.stratify
+				if (!card.appData) card.appData = {}
+				card.appData['parentId'] = 'root'	//For d3.stratify
+				card.appData['level'] = this.state.depth
 			})
 			if (me.props.dedupe) {
 				var flatted = []
