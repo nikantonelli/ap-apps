@@ -10,20 +10,13 @@ import { APTimeLineView } from "../Apps/TimeLineApp";
 import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 import { APCard } from "./APCard";
 
-import { App } from "../Apps/App";
+import { NiksApp } from "../Apps/App";
 import { APPartitionView } from "../Apps/PartitionApp";
 import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
 import { ConfigDrawer } from "./ConfigDrawer";
 
-export class APBoard extends App {
-
-	static DEFAULT_TREE_DEPTH = 3;
-	static DEFAULT_SUNBURST_DEPTH = 3;	//Three rings of children plus the root
-	static OPACITY_HIGH = 1.0;
-	static OPACITY_MEDIUM = 0.7;
-	static OPACITY_LOW = 0.3;
-	static OPACITY_VERY_LOW = 0.1;
+export class APBoard extends NiksApp {
 
 	constructor(props) {
 		super(props)

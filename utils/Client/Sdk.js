@@ -236,7 +236,7 @@ export const doRequest = async (params) => {
 	}
 	//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
 	var req = new Request("http://" + params.host + "/api" + params.url, ps);
-	var res = await fetch(req, { next: { revalidate: 30 } }).then(
+	var res = await fetch(req).then(
 		async (response) => {
 			if (response.ok) {
 				return response

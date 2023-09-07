@@ -2,17 +2,18 @@ import { Grid } from "@mui/material";
 import { sortBy, unionBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import { App } from "./App";
+import { NiksApp } from "./App";
 
-export class APAllocationView extends App {
+export class APAllocationView extends NiksApp {
 
     constructor(props) {
         super(props);
-        this.mode = VIEW_TYPES.ALLOCATION
 
         this.state = {
+            ...this.state,
             popoverId: null,
-            popoverEl: null
+            popoverEl: null,
+            mode: VIEW_TYPES.ALLOCATION
         }
         this.errorData = props.errorData || this.nullErrorData
         this.cards = this.props.cards || []

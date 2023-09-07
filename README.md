@@ -19,9 +19,9 @@ Another variable you can set is AGILEPLACE_CACHE_AGE_LIMIT. This sets the timeou
 
 Once you have everything configured, you can run the 'npm run dev' command to get things going. It can be a little slow because this is the development environment version and will want to compile everything the first time out. The development environment is useful in that it attempts to notice any code changes you make and auto-reload the client (but, it doesn't always happen in a timely fashion!)
 
-If you just want to run the code, the build it (npm run build) and then start it up (npm start)
+If you just want to run the code, the build it (npm run build) and then start it up (npm start). If you want to run in development mode (e.g. you are going to do code changes) use 'npm run dev'
 
-Open a browser window to access "http://localhost:3000". Notice that it is http not https. We are only going locally, so security is not needed (and you would need to have a certificate configured!).
+Open a browser window to access "http://localhost:3000". Notice that it is http not https. We are only going locally, so security is not needed (and you would need to have a certificate configured!). Same goes for any machine on the local network.
 
 I have run this on another machine on the same network as the client, so you can provide this as a server to other people - but once again, it has no user authentication on the client, so all users will look like you when the server accesses AP
 

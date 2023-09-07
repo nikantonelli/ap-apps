@@ -1,14 +1,21 @@
 import { interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal } from "d3";
 import { findIndex } from "lodash";
 import React from "react";
-import APBoard from "../Components/APBoard";
 import { VIEW_TYPES } from "../utils/Client/Sdk";
 
-export class App extends React.Component {
+export class NiksApp extends React.Component {
+	
+	static DEFAULT_TREE_DEPTH = 3;
+	static DEFAULT_SUNBURST_DEPTH = 3;	//Three rings of children plus the root
+	static OPACITY_HIGH = 1.0;
+	static OPACITY_MEDIUM = 0.7;
+	static OPACITY_LOW = 0.3;
+	static OPACITY_VERY_LOW = 0.1;
+
     constructor(props) {
         super(props);
 
-		var stateDepth = this.props.depth || APBoard.DEFAULT_TREE_DEPTH
+		var stateDepth = this.props.depth || NiksApp.DEFAULT_TREE_DEPTH
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
 		
 		
@@ -26,12 +33,8 @@ export class App extends React.Component {
 			
 			configOpen: false,
 			drawerWidth: this.props.drawerWidth || 400,
-        }
-        
-        this.itemsOfInterest = {
-            cards: [],
-            boards: []
-        };
+       }
+  
 
         // if (!globalThis.bc) {
 		// 	globalThis.bc = new BroadcastChannel("nui_socket_ch")

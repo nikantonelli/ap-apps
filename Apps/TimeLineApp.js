@@ -7,17 +7,18 @@ import React from "react";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import { App } from "./App";
+import { NiksApp } from "./App";
 
-export class APTimeLineView extends App {
+export class APTimeLineView extends NiksApp {
 
 	constructor(props) {
 		super(props);
-		this.mode = VIEW_TYPES.TIMELINE
 		
 		this.state = {
+			...this.state,
 			popoverId: null,
-			popoverEl: null
+			popoverEl: null,
+			mode: VIEW_TYPES.TIMELINE
 		}
 		this.errorData = props.errorData || this.nullErrorData
 	}

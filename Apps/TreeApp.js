@@ -2,10 +2,10 @@ import { min, select, tree } from "d3";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
 import { VIEW_TYPES } from "../utils/Client/Sdk";
-import { App } from "./App";
+import { NiksApp } from "./App";
 import APBoard from "../Components/APBoard";
 
-export class APTreeView extends App {
+export class APTreeView extends NiksApp {
     constructor(props) {
         super(props)
         this.mode = VIEW_TYPES.TREE
@@ -143,7 +143,7 @@ export class APTreeView extends App {
 
         nodes.each(function (d, idx, nodeArray) {
             var node = select(this);
-            var opacity = me.opacityDrop ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM;
+            var opacity = me.opacityDrop ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM;
             var colour = me.props.colourise(d);
             var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
             var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)

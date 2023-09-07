@@ -3,9 +3,9 @@ import { min } from "lodash";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import { App } from "./App";
+import { NiksApp } from "./App";
 
-export class APSunburstView extends App {
+export class APSunburstView extends NiksApp {
     constructor(props) {
         super(props)
 
@@ -29,7 +29,7 @@ export class APSunburstView extends App {
 
         var levels = (this.props.depth ?
                 min([parseInt(this.props.depth), this.props.root.height]) :
-                min([APBoard.DEFAULT_SUNBURST_DEPTH, this.props.root.height])
+                min([NiksApp.DEFAULT_SUNBURST_DEPTH, this.props.root.height])
             ) //Number of rings plus the centre
 
         partition()
@@ -81,7 +81,7 @@ export class APSunburstView extends App {
             .attr("fill", d => {
                 return this.colourise(d);
             })
-            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
+            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM) : 0)
             .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
 
             .attr("d", d => nArc(d))
@@ -102,7 +102,7 @@ export class APSunburstView extends App {
                 var eColour = me.props.errorData(d).colour;
                 return eColour.length ? eColour : this.colourise(d);
             })
-            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? APBoard.OPACITY_HIGH : APBoard.OPACITY_MEDIUM) : 0)
+            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM) : 0)
             .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
             .attr("d", d => eArc(d))
             .append("title")

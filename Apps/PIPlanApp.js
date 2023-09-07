@@ -4,21 +4,21 @@ import { filter, find, forEach, orderBy } from "lodash";
 import React from "react";
 import { APAllocationView } from "../Apps/AllocationApp";
 import { APtimebox } from "../Components/AP-Fields/timebox";
-import { App } from "./App";
+import APBoard from "../Components/APBoard";
 import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
 import { VIEW_TYPES, doRequest, getCardHierarchy } from "../utils/Client/Sdk";
-import APBoard from "../Components/APBoard";
+import { NiksApp } from "./App";
 
-export class PIPlanApp extends App {
+export class PIPlanApp extends NiksApp {
 
-	CONFIG_PANEL = "config"
-	PLAN_PANEL = "plan"
-	ALLOC_PANEL = "allocation"
+	static CONFIG_PANEL = "config"
+	static PLAN_PANEL = "plan"
+	static ALLOC_PANEL = "allocation"
 
 	constructor(props) {
 		super(props);
-		this.mode = VIEW_TYPES.TREE;	//Default view type
+		
 		var splitActive = this.props.active ? this.props.active.split(',') : []
 		this.state = {
 			...this.state,
@@ -36,6 +36,7 @@ export class PIPlanApp extends App {
 			currentPanel: this.props.panel || 'config',
 			transitionDone: true,
 			drawerWidth: this.props.drawerWidth || 400,
+			mode: VIEW_TYPES.TREE 	//Default view type
 		}
 	}
 
@@ -219,16 +220,16 @@ export class PIPlanApp extends App {
 			return (
 				<>
 					<Paper>
-						<Button size="small" variant={this.state.currentPanel === this.CONFIG_PANEL ? "contained" : "text"} name={this.CONFIG_PANEL} onClick={this.panelChange}>
+						<Button size="small" variant={this.state.currentPanel === PIPlanApp.CONFIG_PANEL ? "contained" : "text"} name={PIPlanApp.CONFIG_PANEL} onClick={this.panelChange}>
 							Configuration
 						</Button>
 
 						{(this.state.currentSeries && this.state.currentTimebox) ?
 							<>
-								<Button size="small" variant={this.state.currentPanel === this.PLAN_PANEL ? "contained" : "text"} name={this.PLAN_PANEL} onClick={this.panelChange}>
+								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.panelChange}>
 									Planning
 								</Button>
-								<Button size="small" variant={this.state.currentPanel === this.ALLOC_PANEL ? "contained" : "text"} name={this.ALLOC_PANEL} onClick={this.panelChange}>
+								<Button size="small" variant={this.state.currentPanel === PIPlanApp.ALLOC_PANEL ? "contained" : "text"} name={PIPlanApp.ALLOC_PANEL} onClick={this.panelChange}>
 									Allocation
 								</Button>
 							</> :
@@ -243,7 +244,7 @@ export class PIPlanApp extends App {
 								: null}
 						</Button>
 					</Paper>
-					{this.state.currentPanel === this.CONFIG_PANEL ?
+					{this.state.currentPanel === PIPlanApp.CONFIG_PANEL ?
 						<div className="content">
 							<Grid container>
 								<Grid item sx={{ margin: "2px" }}>
@@ -350,17 +351,17 @@ export class PIPlanApp extends App {
 						: null
 					}
 					{
-						this.state.currentPanel === this.PLAN_PANEL ?
-							<div id={this.PLAN_PANEL} className="content">
+						this.state.currentPanel === PIPlanApp.PLAN_PANEL ?
+							<div id={PIPlanApp.PLAN_PANEL} className="content">
 								{this.getPanelType()}
 							</div>
 							: null
 					}
 					{
-						this.state.currentPanel === this.PLAN_PANEL ?
-							<div id={this.ALLOC_PANEL} className="content">
+						this.state.currentPanel === PIPlanApp.PLAN_PANEL ?
+							<div id={PIPlanApp.ALLOC_PANEL} className="content">
 								<APAllocationView
-									target={this.ALLOC_PANEL}
+									target={PIPlanApp.ALLOC_PANEL}
 									board={this.state.context}
 									cards={this.state.topLevelList.active}
 									depth={this.props.depth}
@@ -386,7 +387,7 @@ export class PIPlanApp extends App {
 		return (
 			<>
 				<APBoard
-					target={this.PLAN_PANEL}
+					target={PIPlanApp.PLAN_PANEL}
 					board={this.state.context}
 					cards={this.state.topLevelList.active}
 					depth={this.props.depth}
