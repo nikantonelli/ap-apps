@@ -3,9 +3,9 @@ import { min } from "lodash";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, visitTree } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import { NiksApp } from "./App";
+import { HierarchyApp } from "./HierarchyApp";
 
-export class APPartitionView extends NiksApp {
+export class APPartitionView extends HierarchyApp {
 
     static ROW_HEIGHT = 30;
     constructor(props) {
@@ -29,7 +29,7 @@ export class APPartitionView extends NiksApp {
 
         var columnCount = this.props.depth ?
             min([parseInt(this.props.depth), this.props.root.height]) :
-            min([NiksApp.DEFAULT_TREE_DEPTH, this.props.root.height])
+            min([HierarchyApp.DEFAULT_TREE_DEPTH, this.props.root.height])
 
         function sizeIt(d, prevSize) {
             switch (me.sort) {
@@ -65,7 +65,7 @@ export class APPartitionView extends NiksApp {
             .attr("id", (d, idx) => "rect_" + idx)
             .attr("width", d => d.y1 - d.y0 - 4)
             .attr("height", d => rectHeight(d))
-            .attr("fill-opacity", d => ((d.children && me.opacityDrop) ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM))
+            .attr("fill-opacity", d => ((d.children && me.opacityDrop) ? HierarchyApp.OPACITY_HIGH : HierarchyApp.OPACITY_MEDIUM))
             .attr("fill", d => {
                 return this.colourise(d);
             })
@@ -123,6 +123,6 @@ export class APPartitionView extends NiksApp {
     }
 
     render() {
-        this.doit()
+        if (this.props.root) this.doit()
     }
 }

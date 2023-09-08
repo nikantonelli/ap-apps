@@ -34,23 +34,23 @@ export default class PlanItem extends React.Component {
 
 				</CardHeader>
 				<CardContent sx={{ background: "lightgrey" }}>
-					<Typography sx={{ fontSize: 14 }} colour="text.secondary" gutterBottom>
-						<Grid container>
-							<Grid item xs>
+					<Grid container>
+						<Grid item xs>
+							<Typography sx={{ fontSize: 14 }} colour="text.secondary" gutterBottom>
 								{this.props.card.title}
-							</Grid>
-							<Grid item xs={1}>
-								<Tooltip title="Open Card in AgilePlace">
-									<IconButton
-										size="small"
-										onClick={this.openInNew}
-									>
-										<OpenInNew />
-									</IconButton>
-								</Tooltip>
-							</Grid>
+							</Typography>
 						</Grid>
-					</Typography>
+						<Grid item xs={1}>
+							<Tooltip title="Open Card in AgilePlace">
+								<IconButton
+									size="small"
+									onClick={this.openInNew}
+								>
+									<OpenInNew />
+								</IconButton>
+							</Tooltip>
+						</Grid>
+					</Grid>
 				</CardContent>
 				<CardActions sx={{ backgroundColor: this.props.card.color }} >
 					<Grid container direction={'row'} alignItems={"center"}>
@@ -65,8 +65,6 @@ export default class PlanItem extends React.Component {
 							/> : null}
 						</Grid>
 					</Grid>
-
-
 				</CardActions>
 			</Card>
 		)

@@ -2,117 +2,129 @@ import { min, select, tree } from "d3";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 
 import { VIEW_TYPES } from "../utils/Client/Sdk";
-import { NiksApp } from "./App";
-import APBoard from "../Components/APBoard";
+import { AppRoot } from "./App";
+import { HierarchyApp } from "./HierarchyApp";
 
-export class APTreeView extends NiksApp {
+export class APTreeView extends AppRoot {
     constructor(props) {
         super(props)
         this.mode = VIEW_TYPES.TREE
+        this.setup()
+    }
+
+    componentDidMount() {
+        this.doit()
+    }
+    componentDidUpdate = (prevProps, prevState) => {
+        if (prevProps != this.props) {
+            this.setup()
+        }
+    }
+
+    //Called from constructor, too, so no setState please.
+    setup = () => {
+        this.colouring = this.props.colouring
+        this.sort = this.props.sort
+        this.colourise = this.props.colourise || function () { return "#666666" }
+        this.nodeClicked = this.props.onSvgClick || null;
+        this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
+        //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring
         this.sort = this.props.sort
     }
 
     doit = () => {
+        var svgTarget = document.getElementById("svg_" + this.props.context.id)
         var me = this;
+        if (Boolean(svgTarget)) {
+            var svg = select(svgTarget)
 
-        this.colourise = this.props.colourise || function () { return "#666666" }
-        this.nodeClicked = this.props.onSvgClick || null;
-        this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
+            var colWidth = (this.props.size[0] / (this.props.root.height || 1))
+            var colMargin = 100
+            var rowHeight = 30
 
+            var nTree = tree()
+                .nodeSize([rowHeight, colWidth])
+                .separation(function (a, b) {
+                    return (a.parent === b.parent ? 1 : 1);
+                }
+                );
 
-        //These two are used by the routines in Sdk.js and not here
-        this.colouring = this.props.colouring
-        this.sort = this.props.sort
-        var svg = select(this.props.target)
-        if (!Boolean(svg)) throw new Error("No valid svg given to TreeApp")
+            nTree(this.props.root);
 
-        var colWidth = (this.props.size[0] / (this.props.root.height || 1))
-        var colMargin = 100
-        var rowHeight = 30
-
-        var nTree = tree()
-            .nodeSize([rowHeight, colWidth])
-            .separation(function (a, b) {
-                return (a.parent === b.parent ? 1 : 1);
-            }
-            );
-
-        nTree(this.props.root);
-
-        var smallestY = 0;
-        var biggestY = 0;
-        this.props.root.descendants().slice(1).forEach((d) => {
-            if (d.x < smallestY) smallestY = d.x
-            if (d.x > biggestY) biggestY = d.x
-        })
-        var viewBox = [this.props.size[0], (biggestY - smallestY) + rowHeight]
-        svg.attr('width', viewBox[0] + (rowHeight / 2))
-        svg.attr("height", viewBox[1] + rowHeight)
-        svg.attr('viewBox', (colWidth).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
-
-        svg.attr('preserveAspectRatio', 'none');
-        const g = svg.append("g")
-            .attr("transform", `translate(${rowHeight / 2},${0})`);
-
-        var nodes = g.selectAll("g")
-            .data(this.props.root.descendants().slice(1))
-            .enter()
-
-        var me = this;
-
-        nodes.each(function (d) {
-            d.colMargin = colMargin;
-            d.colWidth = colWidth - colMargin;
-            d.rowHeight = rowHeight;
-        })
-
-
-
-        nodes.append("clipPath")
-            .attr("id", function (d, idx) { d.idx = idx; return "clip_" + idx })
-            .append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
-            .attr("x", function (d) { return d.y })
-            .attr("y", function (d) { return d.x - (d.rowHeight / 2) })
-            .attr("width", function (d) { return d.colWidth })
-            .attr("height", rowHeight)
-
-        //Draw the first time so that we can get the sizes of things.
-        //THe paths routine needs this info, but the side effect is that the bar that is
-        //drawn obliterates the text. We redraw below......
-        nodes.append("text")
-            .attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-            .text(d => getLabel(this, d))
-            .attr("height", rowHeight)
-            .attr("id", function (d) {
-                return "text_" + d.depth + '_' + d.data.id
+            var smallestY = 0;
+            var biggestY = 0;
+            this.props.root.descendants().slice(1).forEach((d) => {
+                if (d.x < smallestY) smallestY = d.x
+                if (d.x > biggestY) biggestY = d.x
             })
-            .attr("x", function (d) { return d.y + (d.rowHeight / 16) })
-            .attr("y", function (d) { return d.x + (d.rowHeight / 8) })
+            var viewBox = [this.props.size[0], (biggestY - smallestY) + rowHeight]
+            svg.attr('width', viewBox[0] + (rowHeight / 2))
+            svg.attr("height", viewBox[1] + rowHeight)
+            svg.attr('viewBox', (colWidth).toString() + ' ' + (smallestY - rowHeight) + ' ' + viewBox[0] + ' ' + (viewBox[1] + rowHeight))
 
-        this.bars(nodes)
-        this.paths(nodes)
+            svg.attr('preserveAspectRatio', 'none');
+            const g = svg.append("g")
+                .attr("transform", `translate(${rowHeight / 2},${0})`);
+
+            var nodes = g.selectAll("g")
+                .data(this.props.root.descendants().slice(1))
+                .enter()
+
+            var me = this;
+
+            nodes.each(function (d) {
+                d.colMargin = colMargin;
+                d.colWidth = colWidth - colMargin;
+                d.rowHeight = rowHeight;
+            })
 
 
-        //Draw it twice so we can put it on top of the line
-        nodes.selectAll("text").remove()
-        nodes.each(function (p, idx, nodeArray) {
-            var node = select(this);
-            node.append("text")
-                .attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
+
+            nodes.append("clipPath")
+                .attr("id", function (d, idx) { d.idx = idx; return "clip_" + idx })
+                .append("rect").attr("id", function (d) { return "rect_" + d.depth + '_' + d.data.id })
+                .attr("x", function (d) { return d.y })
+                .attr("y", function (d) { return d.x - (d.rowHeight / 2) })
+                .attr("width", function (d) { return d.colWidth })
+                .attr("height", rowHeight)
+
+            //Draw the first time so that we can get the sizes of things.
+            //THe paths routine needs this info, but the side effect is that the bar that is
+            //drawn obliterates the text. We redraw below......
+            nodes.append("text")
+                .attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
                 .text(d => getLabel(this, d))
-                .attr("height", rowHeight - 12)
+                .attr("height", rowHeight)
                 .attr("id", function (d) {
                     return "text_" + d.depth + '_' + d.data.id
                 })
-                .on('click', me.nodeClicked)
-                .style("text-anchor", "start")
                 .attr("x", function (d) { return d.y + (d.rowHeight / 16) })
                 .attr("y", function (d) { return d.x + (d.rowHeight / 8) })
-                .style('cursor', 'pointer')
 
-        })
+            this.bars(nodes)
+            this.paths(nodes)
 
+
+            //Draw it twice so we can put it on top of the line
+            nodes.selectAll("text").remove()
+            nodes.each(function (p, idx, nodeArray) {
+                var node = select(this);
+                node.append("text")
+                    .attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
+                    .text(d => getLabel(this, d))
+                    .attr("height", rowHeight - 12)
+                    .attr("id", function (d) {
+                        return "text_" + d.depth + '_' + d.data.id
+                    })
+                    .on('click', me.nodeClicked)
+                    .style("text-anchor", "start")
+                    .attr("x", function (d) { return d.y + (d.rowHeight / 16) })
+                    .attr("y", function (d) { return d.x + (d.rowHeight / 8) })
+                    .style('cursor', 'pointer')
+
+            })
+        }
     }
 
     bars = (nodes) => {
@@ -143,7 +155,7 @@ export class APTreeView extends NiksApp {
 
         nodes.each(function (d, idx, nodeArray) {
             var node = select(this);
-            var opacity = me.opacityDrop ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM;
+            var opacity = me.opacityDrop ? HierarchyApp.OPACITY_HIGH : HierarchyApp.OPACITY_MEDIUM;
             var colour = me.props.colourise(d);
             var rEl = document.getElementById("rect_" + d.depth + '_' + d.data.id)
             var tEl = document.getElementById("text_" + d.depth + '_' + d.data.id)
@@ -237,7 +249,7 @@ export class APTreeView extends NiksApp {
                 .attr("id", function (d) { return "path_" + d.parent.data.id + '_' + d.data.id })
                 .attr("class", function (d) { return "local--link"; })
                 .attr("d", function (d) {
-                    var startPointH = d.parent.y + pWidth + ((d.rowHeight-4) / 2);
+                    var startPointH = d.parent.y + pWidth + ((d.rowHeight - 4) / 2);
                     var startApex = (d.y - (d.parent.y + pWidth)) / 2
                     var startPointV = d.parent.x;
                     var endPointH = d.y - (d.rowHeight / 2);
@@ -252,6 +264,6 @@ export class APTreeView extends NiksApp {
         })
     }
     render() {
-        this.doit()
+        return <svg id={"svg_" + this.props.context.id} />
     }
 }

@@ -1,19 +1,18 @@
 import { arc, partition, select } from "d3";
 import { min } from "lodash";
-import APBoard from "../Components/APBoard";
-import { VIEW_TYPES } from "../utils/Client/Sdk";
+import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import { NiksApp } from "./App";
+import { HierarchyApp } from "./HierarchyApp";
 
-export class APSunburstView extends NiksApp {
+export class APSunburstView extends HierarchyApp {
     constructor(props) {
         super(props)
-
         this.mode = VIEW_TYPES.SUNBURST
-
+        this.colouring = this.props.colouring
+        this.sort = this.props.sort
     }
 
-    doit = () => {
+     doit = () => {
         var me = this;
 
         this.colourise = this.props.colourise || function () { return "#666666" }
@@ -29,7 +28,7 @@ export class APSunburstView extends NiksApp {
 
         var levels = (this.props.depth ?
                 min([parseInt(this.props.depth), this.props.root.height]) :
-                min([NiksApp.DEFAULT_SUNBURST_DEPTH, this.props.root.height])
+                min([HierarchyApp.DEFAULT_SUNBURST_DEPTH, this.props.root.height])
             ) //Number of rings plus the centre
 
         partition()
@@ -81,7 +80,7 @@ export class APSunburstView extends NiksApp {
             .attr("fill", d => {
                 return this.colourise(d);
             })
-            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM) : 0)
+            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? HierarchyApp.OPACITY_HIGH : HierarchyApp.OPACITY_MEDIUM) : 0)
             .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
 
             .attr("d", d => nArc(d))
@@ -102,7 +101,7 @@ export class APSunburstView extends NiksApp {
                 var eColour = me.props.errorData(d).colour;
                 return eColour.length ? eColour : this.colourise(d);
             })
-            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? NiksApp.OPACITY_HIGH : NiksApp.OPACITY_MEDIUM) : 0)
+            .attr("fill-opacity", d => arcVisible(me, d) ? ((d.children && this.props.opacityDrop) ? HierarchyApp.OPACITY_HIGH : HierarchyApp.OPACITY_MEDIUM) : 0)
             .attr("pointer-events", d => arcVisible(me, d) ? "auto" : "none")
             .attr("d", d => eArc(d))
             .append("title")
@@ -173,6 +172,6 @@ export class APSunburstView extends NiksApp {
     }
 
     render() {
-        this.doit()
+        if (this.props.root) this.doit()
     }
 }

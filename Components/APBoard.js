@@ -10,37 +10,109 @@ import { APTimeLineView } from "../Apps/TimeLineApp";
 import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
 import { APCard } from "./APCard";
 
-import { NiksApp } from "../Apps/App";
+import { HierarchyApp } from "../Apps/HierarchyApp";
 import { APPartitionView } from "../Apps/PartitionApp";
 import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
 import { ConfigDrawer } from "./ConfigDrawer";
 
-export class APBoard extends NiksApp {
+export class APBoard extends HierarchyApp {
 
 	constructor(props) {
 		super(props)
 		this.state = {
-			...this.state,	//Bring state in from App
-			board: this.props.board,
+			...this.state,	//Bring state in from higher layers
 			fetchActive: true,
 			active: props.active,
-
-			topLevelList: props.topLevelList || [],
+			rootNode: null,
+			topLevelList: props.topLevelList || [],	//Usally, won't have any here, but just in case we decide to
 			pending: 0,
 			total: 0
 		}
 	}
 
+	/**
+	 * 
+	 * This app has to deal with both D3 (i.e. SVG) based and normal React apps
+	 * so has two types of tree: a d3-hierarchy and a lodash one.
+	 * 
+	 * The lodash one is the 'original' tree created from AP children. We manipulate the
+	 * D3 tree from it, to generate the views we want.
+	 */
+
+	//lodash tree here, D3 one in this.state
 	root = {
 		id: 'root',
 		children: this.props.cards || []
 	};
+
 	assignedUserList = [];
 	createdUserList = [];
 	updatedUserList = [];
 	contextList = [];
 
+	componentDidMount = () => {
+		this.load(this.props.cards);
+		window.addEventListener('resize', this.resize);
+	}
+
+
+	searchNodeTree = (element, id) => {
+		if (element.data.id === id) {
+			return element;
+		}
+		else if (Boolean(element.children)) {
+			var i;
+			var result = null;
+			for (i = 0; result == null && i < element.children.length; i++) {
+				result = this.searchNodeTree(element.children[i], id);
+			}
+			return result
+		}
+		return null;
+	}
+
+	searchRootTree = (element, id) => {
+		if (element.id === id) {
+			return element;
+		}
+		else if (Boolean(element.children)) {
+			var i;
+			var result = null;
+			for (i = 0; result == null && i < element.children.length; i++) {
+				result = this.searchRootTree(element.children[i], id);
+			}
+			return result
+		}
+		return null;
+	}
+
+	load = (usedCards) => {
+		var me = this;
+		if (typeof document !== "undefined") {
+			var svgTarget = document.getElementById("svg_" + this.props.context.id)
+			if (Boolean(svgTarget)) svgTarget.replaceChildren()
+		}
+		Promise.all(getRealChildren(this.props.host, usedCards, this.state.depth, this.countInc, this.countDec)).then((result) => {
+			result.forEach((card) => {
+				if (!card.appData) card.appData = {}
+				card.appData['parentId'] = 'root'	//For d3.stratify
+				card.appData['level'] = this.state.depth
+			})
+			if (me.props.dedupe) {
+				var flatted = []
+				flattenChildren(result, flatted)
+				var reducedTree = removeDuplicates(flatted);
+				this.root.children = createTree(reducedTree)
+			} else {
+				this.root.children = result;
+			}
+			this.setData()
+			this.setState({ fetchActive: false })
+			this.setColouring({ colouring: this.state.colouring })
+
+		})
+	}
 
 	calcTreeData = (rootNode) => {
 		var me = this;
@@ -138,7 +210,7 @@ export class APBoard extends NiksApp {
 
 		rootNode.each((d) => {
 			if (d.data.assignedUsers && d.data.assignedUsers.length) {
-				d.data.assignedUsers.forEach( (user) => {
+				d.data.assignedUsers.forEach((user) => {
 					this.assignedUserList = unionWith(this.assignedUserList, [user], function (a, b) { return b.id === a.id })
 				})
 			}
@@ -158,100 +230,9 @@ export class APBoard extends NiksApp {
 		})
 	};
 
-	getErrorData = (d) => {
-		var data = {
-			colour: "",
-			msg: ""
-		}
-
-		d.opacity = 1.0
-
-		if (this.state.showErrors === 'on') {
-			//Compare dates
-			var pPF = d.parent.data.plannedFinish ? new Date(d.parent.data.plannedFinish).getTime() : null;
-			var pPS = d.parent.data.plannedStart ? new Date(d.parent.data.plannedStart).getTime() : null;
-			var pf = d.data.plannedFinish ? new Date(d.data.plannedFinish).getTime() : null;
-			var ps = d.data.plannedStart ? new Date(d.data.plannedStart).getTime() : null;
-
-			if (d.data.blockedStatus.isBlocked) {
-				data.msg += "BLOCKED.\n"
-				data.colour = "red"
-			}
-
-			if ((pf === null) || (ps === null)) {
-				data.msg += "Incomplete schedule information for this item\n"
-				data.colour = "red"
-			} else {
-				if ((pf > pPF) || (ps >= pPF)) {
-					data.msg += "This item runs beyond parent dates\n"
-					data.colour = "red"
-				}
-				else if (ps < pPS) {
-					data.msg += "This item starts before parent dates\n"
-					data.colour = "#e69500"
-				}
-			}
-
-			if (data.msg.length) {
-				d.opacity = 0.7
-			}
-		}
-		return data;
-	}
-
-	modeChange = (e) => {
-		var newMode = e.target.value;
-		this.setState((prev) => {
-			if (newMode === VIEW_TYPES.TIMELINE) {
-				return { mode: newMode, sortType: 'count' }
-			}
-			if ((prev.sortType === "title") && (newMode === VIEW_TYPES.SUNBURST)) {
-				return { mode: newMode, sortType: 'count' }
-			}
-			else if ((prev.sortType === "count") && (newMode === VIEW_TYPES.TREE)) {
-				return { mode: newMode, sortType: 'size' }
-			}
-			return { mode: newMode }
-		});
-		if (this.props.modeChange) this.props.modeChange(newMode);
-	}
-
-	sortChange = (e) => {
-		var value = e.target.value;
-		this.setState({ sortType: value });
-		if (this.props.sortChange) this.props.sortChange(value);
-
-	}
-
-	sortDirChange = (e) => {
-		var value = e.target.value;
-		this.setState({ sortDir: value });
-		if (this.props.sortDirChange) this.props.sortDirChange(value);
-	}
-
-	errorChange = (e) => {
-		var value = e.target.value;
-		this.setState({ showErrors: value });
-		if (this.props.errorChange) this.props.errorChange(value);
-	}
-
-	groupChange = (e) => {
-		var value = e.target.value;
-		this.setColouring({ colouring: value })
-		this.setState({ grouping: value, colouring: value });
-		if (this.props.groupChange) this.props.groupChange(value);
-	}
-
-	colourChange = (e) => {
-		var value = e.target.value;
-		this.setColouring({ colouring: value })
-
-		if (this.props.colourChange) this.props.colourChange(value);
-	}
-
 	render() {
 		if (typeof document !== "undefined") {
-			var svgTarget = document.getElementById("svg_" + this.state.board.id)
+			var svgTarget = document.getElementById("svg_" + this.props.context.id)
 			if (Boolean(svgTarget)) svgTarget.replaceChildren()
 		}
 		if (!this.state.fetchActive) {
@@ -260,26 +241,25 @@ export class APBoard extends NiksApp {
 
 			var item = this.state.popUp ? this.searchRootTree(this.root, this.state.popUp) : null
 			var appProps = {
+				root: this.state.rootNode,
+				context: this.props.context,	//Needed for labels at least.
+				topLevel: this.state.topLevelList,
 				end: this.dateRangeEnd,
 				start: this.dateRangeStart,
 				grouping: this.state.grouping,
 				size:
 					[
 						window.innerWidth,
-						//document.getElementById("svg_" + this.state.board.id).getBoundingClientRect().width,
+						//document.getElementById("svg_" + this.props.context.id).getBoundingClientRect().width,
 						window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
 					]
 				,
-
-				target: svgTarget,
-				board: this.state.board,
-				root: this.state.rootNode,
 				onClick: this.nodeClicked,
 				onSvgClick: this.svgNodeClicked,
 				sort: this.state.sortType,
 				colouring: this.state.colouring,
 				colourise: this.state.colourise,
-				errorData: this.getErrorData,
+				errorData: this.getD3ErrorData,
 			}
 
 			return (<>
@@ -299,7 +279,7 @@ export class APBoard extends NiksApp {
 									cardProps={{ maxWidth: 700, flexGrow: 1 }}
 									host={this.props.host}
 									card={item}
-									context={this.state.context}
+									context={this.props.context}
 									onClose={this.closePopUp}
 									readOnly
 								/>
@@ -318,7 +298,7 @@ export class APBoard extends NiksApp {
 										variant="standard"
 										sx={{ m: 1, minWidth: 400 }}
 										size="small"
-										defaultValue={this.state.board.title}
+										defaultValue={this.props.context.title}
 										label="Context"
 										InputProps={{ readOnly: true }} />
 								</Grid>
@@ -327,22 +307,17 @@ export class APBoard extends NiksApp {
 						</Grid>
 
 					</Grid>
-					
+
 					{this.state.mode === VIEW_TYPES.TIMELINE ?
 						<APTimeLineView {...appProps}
 						/> : null}
 
 					{this.state.mode === VIEW_TYPES.PARTITION ?
-						<APPartitionView {...appProps}
-						/> : null}
-
+						<APPartitionView {...appProps} /> : null}
 					{this.state.mode === VIEW_TYPES.TREE ?
-						<APTreeView {...appProps}
-
-						/> : null}
+						<APTreeView {...appProps} /> : null}
 					{this.state.mode === VIEW_TYPES.SUNBURST ?
-						<APSunburstView {...appProps}
-						/> : null}
+						<APSunburstView {...appProps} /> : null}
 
 					<ConfigDrawer
 						onClose={this.closeDrawer}
@@ -391,92 +366,7 @@ export class APBoard extends NiksApp {
 		}
 	}
 
-	setData = () => {
-		this.rootNode = hierarchy(this.root)
-		this.setRootNode(this.rootNode)
-	}
-
-	setChildColourIndex = (item) => {
-		item.children && item.children.forEach((child, idx) => {
-			child.index = idx;
-			this.setChildColourIndex(child);
-		})
-	}
-
-	setRootNode = (rootNode) => {
-		this.setChildColourIndex(this.rootNode)
-		var me = this;
-		this.setState((prev) => {
-			return { rootNode: this.rootNode }
-		})
-	}
-
-	countInc = () => {
-		this.setState((prev) => {
-			var next = prev.pending + 1
-			return { pending: next, total: max([prev.total, next]) }
-		})
-	}
-
-	countDec = () => {
-		this.setState((prev) => {
-			return { pending: prev.pending - 1 }
-		})
-	}
-
-	componentDidMount = () => {
-		var me = this;
-		Promise.all(getRealChildren(this.props.host, this.props.cards, this.state.depth, this.countInc, this.countDec)).then((result) => {
-			result.forEach((card) => {
-				if (!card.appData) card.appData = {}
-				card.appData['parentId'] = 'root'	//For d3.stratify
-				card.appData['level'] = this.state.depth
-			})
-			if (me.props.dedupe) {
-				var flatted = []
-				flattenChildren(result, flatted)
-				var reducedTree = removeDuplicates(flatted);
-				this.root.children = createTree(reducedTree)
-			} else {
-				this.root.children = result;
-			}
-			this.setData()
-			this.setState({ fetchActive: false })
-			this.setColouring({ colouring: this.state.colouring })
-		})
-
-		window.addEventListener('resize', this.resize);
-	}
-
-	searchNodeTree = (element, id) => {
-		if (element.data.id === id) {
-			return element;
-		}
-		else if (Boolean(element.children)) {
-			var i;
-			var result = null;
-			for (i = 0; result == null && i < element.children.length; i++) {
-				result = this.searchNodeTree(element.children[i], id);
-			}
-			return result
-		}
-		return null;
-	}
-
-	searchRootTree = (element, id) => {
-		if (element.id === id) {
-			return element;
-		}
-		else if (Boolean(element.children)) {
-			var i;
-			var result = null;
-			for (i = 0; result == null && i < element.children.length; i++) {
-				result = this.searchRootTree(element.children[i], id);
-			}
-			return result
-		}
-		return null;
-	}
+	
 
 	nodeClicked = (ev) => {
 		var node = this.searchNodeTree(this.rootNode, ev.currentTarget.id)
@@ -578,7 +468,7 @@ export class APBoard extends NiksApp {
 		as += "&depth=" + this.state.depth
 		as += "&eb=" + this.state.showErrors
 
-		document.open("/nui/context/" + this.state.board.id + as, "", "noopener=true")
+		document.open("/nui/context/" + this.props.context.id + as, "", "noopener=true")
 	}
 	handleChangeMultiple = (evt, valueList) => {
 		var root = { ...this.root };
@@ -593,7 +483,7 @@ export class APBoard extends NiksApp {
 					}))
 				return (result.length > 0)
 			})
-			root.savedChildren =reject(allChildren, function (child) {
+			root.savedChildren = reject(allChildren, function (child) {
 				var result = (
 					filter(valueList, function (value) {
 						var eqv = value.id === child.id;
@@ -611,5 +501,3 @@ export class APBoard extends NiksApp {
 	}
 
 }
-
-export default APBoard

@@ -7,9 +7,9 @@ import React from "react";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
-import { NiksApp } from "./App";
+import { HierarchyApp } from "./HierarchyApp";
 
-export class APTimeLineView extends NiksApp {
+export class APTimeLineView extends HierarchyApp {
 
 	constructor(props) {
 		super(props);

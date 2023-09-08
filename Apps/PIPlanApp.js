@@ -1,16 +1,16 @@
 import { Settings } from "@mui/icons-material";
-import { Button, Grid, IconButton, Paper, Tooltip, Typography } from "@mui/material";
+import { Button, Grid, IconButton, LinearProgress, Paper, Tooltip, Typography } from "@mui/material";
 import { filter, find, forEach, orderBy } from "lodash";
 import React from "react";
 import { APAllocationView } from "../Apps/AllocationApp";
 import { APtimebox } from "../Components/AP-Fields/timebox";
-import APBoard from "../Components/APBoard";
 import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
-import { VIEW_TYPES, doRequest, getCardHierarchy } from "../utils/Client/Sdk";
-import { NiksApp } from "./App";
+import { VIEW_TYPES, doRequest, getRealChildren } from "../utils/Client/Sdk";
+import { HierarchyApp } from "./HierarchyApp";
+import { APTreeView } from "./TreeApp";
 
-export class PIPlanApp extends NiksApp {
+export class PIPlanApp extends HierarchyApp {
 
 	static CONFIG_PANEL = "config"
 	static PLAN_PANEL = "plan"
@@ -18,11 +18,11 @@ export class PIPlanApp extends NiksApp {
 
 	constructor(props) {
 		super(props);
-		
+
 		var splitActive = this.props.active ? this.props.active.split(',') : []
 		this.state = {
 			...this.state,
-			context: props.board,
+			context: props.context,
 			cards: props.cards || [],
 			planningSeries: [],
 			currentSeries: null,
@@ -32,13 +32,17 @@ export class PIPlanApp extends NiksApp {
 				active: splitActive.length ? splitActive : [],
 				passive: []
 			},
-
 			currentPanel: this.props.panel || 'config',
 			transitionDone: true,
 			drawerWidth: this.props.drawerWidth || 400,
 			mode: VIEW_TYPES.TREE 	//Default view type
 		}
 	}
+
+	root = {
+		id: 'root',
+		children: this.props.cards || []
+	};
 
 	componentDidMount() {
 		//Now get the planning series called "PI Planning" and the sub-increments
@@ -120,41 +124,32 @@ export class PIPlanApp extends NiksApp {
 			})
 		}
 
-		this.data = this.createAllocationData(activeList)
-		this.setState({ topLevelList: { active: activeList, passive: passiveList } })
 		this.setCurrentTimebox(find(timeboxes, { id: tid }))
+		this.data = this.createAllocationData(activeList, passiveList)
 	}
 
-	createAllocationData = async (cardList) => {
-		var groups = [];
-		//Get all the boards
-
-		//First get the hierarchy
-		for (var i = 0; i < cardList.length; i++) {
-			await getCardHierarchy(this.props.host, cardList[i], 'children', this.state.depth)
-
-		}
-
-		// var boards = await findBoards(this.props.host, 
-		// 	{search: 
-		// 		join(
-		// 			uniq( cardList.map((card) => card.board.title)),
-		// 			',')
-		// 	})
-
-		// switch (this.state.grouping) {
-		// 	case 'level': {
-		// 		//Get the levels from the system? Or just use the levesl from the boards we have
-		// 		break;
-		// 	}
-
-		// 	case 'board': {
-
-		// 		break;
-		// 	}
-		// }
-
-		return cardList;
+	createAllocationData = async (activeList, passiveList) => {
+		var me = this;
+		this.fetchActive = true
+		Promise.all(getRealChildren(this.props.host, activeList, this.state.depth, this.countInc, this.countDec)).then((result) => {
+			result.forEach((card) => {
+				if (!card.appData) card.appData = {}
+				card.appData['parentId'] = 'root'	//For d3.stratify
+				card.appData['level'] = this.state.depth
+			})
+			if (me.props.dedupe) {
+				var flatted = []
+				flattenChildren(result, flatted)
+				var reducedTree = removeDuplicates(flatted);
+				me.root.children = createTree(reducedTree)
+			} else {
+				me.root.children = result;
+			}
+			me.fetchActive = false
+			me.setState({ topLevelList: { active: activeList, passive: passiveList } })
+			me.setData()
+			me.setColouring({ colouring: me.state.colouring })
+		})
 	}
 
 	timeboxChange = (evt) => {
@@ -248,22 +243,6 @@ export class PIPlanApp extends NiksApp {
 						<div className="content">
 							<Grid container>
 								<Grid item sx={{ margin: "2px" }}>
-									<APtimebox
-										title="Planning Series"
-										timeBoxChange={this.seriesChange}
-										timeboxes={this.state.planningSeries}
-										initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
-									/>
-								</Grid>
-								<Grid item sx={{ margin: "2px" }}>
-									<APtimebox
-										title="Planning Timebox"
-										timeBoxChange={this.timeboxChange}
-										timeboxes={this.state.seriesIncrements}
-										initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
-									/>
-								</Grid>
-								<Grid item sx={{ margin: "2px" }}>
 									<>
 										<Tooltip title="Configure Settings">
 											<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer}>
@@ -293,7 +272,45 @@ export class PIPlanApp extends NiksApp {
 										/>
 									</>
 								</Grid>
+
+								<Grid item sx={{ margin: "2px" }}>
+									<APtimebox
+										title="Planning Series"
+										timeBoxChange={this.seriesChange}
+										timeboxes={this.state.planningSeries}
+										initialTimeBox={this.state.currentSeries ? this.state.currentSeries.id : null}
+									/>
+								</Grid>
+								<Grid item sx={{ margin: "2px" }}>
+									<APtimebox
+										title="Planning Timebox"
+										timeBoxChange={this.timeboxChange}
+										timeboxes={this.state.seriesIncrements}
+										initialTimeBox={this.state.currentTimebox ? this.state.currentTimebox.id : null}
+									/>
+								</Grid>
+								{this.fetchActive ?
+									<Grid item>
+										<Grid container direction='column' sx={{ display: 'flex', alignItems: 'center' }}>
+											<Grid item>
+												<Typography variant="h6">Loading, please wait</Typography>
+											</Grid>
+											<Grid item sx={{ width: '100%' }}>
+												<Grid container direction="row">
+													<Grid xs={10} item>
+														<LinearProgress variant="determinate" value={Math.round((this.state.total - this.state.pending) / (this.state.total ? this.state.total : 1) * 100)} />
+													</Grid>
+													<Grid xs={2} item>
+														<Typography variant="body2" color="text.secondary">{`${this.state.total}`}</Typography>
+													</Grid>
+												</Grid>
+											</Grid>
+
+										</Grid>
+									</Grid>
+									: null}
 							</Grid>
+
 
 							<Grid container direction="column" className="board-grid">
 								{this.state.topLevelList.active.length ?
@@ -362,9 +379,9 @@ export class PIPlanApp extends NiksApp {
 							<div id={PIPlanApp.ALLOC_PANEL} className="content">
 								<APAllocationView
 									target={PIPlanApp.ALLOC_PANEL}
-									board={this.state.context}
+									context={this.state.context}
 									cards={this.state.topLevelList.active}
-									depth={this.props.depth}
+									depth={this.state.depth}
 									colour={this.state.colouring}
 									mode={this.state.mode}
 									sort={this.state.sortType}
@@ -384,22 +401,39 @@ export class PIPlanApp extends NiksApp {
 	}
 
 	getPanelType = () => {
+		if (typeof document !== "undefined") {
+			var svgTarget = document.getElementById("svg_" + this.state.context.id)
+			if (Boolean(svgTarget)) svgTarget.replaceChildren()
+		
+		var hdrBox = document.getElementById("header-box")
+		var appProps = {
+			root: this.state.rootNode,
+			context: this.props.context,	//Needed for labels at least.
+			topLevel: this.state.topLevelList,
+			end: this.dateRangeEnd,
+			start: this.dateRangeStart,
+			grouping: this.state.grouping,
+			size:
+				[
+					window.innerWidth,
+					window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+				]
+			,
+			target: svgTarget,
+			onClick: this.nodeClicked,
+			onSvgClick: this.svgNodeClicked,
+			sort: this.state.sortType,
+			colouring: this.state.colouring,
+			colourise: this.state.colourise,
+			errorData: this.getD3ErrorData,
+		}
+
 		return (
 			<>
-				<APBoard
-					target={PIPlanApp.PLAN_PANEL}
-					board={this.state.context}
-					cards={this.state.topLevelList.active}
-					depth={this.props.depth}
-					colour={this.state.colouring}
-					mode={this.state.mode}
-					sort={this.state.sortType}
-					eb={this.state.showErrors}
-					sortDir={this.state.sortDir}
-					host={this.props.host}
+				<APTreeView {...appProps}
 				/>
-				<svg id={"svg_" + this.state.context.id} />
 			</>)
+		}
 	}
 	modeChange = (mode) => {
 		this.setState({ mode: mode })

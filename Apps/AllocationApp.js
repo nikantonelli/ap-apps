@@ -2,9 +2,9 @@ import { Grid } from "@mui/material";
 import { sortBy, unionBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import { NiksApp } from "./App";
+import { HierarchyApp } from "./HierarchyApp";
 
-export class APAllocationView extends NiksApp {
+export class APAllocationView extends HierarchyApp {
 
     constructor(props) {
         super(props);

@@ -3,7 +3,7 @@ import { shortDate } from "./Helpers"
 export const getLabel = (me, d) => {
     switch (me.mode) {
         case 'sunburst': {
-            return d.data.id === "root" ? me.props.board.title : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
+            return d.data.id === "root" ? me.props.context.title : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
         }
 
         default:
