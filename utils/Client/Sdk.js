@@ -31,6 +31,21 @@ export const getCard = (host, cardId) => {
 	return doRequest(params);
 }
 
+export const searchRootTree = (element, id) => {
+	if (element.id === id) {
+		return element;
+	}
+	else if (Boolean(element.children)) {
+		var i;
+		var result = null;
+		for (i = 0; result == null && i < element.children.length; i++) {
+			result = searchRootTree(element.children[i], id);
+		}
+		return result
+	}
+	return null;
+}
+
 export const getCards = (host, cardIds) => {
 	var reqs = []
 	if (cardIds.constructor.toString().indexOf("Array") < 0) return null;

@@ -13,16 +13,15 @@ export class APTreeView extends AppRoot {
     }
 
     componentDidMount() {
+        this.setup()
         this.reload()
     }
 
     componentDidUpdate = (prevProps, prevState) => {
-        if (prevProps != this.props) {
-            this.setup()
-        }
+        this.setup()
         this.reload();
     }
-    reload = () =>{
+    reload = () => {
         var svg = document.getElementById("svg_" + this.props.context.id)
         svg.replaceChildren();
         this.doit();
@@ -30,8 +29,6 @@ export class APTreeView extends AppRoot {
 
     //Called from constructor, too, so no setState please.
     setup = () => {
-        this.colouring = this.props.colouring
-        this.sort = this.props.sort
         this.colourise = this.props.colourise || function () { return "#666666" }
         this.nodeClicked = this.props.onSvgClick || null;
         this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }

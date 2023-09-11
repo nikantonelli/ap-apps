@@ -65,3 +65,18 @@ export const getTitle = (me, d) => {
     }
     return d.data.id === "root" ? "" : (d.data.title + " (" + d.data.size + "/" + d.value + ")")
 }
+
+export const searchNodeTree = (element, id) => {
+    if (element.data.id === id) {
+        return element;
+    }
+    else if (Boolean(element.children)) {
+        var i;
+        var result = null;
+        for (i = 0; result == null && i < element.children.length; i++) {
+            result = searchNodeTree(element.children[i], id);
+        }
+        return result
+    }
+    return null;
+}

@@ -7,7 +7,7 @@ import { Settings } from "@mui/icons-material";
 import React from "react";
 
 import { APTimeLineView } from "../Apps/TimeLineApp";
-import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
+import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates, searchRootTree } from "../utils/Client/Sdk";
 import { APCard } from "./APCard";
 
 import { HierarchyApp } from "../Apps/HierarchyApp";
@@ -16,6 +16,7 @@ import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
 import { ConfigDrawer } from "./ConfigDrawer";
 import { ReqsProgress } from "./ReqsProgress";
+import { searchNodeTree } from "../utils/Client/SdkSvg";
 
 export class APBoard extends HierarchyApp {
 
@@ -55,37 +56,6 @@ export class APBoard extends HierarchyApp {
 	componentDidMount = () => {
 		this.load(this.props.cards);
 		window.addEventListener('resize', this.resize);
-	}
-
-
-	searchNodeTree = (element, id) => {
-		if (element.data.id === id) {
-			return element;
-		}
-		else if (Boolean(element.children)) {
-			var i;
-			var result = null;
-			for (i = 0; result == null && i < element.children.length; i++) {
-				result = this.searchNodeTree(element.children[i], id);
-			}
-			return result
-		}
-		return null;
-	}
-
-	searchRootTree = (element, id) => {
-		if (element.id === id) {
-			return element;
-		}
-		else if (Boolean(element.children)) {
-			var i;
-			var result = null;
-			for (i = 0; result == null && i < element.children.length; i++) {
-				result = this.searchRootTree(element.children[i], id);
-			}
-			return result
-		}
-		return null;
 	}
 
 	load = (usedCards) => {
@@ -240,7 +210,7 @@ export class APBoard extends HierarchyApp {
 			var hdrBox = document.getElementById("header-box")
 			this.calcTreeData(this.state.rootNode)
 
-			var item = this.state.popUp ? this.searchRootTree(this.root, this.state.popUp) : null
+			var item = this.state.popUp ? searchRootTree(this.root, this.state.popUp) : null
 			var appProps = {
 				root: this.state.rootNode,
 				context: this.props.context,	//Needed for labels at least.
@@ -355,7 +325,7 @@ export class APBoard extends HierarchyApp {
 	
 
 	nodeClicked = (ev) => {
-		var node = this.searchNodeTree(this.rootNode, ev.currentTarget.id)
+		var node = searchNodeTree(this.rootNode, ev.currentTarget.id)
 		this.svgNodeClicked(ev, node)
 	}
 
@@ -383,9 +353,9 @@ export class APBoard extends HierarchyApp {
 		else if (ev.shiftKey) {
 
 			if (target.data.id != 'root') {
-				var newNode = this.searchNodeTree(me.rootNode, target.data.id)
-				var newRoot = this.searchRootTree(me.root, target.data.id);
-				var parent = this.searchRootTree(me.root, newNode.parent.data.id);
+				var newNode = searchNodeTree(me.rootNode, target.data.id)
+				var newRoot = searchRootTree(me.root, target.data.id);
+				var parent = searchRootTree(me.root, newNode.parent.data.id);
 				if (me.focus === target.data.id) {
 					if (parent && (parent.id !== 'root')) {
 						me.focus = parent.id;
