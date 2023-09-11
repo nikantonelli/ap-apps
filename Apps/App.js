@@ -8,21 +8,27 @@ export class AppRoot extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            pending: 0,
+            reqsPending: 0,
+            reqsComplete: 0,
             total: 0,
             resizeCount: 0,
         }
     }
+    countReset = () => {
+        this.setState({reqsComplete: 0, reqsPending: 0})
+    }
+    
     countInc = () => {
         this.setState((prev) => {
-            var next = prev.pending + 1
-            return { pending: next, total: max([prev.total, next]) }
+            var next = prev.reqsPending + 1
+            return { reqsPending: next }
         })
     }
 
     countDec = () => {
         this.setState((prev) => {
-            return { pending: prev.pending - 1 }
+            var next = prev.reqsComplete + 1
+            return { reqsComplete: next }
         })
     }
     

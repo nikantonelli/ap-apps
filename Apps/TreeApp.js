@@ -13,12 +13,19 @@ export class APTreeView extends AppRoot {
     }
 
     componentDidMount() {
-        this.doit()
+        this.reload()
     }
+
     componentDidUpdate = (prevProps, prevState) => {
         if (prevProps != this.props) {
             this.setup()
         }
+        this.reload();
+    }
+    reload = () =>{
+        var svg = document.getElementById("svg_" + this.props.context.id)
+        svg.replaceChildren();
+        this.doit();
     }
 
     //Called from constructor, too, so no setState please.
@@ -263,6 +270,7 @@ export class APTreeView extends AppRoot {
                 });
         })
     }
+
     render() {
         return <svg id={"svg_" + this.props.context.id} />
     }

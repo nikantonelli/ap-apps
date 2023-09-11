@@ -1,4 +1,4 @@
-import { Box, Drawer, Grid, LinearProgress, Stack, TextField, Typography } from "@mui/material";
+import { Box, Drawer, Grid, Stack, TextField } from "@mui/material";
 import { ascending, descending, hierarchy, select } from "d3";
 import { filter, max, min, reject, union, unionWith } from "lodash";
 
@@ -15,6 +15,7 @@ import { APPartitionView } from "../Apps/PartitionApp";
 import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
 import { ConfigDrawer } from "./ConfigDrawer";
+import { ReqsProgress } from "./ReqsProgress";
 
 export class APBoard extends HierarchyApp {
 
@@ -346,22 +347,7 @@ export class APBoard extends HierarchyApp {
 			)
 		} else {
 			return (
-				<Grid container direction='column' sx={{ display: 'flex', alignItems: 'center' }}>
-					<Grid>
-						<Typography variant="h6">Loading, please wait</Typography>
-					</Grid>
-					<Grid sx={{ width: '100%' }}>
-						<Grid container direction="row">
-							<Grid xs={10} item>
-								<LinearProgress variant="determinate" value={Math.round((this.state.total - this.state.pending) / (this.state.total ? this.state.total : 1) * 100)} />
-							</Grid>
-							<Grid xs={2} item>
-								<Typography variant="body2" color="text.secondary">{`${this.state.total}`}</Typography>
-							</Grid>
-						</Grid>
-					</Grid>
-
-				</Grid>
+				<ReqsProgress pending={this.state.reqsPending} complete={this.state.reqsComplete}/>
 			)
 		}
 	}

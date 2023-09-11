@@ -1,5 +1,5 @@
 import { Settings } from "@mui/icons-material";
-import { Button, Grid, IconButton, LinearProgress, Paper, Tooltip, Typography } from "@mui/material";
+import { Button, Grid, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import { filter, find, forEach, orderBy } from "lodash";
 import React from "react";
 import { APAllocationView } from "../Apps/AllocationApp";
@@ -9,6 +9,8 @@ import PlanItem from "../Components/PlanningItem";
 import { VIEW_TYPES, doRequest, getRealChildren } from "../utils/Client/Sdk";
 import { HierarchyApp } from "./HierarchyApp";
 import { APTreeView } from "./TreeApp";
+import { ReqsProgress } from "../Components/ReqsProgress";
+import { hierarchy } from "d3";
 
 export class PIPlanApp extends HierarchyApp {
 
@@ -131,19 +133,20 @@ export class PIPlanApp extends HierarchyApp {
 	createAllocationData = async (activeList, passiveList) => {
 		var me = this;
 		this.fetchActive = true
-		Promise.all(getRealChildren(this.props.host, activeList, this.state.depth, this.countInc, this.countDec)).then((result) => {
-			result.forEach((card) => {
+		this.countReset();
+		Promise.all(getRealChildren(this.props.host, activeList, this.state.depth, this.countInc, this.countDec)).then((cards) => {
+			cards.forEach((card) => {
 				if (!card.appData) card.appData = {}
 				card.appData['parentId'] = 'root'	//For d3.stratify
 				card.appData['level'] = this.state.depth
 			})
 			if (me.props.dedupe) {
 				var flatted = []
-				flattenChildren(result, flatted)
+				flattenChildren(cards, flatted)
 				var reducedTree = removeDuplicates(flatted);
 				me.root.children = createTree(reducedTree)
 			} else {
-				me.root.children = result;
+				me.root.children = cards;
 			}
 			me.fetchActive = false
 			me.setState({ topLevelList: { active: activeList, passive: passiveList } })
@@ -189,24 +192,23 @@ export class PIPlanApp extends HierarchyApp {
 	}
 
 	cardSelectChange = (id, newState) => {
-		var card = null;
 		this.setState((prevState) => {
+			var topLevelList = {}
 			if (newState === false) {
-				return {
-					topLevelList: {
-						passive: _.union(prevState.topLevelList.passive, _.remove(prevState.topLevelList.active, { id: id })),
-						active: prevState.topLevelList.active
-					}
+				topLevelList = {
+					passive: _.union(prevState.topLevelList.passive, _.remove(prevState.topLevelList.active, { id: id })),
+					active: prevState.topLevelList.active
 				}
 			}
 			else {
-				return {
-					topLevelList: {
-						active: _.union(prevState.topLevelList.active, _.remove(prevState.topLevelList.passive, { id: id })),
-						passive: prevState.topLevelList.passive
-					}
+				topLevelList = {
+					active: _.union(prevState.topLevelList.active, _.remove(prevState.topLevelList.passive, { id: id })),
+					passive: prevState.topLevelList.passive
 				}
 			}
+			this.root.children = topLevelList.active
+			this.rootNode = hierarchy(this.root)
+			return { topLevelList: topLevelList, rootNode: this.rootNode }
 		})
 	}
 
@@ -291,22 +293,7 @@ export class PIPlanApp extends HierarchyApp {
 								</Grid>
 								{this.fetchActive ?
 									<Grid item>
-										<Grid container direction='column' sx={{ display: 'flex', alignItems: 'center' }}>
-											<Grid item>
-												<Typography variant="h6">Loading, please wait</Typography>
-											</Grid>
-											<Grid item sx={{ width: '100%' }}>
-												<Grid container direction="row">
-													<Grid xs={10} item>
-														<LinearProgress variant="determinate" value={Math.round((this.state.total - this.state.pending) / (this.state.total ? this.state.total : 1) * 100)} />
-													</Grid>
-													<Grid xs={2} item>
-														<Typography variant="body2" color="text.secondary">{`${this.state.total}`}</Typography>
-													</Grid>
-												</Grid>
-											</Grid>
-
-										</Grid>
+										<ReqsProgress pending={this.state.reqsPending} complete={this.state.reqsComplete} />
 									</Grid>
 									: null}
 							</Grid>
@@ -404,35 +391,35 @@ export class PIPlanApp extends HierarchyApp {
 		if (typeof document !== "undefined") {
 			var svgTarget = document.getElementById("svg_" + this.state.context.id)
 			if (Boolean(svgTarget)) svgTarget.replaceChildren()
-		
-		var hdrBox = document.getElementById("header-box")
-		var appProps = {
-			root: this.state.rootNode,
-			context: this.props.context,	//Needed for labels at least.
-			topLevel: this.state.topLevelList,
-			end: this.dateRangeEnd,
-			start: this.dateRangeStart,
-			grouping: this.state.grouping,
-			size:
-				[
-					window.innerWidth,
-					window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
-				]
-			,
-			target: svgTarget,
-			onClick: this.nodeClicked,
-			onSvgClick: this.svgNodeClicked,
-			sort: this.state.sortType,
-			colouring: this.state.colouring,
-			colourise: this.state.colourise,
-			errorData: this.getD3ErrorData,
-		}
 
-		return (
-			<>
-				<APTreeView {...appProps}
-				/>
-			</>)
+			var hdrBox = document.getElementById("header-box")
+			var appProps = {
+				root: this.state.rootNode,
+				context: this.props.context,	//Needed for labels at least.
+				topLevel: this.state.topLevelList,
+				end: this.dateRangeEnd,
+				start: this.dateRangeStart,
+				grouping: this.state.grouping,
+				size:
+					[
+						window.innerWidth,
+						window.innerHeight - (hdrBox ? hdrBox.getBoundingClientRect().height : 60) //Pure guesswork on the '60'
+					]
+				,
+				target: svgTarget,
+				onClick: this.nodeClicked,
+				onSvgClick: this.svgNodeClicked,
+				sort: this.state.sortType,
+				colouring: this.state.colouring,
+				colourise: this.state.colourise,
+				errorData: this.getD3ErrorData,
+			}
+
+			return (
+				<>
+					<APTreeView {...appProps}
+					/>
+				</>)
 		}
 	}
 	modeChange = (mode) => {
