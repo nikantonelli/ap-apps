@@ -22,8 +22,8 @@ export class APTreeView extends AppRoot {
         this.reload();
     }
     reload = () => {
-        var svg = document.getElementById("svg_" + this.props.context.id)
-        svg.replaceChildren();
+        this.svg = document.getElementById("svg_" + this.props.context.id)
+        this.svg.replaceChildren();
         this.doit();
     }
 
@@ -38,10 +38,9 @@ export class APTreeView extends AppRoot {
     }
 
     doit = () => {
-        var svgTarget = document.getElementById("svg_" + this.props.context.id)
         var me = this;
-        if (Boolean(svgTarget)) {
-            var svg = select(svgTarget)
+        if (Boolean(this.svg)) {
+            var svg = select(this.svg)
 
             var colWidth = (this.props.size[0] / (this.props.root.height || 1))
             var colMargin = 100

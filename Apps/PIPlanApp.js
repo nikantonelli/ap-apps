@@ -13,6 +13,8 @@ import { ReqsProgress } from "../Components/ReqsProgress";
 import { ascending, descending, hierarchy } from "d3";
 import { APCard } from "../Components/APCard";
 import { searchNodeTree } from "../utils/Client/SdkSvg";
+import { APSunburstView } from "./SunburstApp";
+import { APPartitionView } from "./PartitionApp";
 
 export class PIPlanApp extends HierarchyApp {
 
@@ -363,7 +365,7 @@ export class PIPlanApp extends HierarchyApp {
 							Configuration
 						</Button>
 
-						{(this.state.currentSeries && this.state.currentTimebox) ?
+						{(this.state.currentSeries && this.state.currentTimebox && !this.fetchActive) ?
 							<>
 								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.panelChange}>
 									Planning
@@ -641,6 +643,27 @@ export class PIPlanApp extends HierarchyApp {
 								onSvgClick={this.svgNodeClicked}
 							/>
 						</>)
+				}
+				case 'sunburst': {
+					return (
+						<>
+							<APSunburstView
+								{...appProps}
+								onSvgClick={this.svgNodeClicked}
+							/>
+						</>)
+				}
+				case 'partition': {
+					return (
+						<>
+							<APPartitionView
+								{...appProps}
+								onSvgClick={this.svgNodeClicked}
+							/>
+						</>)
+				}
+				default: {
+					return null;
 				}
 			}
 
