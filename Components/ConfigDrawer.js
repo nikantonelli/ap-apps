@@ -39,15 +39,17 @@ export function ConfigDrawer({
                 <Grid container direction="column">
                     <Grid item>
                         <Grid container direction="row">
-                            <Grid xs item>
-                                <Button
-                                    aria-label="Open As New Tab"
-                                    onClick={openInNew}
-                                    endIcon={<OpenInNew />}
-                                >
-                                    New Tab
-                                </Button>
-                            </Grid>
+                            {openInNew ?
+                                <Grid xs item>
+                                    <Button
+                                        aria-label="Open As New Tab"
+                                        onClick={openInNew}
+                                        endIcon={<OpenInNew />}
+                                    >
+                                        New Tab
+                                    </Button>
+                                </Grid>
+                                : <Grid xs item />}
                             <Grid xs={2} item>
                                 <Grid sx={{ justifyContent: 'flex-end' }} container>
 
@@ -59,36 +61,36 @@ export function ConfigDrawer({
                         </Grid>
                     </Grid>
                     <Grid item>
-                        {onChange?
-                        <Autocomplete
-                            freeSolo
-                            multiple
-                            clearOnEscape
-                            id="root-child-selector"
-                            disableClearable
-                            onChange={onChange}
-                            value={items}
-                            options={allItems}
-                            getOptionLabel={(option) => option.title}
-                            renderOption={(props, option) => {
-                                return (
-                                    <li {...props} key={option.id}>
-                                        {option.title}
-                                    </li>
-                                );
-                            }}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Click here to search cards"
-                                    InputProps={{
-                                        ...params.InputProps,
-                                        type: 'search',
-                                    }}
-                                />
-                            )}
-                        />
-                        :null}
+                        {onChange ?
+                            <Autocomplete
+                                freeSolo
+                                multiple
+                                clearOnEscape
+                                id="root-child-selector"
+                                disableClearable
+                                onChange={onChange}
+                                value={items}
+                                options={allItems}
+                                getOptionLabel={(option) => option.title}
+                                renderOption={(props, option) => {
+                                    return (
+                                        <li {...props} key={option.id}>
+                                            {option.title}
+                                        </li>
+                                    );
+                                }}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Click here to search cards"
+                                        InputProps={{
+                                            ...params.InputProps,
+                                            type: 'search',
+                                        }}
+                                    />
+                                )}
+                            />
+                            : null}
                     </Grid>
                     <Grid item>
                         <Grid container>

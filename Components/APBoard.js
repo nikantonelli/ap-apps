@@ -48,11 +48,6 @@ export class APBoard extends HierarchyApp {
 		children: this.props.cards || []
 	};
 
-	assignedUserList = [];
-	createdUserList = [];
-	updatedUserList = [];
-	contextList = [];
-
 	componentDidMount = () => {
 		this.load(this.props.cards);
 		window.addEventListener('resize', this.resize);

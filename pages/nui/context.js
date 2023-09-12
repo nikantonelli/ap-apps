@@ -1,10 +1,11 @@
-import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Stack, TextField, Tooltip } from "@mui/material";
+import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Paper, Stack, TextField, Tooltip } from "@mui/material";
 import BoardService from "../../services/BoardService";
 
-import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, NextPlan, OpenInNew, Search } from "@mui/icons-material";
+import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, NextPlan, OpenInNew, Search, Settings } from "@mui/icons-material";
 import { useState } from 'react';
 import { findBoards } from "../../utils/Client/Sdk";
 import { orderBy } from "lodash";
+import { ConfigDrawer } from "../../Components/ConfigDrawer";
 
 export default function Board({ host }) {
 
@@ -13,25 +14,20 @@ export default function Board({ host }) {
 	const [timer, setTimer] = useState(null);
 	const [pending, setPending] = useState(false);
 	const [sortField, setSortField] = useState("id")
-	const [sortDir, setSortDir] = useState("desc")
+	const [sortDir, setSortDir] = useState("ascending")
+	const [mode, setMode] = useState('tree')
+	const [grouping, setGrouping] = useState('none')
+	const [sortType, setSortType] = useState('none')
+	const [colouring, setColouring] = useState('type')
+	const [showErrors, setShowErrors] = useState('off')
+	const [drawerOpen, setDrawerOpen] = useState(false)
 
-
-	function treeClicked(evt) {
-		document.open("/nui/context/" + evt.currentTarget.id + "?mode=tree&dedupe=true", "", "noopener=true")
+	function boardClicked(evt) {
+		document.open("/nui/context/" + evt.currentTarget.id + "?mode=" + mode + "&dedupe=true", "", "noopener=true")
 	}
 
-	function sunClicked(evt) {
-		document.open("/nui/context/" + evt.currentTarget.id + "?mode=sunburst&dedupe=true", "", "noopener=true")
-	}
-
-	function partClicked(evt) {
-		document.open("/nui/context/" + evt.currentTarget.id + "?mode=partition&dedupe=true", "", "noopener=true")
-	}
-	function timeClicked(evt) {
-		document.open("/nui/context/" + evt.currentTarget.id + "?mode=timeline&dedupe=true", "", "noopener=true")
-	}
 	function planClicked(evt) {
-		document.open("/nui/planning/" + evt.currentTarget.id , "", "noopener=true")
+		document.open("/nui/planning/" + evt.currentTarget.id, "", "noopener=true")
 	}
 
 	function updateList() {
@@ -68,31 +64,84 @@ export default function Board({ host }) {
 		setPending(false);
 	}
 
+	function closeDrawer() {
+		setDrawerOpen(false)
+	}
+	function openDrawer() {
+		setDrawerOpen(true)
+	}
+
+	function errorChange(evt) {
+		setShowErrors(evt.target.value)
+	}
+	function groupChange(evt) {
+		setGrouping(evt.target.value)
+	}
+	function colourChange(evt) {
+		setColouring(evt.target.value)
+	}
+	function sortDirChange(evt) {
+		setSortDir(evt.target.value)
+	}
+	function sortChange(evt) {
+		setSortType(evt.target.value)
+	}
+	function modeChange(evt) {
+		setMode(evt.target.value)
+	}
+
 	return <Stack>
-		<TextField
-			id="filter-field"
-			label="Filter"
-			helperText="Case insensitive search on title and header"
-			variant="standard"
-			InputProps={{
-				startAdornment: (
-					<InputAdornment position="start">
-						{filterText.length != 0 ?
-							<IconButton onClick={clearFilter} sx={{cursor:'pointer'}}>
-								<Cancel />
-							</IconButton>
-							: null }
-							<Search onClick={updateList} sx={{cursor:'pointer'}}/>
-					</InputAdornment>
-				),
-			}}
-		/>
+		<Paper>
+			<>
+				<Tooltip title="Configure Settings">
+					<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={openDrawer}>
+						<Settings />
+					</IconButton>
+				</Tooltip>
+				<ConfigDrawer
+					onClose={closeDrawer}
+					width={200}
+					open={drawerOpen}
+					mode={mode}
+					modeChange={modeChange}
+					sort={sortType}
+					sortChange={sortChange}
+					sortDir={sortDir}
+					sortDirChange={sortDirChange}
+					colour={colouring}
+					colourChange={colourChange}
+					group={grouping}
+					groupChange={groupChange}
+					errors={showErrors}
+					errorChange={errorChange}
+
+				/>
+			</>
+			<Tooltip title="Type, then click on Magnifying Glass">
+			<TextField
+				id="filter-field"
+				variant="standard"
+				InputProps={{
+					startAdornment: (
+						<InputAdornment position="start">
+							{filterText.length != 0 ?
+								<IconButton onClick={clearFilter} sx={{ cursor: 'pointer' }}>
+									<Cancel />
+								</IconButton>
+								: null}
+							<Search onClick={updateList} sx={{ cursor: 'pointer' }} />
+						</InputAdornment>
+					),
+				}}
+			/>
+</Tooltip>
+		</Paper>
 		{(boards && boards.length) ?
 			<Grid className='board-grid' container >
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							sx={{ minWidth: "300px", backgroundColor: "darkgrey", color: "white" }}
+							sx={{ width: "300px", backgroundColor: "darkgrey", color: "white" }}
 							variant="standard"
 							raised
 						>
@@ -101,50 +150,24 @@ export default function Board({ host }) {
 								sx={{ textAlign: 'center' }}
 							/>
 							<CardActions>
-								<Tooltip title="Parent/Child Tree">
-								<IconButton
-									sx={{ cursor: 'pointer' }}
-									onClick={treeClicked}
-									id={brd.id}
-								>
-									<AccountTree />
-								</IconButton>
+								<Tooltip title="View Hierarchy in New Tab">
+									<IconButton
+										sx={{ cursor: 'pointer' }}
+										onClick={boardClicked}
+										id={brd.id}
+									>
+										<AccountTree />
+									</IconButton>
 								</Tooltip>
-								<Tooltip title="Partition Diagram">
-								<IconButton
-									sx={{ cursor: 'pointer' }}
-									onClick={partClicked}
-									id={brd.id}
-								>
-									< Domain />
-								</IconButton>
-								</Tooltip>
-								<Tooltip title="Sunburst Diagram">
-								<IconButton
-									sx={{ cursor: 'pointer' }}
-									onClick={sunClicked}
-									id={brd.id}
-								>
-									<Brightness7 />
-								</IconButton>
-								</Tooltip>
-								<Tooltip title="Timeline">
-								<IconButton
-									sx={{ cursor: 'pointer' }}
-									onClick={timeClicked}
-									id={brd.id}
-								>
-									<CalendarMonth />
-								</IconButton>
-								</Tooltip>
+
 								<Tooltip title="Planning">
-								<IconButton
-									sx={{ cursor: 'pointer' }}
-									onClick={planClicked}
-									id={brd.id}
-								>
-									<NextPlan />
-								</IconButton>
+									<IconButton
+										sx={{ cursor: 'pointer' }}
+										onClick={planClicked}
+										id={brd.id}
+									>
+										<NextPlan />
+									</IconButton>
 								</Tooltip>
 							</CardActions>
 						</Card>

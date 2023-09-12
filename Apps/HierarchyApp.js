@@ -3,9 +3,10 @@ import { findIndex, max } from "lodash";
 import React from "react";
 import { VIEW_TYPES } from "../utils/Client/Sdk";
 import { AppRoot } from "./App";
+import { searchNodeTree } from "../utils/Client/SdkSvg";
 
 export class HierarchyApp extends AppRoot {
-	
+
 	static DEFAULT_TREE_DEPTH = 3;
 	static DEFAULT_SUNBURST_DEPTH = 3;	//Three rings of children plus the root
 	static OPACITY_HIGH = 1.0;
@@ -13,14 +14,14 @@ export class HierarchyApp extends AppRoot {
 	static OPACITY_LOW = 0.3;
 	static OPACITY_VERY_LOW = 0.1;
 
-    constructor(props) {
-        super(props);
+	constructor(props) {
+		super(props);
 
 		var stateDepth = this.props.depth || HierarchyApp.DEFAULT_TREE_DEPTH
 		if (stateDepth < 0) stateDepth = 99;	//If -1 passed in, then do as much as anyone stupid would want.
-		
-		
-        this.state = {
+
+
+		this.state = {
 			...this.state,
 			popUp: null,
 			depth: stateDepth,
@@ -31,16 +32,15 @@ export class HierarchyApp extends AppRoot {
 			showErrors: this.props.eb || 'off',
 			sortType: this.props.sort || 'none',
 			sortDir: this.props.dir || 'ascending',
-			
+
 			configOpen: false,
 			drawerWidth: this.props.drawerWidth || 400,
-       }
-  
+		}
 
-        // if (!globalThis.bc) {
+		// if (!globalThis.bc) {
 		// 	globalThis.bc = new BroadcastChannel("nui_socket_ch")
 		// 	this.bc = globalThis.bc;
-			
+
 		// } else {
 		// 	this.bc = new BroadcastChannel("nui_socket_ch");
 		// 	this.bc.onmessage = (event) => {
@@ -48,7 +48,7 @@ export class HierarchyApp extends AppRoot {
 		// 	}
 		// }
 
-	
+
 		// if (!globalThis.ws) {
 		// 	globalThis.ws = io()
 
@@ -65,15 +65,19 @@ export class HierarchyApp extends AppRoot {
 		// }
 		// //Connect to endpoint to establish socket set up on server
 		// fetch("/api/socket");
-    }
-    
-	
+	}
+
+	assignedUserList = [];
+	createdUserList = [];
+	updatedUserList = [];
+	contextList = [];
+
 	closePopUp = () => {
 		this.setState({ popUp: null })
 	}
 
 	//Config drawer
-	
+
 	openDrawer = () => {
 		this.setState({ configOpen: true })
 	}
@@ -82,7 +86,7 @@ export class HierarchyApp extends AppRoot {
 		this.setState({ configOpen: false })
 	}
 
-	
+
 	modeChange = (e) => {
 		var newMode = e.target.value;
 		this.setState((prev) => {
@@ -144,7 +148,7 @@ export class HierarchyApp extends AppRoot {
 	colourFnc = null;
 
 	tempColouring = (d) => {
-		var mine = this.searchNodeTree(this.rootNode, d.data.id)
+		var mine = searchNodeTree(this.rootNode, d.data.id)
 		while (mine.parent && mine.parent.data.id != 'root') {
 			mine = mine.parent;
 		}
@@ -268,7 +272,7 @@ export class HierarchyApp extends AppRoot {
 		}
 
 	}
-	
+
 	getD3ErrorData = (d) => {
 		var data = {
 			colour: "",
@@ -311,29 +315,29 @@ export class HierarchyApp extends AppRoot {
 	}
 
 
-    root = {
-        id: 'root',
-        children: this.props.cards || []
-    };
+	root = {
+		id: 'root',
+		children: this.props.cards || []
+	};
 
-    setData = () => {
-        this.rootNode = hierarchy(this.root)
-        this.setRootNode(this.rootNode)
-    }
+	setData = () => {
+		this.rootNode = hierarchy(this.root)
+		this.setRootNode(this.rootNode)
+	}
 
-    setChildColourIndex = (item) => {
-        item.children && item.children.forEach((child, idx) => {
-            child.index = idx;
-            this.setChildColourIndex(child);
-        })
-    }
+	setChildColourIndex = (item) => {
+		item.children && item.children.forEach((child, idx) => {
+			child.index = idx;
+			this.setChildColourIndex(child);
+		})
+	}
 
-    setRootNode = (rootNode) => {
-        this.setChildColourIndex(this.rootNode)
-        var me = this;
-        this.setState((prev) => {
-            return { rootNode: this.rootNode }
-        })
-    }
+	setRootNode = (rootNode) => {
+		this.setChildColourIndex(this.rootNode)
+		var me = this;
+		this.setState((prev) => {
+			return { rootNode: this.rootNode }
+		})
+	}
 
 }
