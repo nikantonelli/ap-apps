@@ -15,6 +15,7 @@ import { APCard } from "../Components/APCard";
 import { searchNodeTree } from "../utils/Client/SdkSvg";
 import { APSunburstView } from "./SunburstApp";
 import { APPartitionView } from "./PartitionApp";
+import { APTimeLineView } from "./TimeLineApp";
 
 export class PIPlanApp extends HierarchyApp {
 
@@ -659,6 +660,15 @@ export class PIPlanApp extends HierarchyApp {
 							<APPartitionView
 								{...appProps}
 								onSvgClick={this.svgNodeClicked}
+							/>
+						</>)
+				}
+				case 'timeline': {
+					return (
+						<>
+							<APTimeLineView
+								{...appProps}
+								onClick={this.nodeClicked}
 							/>
 						</>)
 				}

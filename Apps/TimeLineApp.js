@@ -4,7 +4,6 @@ import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
 import { sortBy } from "lodash";
 import React from "react";
-import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
 import { getLabel, getTitle } from "../utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
@@ -192,7 +191,7 @@ export class APTimeLineView extends HierarchyApp {
 										key={idx}
 										id={node.data.id}
 										className="timeline-text"
-										sx={{ height: "24px", backgroundColor: bCol, textAlign: "left", cursor: 'pointer', opacity: APBoard.OPACITY_MEDIUM }}
+										sx={{ height: "24px", backgroundColor: bCol, textAlign: "left", cursor: 'pointer', opacity: HierarchyApp.OPACITY_MEDIUM }}
 										onClick={this.props.onClick}
 										onMouseEnter={this.popoverOpen}
 										onMouseLeave={this.popoverClose}
