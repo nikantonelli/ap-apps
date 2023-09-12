@@ -39,16 +39,16 @@ export function ConfigDrawer({
                 <Grid container direction="column">
                     <Grid item>
                         <Grid container direction="row">
-                            <Grid xs={6} item>
+                            <Grid xs item>
                                 <Button
                                     aria-label="Open As New Tab"
                                     onClick={openInNew}
                                     endIcon={<OpenInNew />}
                                 >
-                                    Open Copy
+                                    New Tab
                                 </Button>
                             </Grid>
-                            <Grid xs={6} item>
+                            <Grid xs={2} item>
                                 <Grid sx={{ justifyContent: 'flex-end' }} container>
 
                                     <Tooltip title='Close Settings'>
@@ -94,11 +94,11 @@ export function ConfigDrawer({
                         <Grid container>
                             <Grid item>
                                 <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                    <InputLabel>Mode</InputLabel>
+                                    <InputLabel>View</InputLabel>
                                     <Select
                                         value={mode}
                                         onChange={modeChange}
-                                        label="Mode"
+                                        label="View"
                                     >
                                         <MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
                                         <MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>

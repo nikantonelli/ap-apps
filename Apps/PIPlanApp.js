@@ -40,8 +40,8 @@ export class PIPlanApp extends HierarchyApp {
 				passive: []
 			},
 			currentPanel: this.props.panel || 'config',
-			drawerWidth: this.props.drawerWidth || 400,
-			mode: VIEW_TYPES.TREE 	//Default view type
+			drawerWidth: this.props.drawerWidth || 200,
+			mode: this.props.mode || VIEW_TYPES.TREE 	//Default view type
 		}
 	}
 
@@ -190,7 +190,7 @@ export class PIPlanApp extends HierarchyApp {
 					case 'score': {
 						return dirFnc(a.data.scoring.scoreTotal, b.data.scoring.scoreTotal)
 					}
-					
+
 					case 'plannedStart': {
 						return dirFnc(new Date(a.data.plannedStart), new Date(b.data.plannedStart))
 					}
@@ -362,35 +362,34 @@ export class PIPlanApp extends HierarchyApp {
 						</Drawer>
 						: null}
 					<Paper>
-					
-									<>
-										<Tooltip title="Configure Settings">
-											<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer}>
-												<Settings />
-											</IconButton>
-										</Tooltip>
-										<ConfigDrawer
-											onClose={this.closeDrawer}
-											openInNew={this.openAsActive}
-											width={this.state.drawerWidth}
-											open={this.state.configOpen}
-											items={this.state.topLevelList}
-											allItems={this.props.cards}
-											mode={this.state.mode}
-											modeChange={this.modeChange}
-											sort={this.state.sortType}
-											sortChange={this.sortChange}
-											sortDir={this.state.sortDir}
-											sortDirChange={this.sortDirChange}
-											colour={this.state.colouring}
-											colourChange={this.colourChange}
-											group={this.state.grouping}
-											groupChange={this.groupChange}
-											errors={this.state.showErrors}
-											errorChange={this.errorChange}
+						<>
+							<Tooltip title="Configure Settings">
+								<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer}>
+									<Settings />
+								</IconButton>
+							</Tooltip>
+							<ConfigDrawer
+								onClose={this.closeDrawer}
+								openInNew={this.openAsActive}
+								width={this.state.drawerWidth}
+								open={this.state.configOpen}
+								items={this.state.topLevelList}
+								allItems={this.props.cards}
+								mode={this.state.mode}
+								modeChange={this.modeChange}
+								sort={this.state.sortType}
+								sortChange={this.sortChange}
+								sortDir={this.state.sortDir}
+								sortDirChange={this.sortDirChange}
+								colour={this.state.colouring}
+								colourChange={this.colourChange}
+								group={this.state.grouping}
+								groupChange={this.groupChange}
+								errors={this.state.showErrors}
+								errorChange={this.errorChange}
 
-										/>
-									</>
+							/>
+						</>
 						<Button size="small" variant={this.state.currentPanel === PIPlanApp.CONFIG_PANEL ? "contained" : "text"} name={PIPlanApp.CONFIG_PANEL} onClick={this.panelChange}>
 							Configuration
 						</Button>
@@ -398,7 +397,7 @@ export class PIPlanApp extends HierarchyApp {
 						{(this.state.currentSeries && this.state.currentTimebox && !this.fetchActive) ?
 							<>
 								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.panelChange}>
-									Plan
+									View
 								</Button>
 								<Button size="small" variant={this.state.currentPanel === PIPlanApp.ALLOC_PANEL ? "contained" : "text"} name={PIPlanApp.ALLOC_PANEL} onClick={this.panelChange}>
 									Allocation
@@ -418,7 +417,7 @@ export class PIPlanApp extends HierarchyApp {
 					{this.state.currentPanel === PIPlanApp.CONFIG_PANEL ?
 						<div className="content">
 							<Grid container>
-								
+
 
 								<Grid item sx={{ margin: "2px" }}>
 									<APtimebox
