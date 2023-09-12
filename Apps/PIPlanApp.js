@@ -362,34 +362,7 @@ export class PIPlanApp extends HierarchyApp {
 						</Drawer>
 						: null}
 					<Paper>
-						<Button size="small" variant={this.state.currentPanel === PIPlanApp.CONFIG_PANEL ? "contained" : "text"} name={PIPlanApp.CONFIG_PANEL} onClick={this.panelChange}>
-							Configuration
-						</Button>
-
-						{(this.state.currentSeries && this.state.currentTimebox && !this.fetchActive) ?
-							<>
-								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.panelChange}>
-									Planning
-								</Button>
-								<Button size="small" variant={this.state.currentPanel === PIPlanApp.ALLOC_PANEL ? "contained" : "text"} name={PIPlanApp.ALLOC_PANEL} onClick={this.panelChange}>
-									Allocation
-								</Button>
-							</> :
-							null}
-						<Button disabled>
-							<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.context.title + " :"}</Typography>
-							{this.state.currentSeries ?
-								<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.currentSeries.label + " :"}</Typography>
-								: null}
-							{this.state.currentTimebox ?
-								<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.currentTimebox.label}</Typography>
-								: null}
-						</Button>
-					</Paper>
-					{this.state.currentPanel === PIPlanApp.CONFIG_PANEL ?
-						<div className="content">
-							<Grid container>
-								<Grid item sx={{ margin: "2px" }}>
+					
 									<>
 										<Tooltip title="Configure Settings">
 											<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer}>
@@ -418,7 +391,34 @@ export class PIPlanApp extends HierarchyApp {
 
 										/>
 									</>
-								</Grid>
+						<Button size="small" variant={this.state.currentPanel === PIPlanApp.CONFIG_PANEL ? "contained" : "text"} name={PIPlanApp.CONFIG_PANEL} onClick={this.panelChange}>
+							Configuration
+						</Button>
+
+						{(this.state.currentSeries && this.state.currentTimebox && !this.fetchActive) ?
+							<>
+								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.panelChange}>
+									Plan
+								</Button>
+								<Button size="small" variant={this.state.currentPanel === PIPlanApp.ALLOC_PANEL ? "contained" : "text"} name={PIPlanApp.ALLOC_PANEL} onClick={this.panelChange}>
+									Allocation
+								</Button>
+							</> :
+							null}
+						<Button disabled>
+							<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.context.title + " :"}</Typography>
+							{this.state.currentSeries ?
+								<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.currentSeries.label + " :"}</Typography>
+								: null}
+							{this.state.currentTimebox ?
+								<Typography sx={{ padding: "0px 4px 0px 0px" }}>{this.state.currentTimebox.label}</Typography>
+								: null}
+						</Button>
+					</Paper>
+					{this.state.currentPanel === PIPlanApp.CONFIG_PANEL ?
+						<div className="content">
+							<Grid container>
+								
 
 								<Grid item sx={{ margin: "2px" }}>
 									<APtimebox
