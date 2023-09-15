@@ -1,5 +1,5 @@
 import { min, select, tree } from "d3";
-import { getLabel, getTitle } from "../utils/Client/SdkSvg";
+import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
 
 import { VIEW_TYPES } from "../utils/Client/Sdk";
 import { AppRoot } from "./App";
@@ -171,7 +171,7 @@ export class APTreeView extends AppRoot {
 
             var g = node.append("g")
             g.append("title")
-                .text(d => getTitle(me, d));
+                .text(d => getSvgTitle(d, me.sort, me.colouring));
 
             g.append("line")
                 .attr("id", function (d) { return "line_" + d.parent.data.id + '_' + d.data.id })

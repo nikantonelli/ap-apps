@@ -5,7 +5,7 @@ import { scaleLinear } from 'd3';
 import { sortBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import { getLabel, getTitle } from "../utils/Client/SdkSvg";
+import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
 export class APTimeLineView extends HierarchyApp {
@@ -214,7 +214,7 @@ export class APTimeLineView extends HierarchyApp {
 										open={this.state.popoverId === node.data.id}
 										onClose={this.popoverClose}
 										disableRestoreFocus>
-										<Typography sx={{height:"30px"}} align='center' variant="subtitle2">{getTitle(me, node)}</Typography>
+										<Typography sx={{height:"30px"}} align='center' variant="subtitle2">{getSvgTitle(node, me.sort, me.colouring)}</Typography>
 									</Popover>
 
 								</Grid>

@@ -1,7 +1,7 @@
 import { arc, partition, select } from "d3";
 import { min } from "lodash";
 import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
-import { getLabel, getTitle } from "../utils/Client/SdkSvg";
+import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
 export class APSunburstView extends HierarchyApp {
@@ -104,7 +104,7 @@ export class APSunburstView extends HierarchyApp {
                 .on("click", this.nodeClicked);
 
             path.append("title")
-                .text(d => getTitle(me, d))
+                .text(d => getSvgTitle(d, me.sort, me.colouring))
                 ;
 
             var ePath = g.append("g")
@@ -157,7 +157,7 @@ export class APSunburstView extends HierarchyApp {
             const parentTitle = g.append("title")
                 .attr("class", "parentTitle")
                 .datum(this.props.root)
-                .text(d => getTitle(me, d))
+                .text(d => getSvgTitle(d, me.sort, me.colouring))
 
             function arcVisible(me, d) {
                 return (d.y1 < levels) && d.y0 >= 0 && d.x1 > d.x0;

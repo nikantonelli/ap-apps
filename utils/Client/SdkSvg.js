@@ -15,8 +15,8 @@ export const getLabel = (me, d) => {
     }
 }
 
-export const getTitle = (me, d) => {
-    switch (me.sort) {
+export const getSvgTitle = (d, sortBy, colourBy) => {
+    switch (sortBy) {
         case 'plannedStart': {
             return d.data.id === "root" ? "" : (d.data.title + " (" + shortDate(d.data.plannedStart) + ")")
         }
@@ -42,7 +42,7 @@ export const getTitle = (me, d) => {
     }
 
     /** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
-    switch (me.colouring) {
+    switch (colourBy) {
         case 'state': {
             return (d.data.id === "root") ? "" :(d.data.title + " (" + 
                 ((d.data.lane.cardStatus === 'finished') ? ('Finished: ' + shortDate(d.data.actualFinish)) :

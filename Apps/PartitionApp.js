@@ -2,7 +2,7 @@ import { partition, select } from "d3";
 import { min } from "lodash";
 import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, visitTree } from "../utils/Client/Sdk";
-import { getLabel, getTitle } from "../utils/Client/SdkSvg";
+import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
 export class APPartitionView extends HierarchyApp {
@@ -123,7 +123,7 @@ export class APPartitionView extends HierarchyApp {
 
 
             cell.append("title")
-                .text(d => getTitle(me, d));
+                .text(d => getSvgTitle(d, me.sort, me.colouring));
 
 
             function rectHeight(d) {

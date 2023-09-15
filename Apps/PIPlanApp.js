@@ -10,7 +10,7 @@ import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
 import { ReqsProgress } from "../Components/ReqsProgress";
 import { VIEW_TYPES, createTree, doRequest, getRealChildren, searchRootTree } from "../utils/Client/Sdk";
-import { searchNodeTree } from "../utils/Client/SdkSvg";
+import { getSvgTitle, searchNodeTree } from "../utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 import { APPartitionView } from "./PartitionApp";
 import { APSunburstView } from "./SunburstApp";
@@ -157,7 +157,7 @@ export class PIPlanApp extends HierarchyApp {
 				me.root.children = cards;
 			}
 			me.fetchActive = false
-			me.setState({ active :activeList, passive: passiveList })
+			me.setState({topLevelList: { active :activeList, passive: passiveList }})
 			me.setData()
 			me.setColouring({ colouring: me.state.colouring })
 		})
@@ -516,7 +516,7 @@ export class PIPlanApp extends HierarchyApp {
 									contexts={this.contextList}
 									cards={this.state.topLevelList.active}
 									depth={this.state.depth}
-									colour={this.state.colouring}
+									colouring={this.state.colouring}
 									colourise={this.state.colourise}
 									mode={this.state.mode}
 									sort={this.state.sortType}

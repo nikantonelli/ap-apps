@@ -1,8 +1,8 @@
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { filter, sortBy, unionBy } from "lodash";
 import React from "react";
-import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
+import { VIEW_TYPES, flattenChildren, getTitle } from "../utils/Client/Sdk";
 import { HierarchyApp } from "./HierarchyApp";
 import PlanItem from "../Components/PlanningItem";
 
@@ -78,7 +78,7 @@ export class APAllocationView extends HierarchyApp {
     }
 
     calcData = () => {
-        
+
         var items = [];
         flattenChildren(this.cards, items)
 
@@ -114,27 +114,24 @@ export class APAllocationView extends HierarchyApp {
                             <Grid container>
                                 <Grid sx={{ width: "100%" }} >
                                     <Paper square elevation={4} sx={{ margin: "3px", textAlign: "center" }}>
-                                        <Typography sx={{ width: "100%" }} variant="body2">Allocated elsewhere</Typography>
+                                        <Typography sx={{ width: "100%" }} variant="body2">Plan Items</Typography>
                                     </Paper>
                                 </Grid>
                                 <Box sx={{ margin: "3px" }}>
-                                    {items.map((itm, idx) => {
-                                        if (Boolean(itm.planningIncrements) &&
-                                            (itm.planningIncrements.length !== 0)
-                                        ) {
-                                            return (
-                                                <Grid key={itm.id + idx}>
-                                                    <PlanItem
-                                                        onClick={this.nodeClicked}
-                                                        width={this.cardWidth}
-                                                        card={itm}
-                                                        colourise={this.props.colourise} />
-                                                </Grid>
-                                            )
-                                        }
-                                        else {
-                                            return null
-                                        }
+                                    {this.props.cards.map((itm, idx) => {
+                                        return (
+                                            <Grid key={itm.id + idx}>
+                                                <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                    <div>
+                                                        <PlanItem
+                                                            onClick={this.nodeClicked}
+                                                            width={this.cardWidth}
+                                                            card={itm}
+                                                            colourise={this.props.colourise} />
+                                                    </div>
+                                                </Tooltip>
+                                            </Grid>
+                                        )
                                     })}
                                 </Box>
                             </Grid>
@@ -152,11 +149,15 @@ export class APAllocationView extends HierarchyApp {
                                         if (!Boolean(itm.planningIncrements) || (itm.planningIncrements.length === 0)) {
                                             return (
                                                 <Grid key={itm.id + idx}>
-                                                    <PlanItem
-                                                        onClick={this.nodeClicked}
-                                                        width={this.cardWidth}
-                                                        card={itm}
-                                                        colourise={this.props.colourise} />
+                                                    <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                        <div>
+                                                            <PlanItem
+                                                                onClick={this.nodeClicked}
+                                                                width={this.cardWidth}
+                                                                card={itm}
+                                                                colourise={this.props.colourise} />
+                                                        </div>
+                                                    </Tooltip>
                                                 </Grid>
                                             )
                                         }
@@ -183,11 +184,15 @@ export class APAllocationView extends HierarchyApp {
                                                 if (inThis && inThis.length) {
                                                     return (
                                                         <Grid key={itm.id + idx}>
-                                                            <PlanItem
-                                                                onClick={this.nodeClicked}
-                                                                width={this.cardWidth}
-                                                                card={itm}
-                                                                colourise={this.props.colourise} />
+                                                            <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                                <div>
+                                                                    <PlanItem
+                                                                        onClick={this.nodeClicked}
+                                                                        width={this.cardWidth}
+                                                                        card={itm}
+                                                                        colourise={this.props.colourise} />
+                                                                </div>
+                                                            </Tooltip>
                                                         </Grid>
                                                     )
                                                 }

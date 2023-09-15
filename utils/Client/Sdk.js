@@ -310,3 +310,54 @@ export const statusString = (card) => {
 			(" Not Started: " + shortDate(card.plannedStart))
 	)
 }
+
+export const getTitle = (card, sortBy, colourBy) => {
+    switch (sortBy) {
+        case 'plannedStart': {
+            return (card.title + " (" + shortDate(card.plannedStart) + ")")
+        }
+        case 'plannedStart': {
+            return (card.title + " (" + shortDate(card.plannedFinish) + ")")
+        }
+        case 'score': {
+            return (card.title + " (" + card.scoring.scoreTotal + ")")
+        }
+        case 'context': {
+            return (card.title + " (" + card.board.title + ")")
+        }
+        case 'a_user': {
+            return (card.title + " (" + (card.assignedUsers && card.assignedUsers.length ? card.assignedUsers[0].fullName : "No User") + ")")
+        }
+        case 'r_size':
+        case 'size': {
+            return (card.title + " (" + card.size + ")")
+        }
+        default: {
+            //Fall out and try something else - usally if set to 'none'
+        }
+    }
+
+    /** If we don't get it on the sortType, use the colouring type next. Usually means sortType is 'size' */
+    switch (colourBy) {
+        case 'state': {
+            return (card.id === "root") ? "" :(card.title + " (" + 
+                ((card.lane.cardStatus === 'finished') ? ('Finished: ' + shortDate(card.actualFinish)) :
+                    (card.lane.cardStatus === 'started') ? ('Started: ' + shortDate(card.actualStart)) :
+                        ("Not Started: " + shortDate(card.plannedStart))
+                ) + ")")
+        }
+        case 'context': {
+            return (card.title + " (" + card.board.title + ")")
+        }
+        case 'type': {
+            return (card.title + " (" + card.type.title + ")")
+        }
+        case 'l_user': {
+            return (card.title + " (" + card.updatedBy.fullName + ")")
+        }
+        case 'c_user': {
+            return (card.title + " (" + card.createdBy.fullName + ")")
+        }
+    }
+    return (card.title + " (" + card.size + ")")
+}

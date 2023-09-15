@@ -1,6 +1,7 @@
-import { Switch, Typography } from "@mui/material";
+import { Switch, Tooltip, Typography } from "@mui/material";
 import Grid from '@mui/material/Unstable_Grid2';
 import React from "react";
+import { getSvgTitle } from "../utils/Client/SdkSvg";
 
 /**
  * props:
@@ -23,10 +24,9 @@ export default class PlanItem extends React.Component {
 	}
 
 	componentDidUpdate = (prevProps, prevState) => {
-		if (prevProps != this.props)
-		{
+		if (prevProps != this.props) {
 			this.setup()
-			this.setState({flag : !prevProps.flag})
+			this.setState({ flag: !prevProps.flag })
 		}
 	}
 	selectChange = (evt) => {
@@ -39,6 +39,7 @@ export default class PlanItem extends React.Component {
 
 	render() {
 		const label = { inputProps: { 'aria-label': 'Include in Plan Switch' } };
+
 		return (
 			// <Card sx={{ minWidth: 200, maxWidth: 400, opacity: this.props.selected ? 1 : 0.3 }}>
 			// 	<CardHeader sx={{ backgroundColor: this.props.card.color }} subheader=
@@ -83,7 +84,6 @@ export default class PlanItem extends React.Component {
 			// 	</CardActions>
 			// 	:null}
 			// </Card>
-
 			<Grid
 				container
 				spacing={1}
