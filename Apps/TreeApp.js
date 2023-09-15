@@ -1,7 +1,7 @@
 import { min, select, tree } from "d3";
-import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
+import { getLabel, getSvgTitle } from "../Utils/Client/SdkSvg";
 
-import { VIEW_TYPES } from "../utils/Client/Sdk";
+import { VIEW_TYPES } from "../Utils/Client/Sdk";
 import { AppRoot } from "./App";
 import { HierarchyApp } from "./HierarchyApp";
 

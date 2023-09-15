@@ -1,4 +1,4 @@
-import DataProvider from "../../../../utils/Server/DataProvider";
+import DataProvider from "../../../../Utils/Server/DataProvider";
 
 /**
  * Board redirection

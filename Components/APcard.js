@@ -3,7 +3,7 @@ import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardC
 
 import React from "react";
 import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
-import { getCard } from "../utils/Client/Sdk";
+import { getCard } from "../Utils/Client/Sdk";
 import { APBlocked } from "./AP-Fields/blocked";
 import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";

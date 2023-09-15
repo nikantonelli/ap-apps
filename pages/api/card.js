@@ -1,6 +1,6 @@
 
 
-import  DataProvider from "../../utils/Server/DataProvider"
+import  DataProvider from "../../Utils/Server/DataProvider"
 
 export default async function handler(req, res) {
 	

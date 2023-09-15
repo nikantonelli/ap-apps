@@ -2,7 +2,7 @@ import { Box, Paper, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { filter, sortBy, unionBy } from "lodash";
 import React from "react";
-import { VIEW_TYPES, flattenChildren, getTitle } from "../utils/Client/Sdk";
+import { VIEW_TYPES, flattenChildren, getTitle } from "../Utils/Client/Sdk";
 import { HierarchyApp } from "./HierarchyApp";
 import PlanItem from "../Components/PlanningItem";
 

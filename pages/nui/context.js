@@ -1,12 +1,12 @@
 import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Paper, Stack, TextField, Tooltip } from "@mui/material";
-import BoardService from "../../services/BoardService";
+import BoardService from "../../Services/BoardService";
 
 import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, NextPlan, OpenInNew, Search, Settings } from "@mui/icons-material";
 import { useState } from 'react';
-import { findBoards } from "../../utils/Client/Sdk";
+import { findBoards } from "../../Utils/Client/Sdk";
 import { orderBy } from "lodash";
 import { ConfigDrawer } from "../../Components/ConfigDrawer";
-import { extractOpts } from "../../utils/Server/Helpers";
+import { extractOpts } from "../../Utils/Server/Helpers";
 
 export default function Board({ host, grouping, mode, eb, colour, field, dir }) {
 

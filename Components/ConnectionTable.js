@@ -3,8 +3,8 @@ import { DataGrid } from "@mui/x-data-grid";
 import React from "react";
 import { cloneDeep } from "lodash";
 import { titleFieldStyle, titlePaperStyle } from "../styles/globals";
-import { shortDate } from "../utils/Client/Helpers";
-import { statusString } from "../utils/Client/Sdk";
+import { shortDate } from "../Utils/Client/Helpers";
+import { statusString } from "../Utils/Client/Sdk";
 export class ConnectionTable extends React.Component {
 	columns = [
 		{ field: 'title', headerName: 'Title', width: 400 },

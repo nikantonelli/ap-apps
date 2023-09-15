@@ -1,6 +1,6 @@
 import React from "react";
-import CardService from "../../../services/CardService";
-import DataProvider from "../../../utils/Server/DataProvider";
+import CardService from "../../../Services/CardService";
+import DataProvider from "../../../Utils/Server/DataProvider";
 
 import { APCard } from "../../../Components/APCard";
 

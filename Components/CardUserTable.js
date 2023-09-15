@@ -1,6 +1,6 @@
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import React from "react";
-import { shortDate } from "../utils/Client/Helpers";
+import { shortDate } from "../Utils/Client/Helpers";
 
 export class CardUserTable extends React.Component {
 

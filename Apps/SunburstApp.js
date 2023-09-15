@@ -1,7 +1,7 @@
 import { arc, partition, select } from "d3";
 import { min } from "lodash";
-import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../utils/Client/Sdk";
-import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
+import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../Utils/Client/Sdk";
+import { getLabel, getSvgTitle } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
 export class APSunburstView extends HierarchyApp {

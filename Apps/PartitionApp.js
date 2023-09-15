@@ -1,8 +1,8 @@
 import { partition, select } from "d3";
 import { min } from "lodash";
 import APBoard from "../Components/APBoard";
-import { VIEW_TYPES, visitTree } from "../utils/Client/Sdk";
-import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
+import { VIEW_TYPES, visitTree } from "../Utils/Client/Sdk";
+import { getLabel, getSvgTitle } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
 export class APPartitionView extends HierarchyApp {

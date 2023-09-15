@@ -1,7 +1,7 @@
 import { PIPlanApp } from "../../../Apps/PIPlanApp";
-import BoardService from "../../../services/BoardService";
-import DataProvider from "../../../utils/Server/DataProvider";
-import { extractOpts } from "../../../utils/Server/Helpers";
+import BoardService from "../../../Services/BoardService";
+import DataProvider from "../../../Utils/Server/DataProvider";
+import { extractOpts } from "../../../Utils/Server/Helpers";
 
 export default function Planning(props) {
 	return (

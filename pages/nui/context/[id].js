@@ -1,8 +1,8 @@
 import { HierarchyApp } from "../../../Apps/HierarchyApp";
 import { APBoard } from "../../../Components/APBoard";
-import BoardService from "../../../services/BoardService";
-import DataProvider from "../../../utils/Server/DataProvider";
-import { extractOpts } from "../../../utils/Server/Helpers";
+import BoardService from "../../../Services/BoardService";
+import DataProvider from "../../../Utils/Server/DataProvider";
+import { extractOpts } from "../../../Utils/Server/Helpers";
 
 export default function Board(props) {
 	return (

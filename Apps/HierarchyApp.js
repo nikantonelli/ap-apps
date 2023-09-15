@@ -1,9 +1,9 @@
 import { interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal, hierarchy } from "d3";
 import { findIndex, max } from "lodash";
 import React from "react";
-import { VIEW_TYPES } from "../utils/Client/Sdk";
+import { VIEW_TYPES } from "../Utils/Client/Sdk";
 import { AppRoot } from "./App";
-import { searchNodeTree } from "../utils/Client/SdkSvg";
+import { searchNodeTree } from "../Utils/Client/SdkSvg";
 
 export class HierarchyApp extends AppRoot {
 

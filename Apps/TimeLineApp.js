@@ -4,8 +4,8 @@ import Grid from "@mui/material/Unstable_Grid2";
 import { scaleLinear } from 'd3';
 import { sortBy } from "lodash";
 import React from "react";
-import { VIEW_TYPES, flattenChildren } from "../utils/Client/Sdk";
-import { getLabel, getSvgTitle } from "../utils/Client/SdkSvg";
+import { VIEW_TYPES, flattenChildren } from "../Utils/Client/Sdk";
+import { getLabel, getSvgTitle } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
 export class APTimeLineView extends HierarchyApp {

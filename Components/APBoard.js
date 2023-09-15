@@ -7,7 +7,7 @@ import { Settings } from "@mui/icons-material";
 import React from "react";
 
 import { APTimeLineView } from "../Apps/TimeLineApp";
-import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates, searchRootTree } from "../utils/Client/Sdk";
+import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates, searchRootTree } from "../Utils/Client/Sdk";
 import { APCard } from "./APCard";
 
 import { HierarchyApp } from "../Apps/HierarchyApp";
@@ -16,7 +16,7 @@ import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
 import { ConfigDrawer } from "./ConfigDrawer";
 import { ReqsProgress } from "./ReqsProgress";
-import { searchNodeTree } from "../utils/Client/SdkSvg";
+import { searchNodeTree } from "../Utils/Client/SdkSvg";
 
 export class APBoard extends HierarchyApp {
 

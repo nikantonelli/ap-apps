@@ -1,6 +1,6 @@
 import { HighlightOff, OpenInNew } from "@mui/icons-material";
 import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Tooltip } from "@mui/material";
-import { VIEW_TYPES } from "../utils/Client/Sdk";
+import { VIEW_TYPES } from "../Utils/Client/Sdk";
 
 export function ConfigDrawer({
     onClose,

@@ -1,7 +1,7 @@
 import { interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal, hierarchy } from "d3";
 import { findIndex, max } from "lodash";
 import React from "react";
-import { VIEW_TYPES } from "../utils/Client/Sdk";
+import { VIEW_TYPES } from "../Utils/Client/Sdk";
 
 export class AppRoot extends React.Component {
     	
