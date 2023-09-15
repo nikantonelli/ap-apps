@@ -6,24 +6,24 @@ import { useState } from 'react';
 import { findBoards } from "../../utils/Client/Sdk";
 import { orderBy } from "lodash";
 import { ConfigDrawer } from "../../Components/ConfigDrawer";
+import { extractOpts } from "../../utils/Server/Helpers";
 
-export default function Board({ host }) {
+export default function Board({ host, grouping, mode, eb, colour, field, dir }) {
 
 	const [boards, setBoards] = useState([]);
 	const [filterText, setFilterText] = useState("");
-	const [timer, setTimer] = useState(null);
 	const [pending, setPending] = useState(false);
-	const [sortField, setSortField] = useState("id")
-	const [sortDir, setSortDir] = useState("ascending")
-	const [mode, setMode] = useState('tree')
-	const [grouping, setGrouping] = useState('none')
-	const [sortType, setSortType] = useState('none')
-	const [colouring, setColouring] = useState('type')
-	const [showErrors, setShowErrors] = useState('off')
+	const [sortField, setLSortField] = useState(field || "id")
+	const [lSortDir, setLSortDir] = useState(dir || "asc")
+	const [lMode, setLMode] = useState(mode || 'tree')
+	const [lGrouping, setLGrouping] = useState(grouping || 'none')
+	const [lSortType, setLSortType] = useState('none')
+	const [lColouring, setLColouring] = useState(colour|| 'type')
+	const [lShowErrors, setLShowErrors] = useState(eb || 'off')
 	const [drawerOpen, setDrawerOpen] = useState(false)
 
 	function boardClicked(evt) {
-		document.open("/nui/context/" + evt.currentTarget.id + "?mode=" + mode + "&dedupe=true", "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id + "?mode=" + lMode + "&dedupe=true", "", "noopener=true")
 	}
 
 	function planClicked(evt) {
@@ -37,7 +37,7 @@ export default function Board({ host }) {
 	}
 
 	function sortBoards(boards) {
-		var sortedBoards = orderBy(boards, [sortField], [sortDir])
+		var sortedBoards = orderBy(boards, [sortField], [lSortDir])
 		return sortedBoards;
 	}
 
@@ -54,7 +54,6 @@ export default function Board({ host }) {
 		setPending(true);
 		var ft = filterText;
 		getList(ft)
-
 	}
 
 	function clearFilter() {
@@ -72,28 +71,38 @@ export default function Board({ host }) {
 	}
 
 	function errorChange(evt) {
-		setShowErrors(evt.target.value)
+		setPending(false);
+		setLShowErrors(evt.target.value)
 	}
 	function groupChange(evt) {
-		setGrouping(evt.target.value)
+		setPending(false);
+		setLGrouping(evt.target.value)
 	}
 	function colourChange(evt) {
-		setColouring(evt.target.value)
+		setPending(false);
+		setLColouring(evt.target.value)
 	}
 	function sortDirChange(evt) {
-		setSortDir(evt.target.value)
+		setPending(false);
+		setLSortDir(evt.target.value)
 	}
 	function sortChange(evt) {
-		setSortType(evt.target.value)
+		setPending(false);
+		setLSortType(evt.target.value)
 	}
 	function modeChange(evt) {
-		setMode(evt.target.value)
+		setPending(false);
+		setLMode(evt.target.value)
 	}
 
+	function fieldChange(evt) {
+		setPending(false);
+		setLSortField(evt.target.value)
+	}
 	return <Stack>
 		<Paper>
 			<>
-				<Tooltip title="Configure Settings">
+				<Tooltip title="View Settings">
 					<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={openDrawer}>
 						<Settings />
 					</IconButton>
@@ -102,19 +111,12 @@ export default function Board({ host }) {
 					onClose={closeDrawer}
 					width={200}
 					open={drawerOpen}
-					mode={mode}
+					mode={lMode}
 					modeChange={modeChange}
-					sort={sortType}
-					sortChange={sortChange}
-					sortDir={sortDir}
+					field={sortField}
+					fieldChange={fieldChange}
+					sortDir={lSortDir}
 					sortDirChange={sortDirChange}
-					colour={colouring}
-					colourChange={colourChange}
-					group={grouping}
-					groupChange={groupChange}
-					errors={showErrors}
-					errorChange={errorChange}
-
 				/>
 			</>
 			<Tooltip title="Type, then click on Magnifying Glass">
@@ -141,7 +143,7 @@ export default function Board({ host }) {
 				{boards.map((brd, key) => {
 					return <Grid key={key} item>
 						<Card
-							sx={{ width: "300px", backgroundColor: "darkgrey", color: "white" }}
+							sx={{ width: "400px", backgroundColor: "darkgrey", color: "white" }}
 							variant="standard"
 							raised
 						>
@@ -179,9 +181,11 @@ export default function Board({ host }) {
 
 }
 
-export function getServerSideProps(context) {
+export function getServerSideProps({ req, query }) {
 
-	var props = { props: { host: context.req.headers.host } };
+	var appProps = { host: req.headers.host }
+	extractOpts(query, appProps)
+
 	//Find the url to this server and pass to client-side
-	return props;
+	return {props: appProps};
 }

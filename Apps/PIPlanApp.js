@@ -1,21 +1,21 @@
-import { Settings, WifiTetheringOffSharp } from "@mui/icons-material";
+import { Settings } from "@mui/icons-material";
 import { Box, Button, Drawer, Grid, IconButton, Paper, Tooltip, Typography } from "@mui/material";
-import { filter, find, forEach, max, min, orderBy, union, unionWith } from "lodash";
+import { ascending, descending, hierarchy } from "d3";
+import { filter, find, forEach, intersectionWith, max, min, orderBy, union, unionWith } from "lodash";
 import React from "react";
 import { APAllocationView } from "../Apps/AllocationApp";
 import { APtimebox } from "../Components/AP-Fields/timebox";
+import { APCard } from "../Components/APCard";
 import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
-import { VIEW_TYPES, doRequest, getRealChildren, searchRootTree } from "../utils/Client/Sdk";
-import { HierarchyApp } from "./HierarchyApp";
-import { APTreeView } from "./TreeApp";
 import { ReqsProgress } from "../Components/ReqsProgress";
-import { ascending, descending, hierarchy } from "d3";
-import { APCard } from "../Components/APCard";
+import { VIEW_TYPES, createTree, doRequest, getRealChildren, searchRootTree } from "../utils/Client/Sdk";
 import { searchNodeTree } from "../utils/Client/SdkSvg";
-import { APSunburstView } from "./SunburstApp";
+import { HierarchyApp } from "./HierarchyApp";
 import { APPartitionView } from "./PartitionApp";
+import { APSunburstView } from "./SunburstApp";
 import { APTimeLineView } from "./TimeLineApp";
+import { APTreeView } from "./TreeApp";
 
 export class PIPlanApp extends HierarchyApp {
 
@@ -36,12 +36,14 @@ export class PIPlanApp extends HierarchyApp {
 			seriesIncrements: [],
 			currentTimebox: null,
 			topLevelList: {
-				active: splitActive.length ? splitActive : [],
+				active: intersectionWith( this.props.cards, splitActive, (a,b) => (a.id === b)),
 				passive: []
 			},
-			currentPanel: this.props.panel || 'config',
+			currentPanel: this.props.panel || PIPlanApp.CONFIG_PANEL,
 			drawerWidth: this.props.drawerWidth || 200,
-			mode: this.props.mode || VIEW_TYPES.TREE 	//Default view type
+			mode: this.props.mode || VIEW_TYPES.TREE, 	//Default view type
+			sortType: this.props.sort || 'id',
+			sortDir: this.props.sortDir || 'asc'
 		}
 	}
 
@@ -107,20 +109,20 @@ export class PIPlanApp extends HierarchyApp {
 
 	updateTimeBox = (timeboxes, tid) => {
 		//Filter the root items to those that are part of this increment
-		var incrementList = []
+		var incrementCards = []
 		var activeList = []
 		var passiveList = []
-		incrementList = filter(this.props.cards, (card) => {
+		incrementCards = filter(this.props.cards, (card) => {
 			var increments = card.planningIncrements;
 			return (find(increments, { id: tid }) !== undefined)
 		})
 
-		var propsActiveList = incrementList.map(item => item.id);
+		var propsActiveList = incrementCards.map(item => item.id);
 
 		if (this.props.active) propsActiveList = this.props.active.split(',');
 
-		if (Boolean(incrementList)) {
-			forEach(incrementList, (card) => {
+		if (Boolean(incrementCards)) {
+			forEach(incrementCards, (card) => {
 				if (find(propsActiveList, (item) => {
 					return item === card.id
 				}))
@@ -129,15 +131,17 @@ export class PIPlanApp extends HierarchyApp {
 					passiveList.push(card)
 			})
 		}
-
+		
 		this.setCurrentTimebox(find(timeboxes, { id: tid }))
-		this.data = this.createAllocationData(activeList, passiveList)
-	}
-
-	createAllocationData = async (activeList, passiveList) => {
+		
 		var me = this;
 		this.fetchActive = true
 		this.countReset();
+		//Add in that we already have these cards from the server
+		activeList.forEach((card) => {
+			this.countInc()
+			this.countDec()
+		})
 		Promise.all(getRealChildren(this.props.host, activeList, this.state.depth, this.countInc, this.countDec)).then((cards) => {
 			cards.forEach((card) => {
 				if (!card.appData) card.appData = {}
@@ -153,7 +157,7 @@ export class PIPlanApp extends HierarchyApp {
 				me.root.children = cards;
 			}
 			me.fetchActive = false
-			me.setState({ topLevelList: { active: activeList, passive: passiveList } })
+			me.setState({ active :activeList, passive: passiveList })
 			me.setData()
 			me.setColouring({ colouring: me.state.colouring })
 		})
@@ -178,7 +182,7 @@ export class PIPlanApp extends HierarchyApp {
 				}
 			})
 			.sort((a, b) => {
-				var dirFnc = me.state.sortDir === "ascending" ? ascending : descending
+				var dirFnc = me.state.sortDir === "asc" ? ascending : descending
 				switch (me.state.sortType) {
 					case 'title': {
 						return dirFnc(a.data.title, b.data.title)
@@ -199,7 +203,7 @@ export class PIPlanApp extends HierarchyApp {
 						return dirFnc(new Date(b.data.plannedFinish), new Date(a.data.plannedFinish))
 					}
 					case 'id': {
-						return dirFnc(Number(a.data.id), Number(b.data.id))
+						return dirFnc(Number(b.data.id), Number(a.data.id))
 					}
 					case 'context': {
 						return dirFnc(Number(a.data.board.id), Number(b.data.board.id))
@@ -212,8 +216,7 @@ export class PIPlanApp extends HierarchyApp {
 					}
 
 					default: {
-						//Sort so the 'latest' (i.e biggest id number) is at top
-						return dirFnc(b.data.id, a.data.id)
+						return dirFnc(a.data.id, b.data.id)
 					}
 				}
 			})
@@ -337,6 +340,7 @@ export class PIPlanApp extends HierarchyApp {
 		if (this.state.context) {
 			if (this.rootNode) this.calcTreeData(this.rootNode)
 			var item = this.state.popUp ? searchRootTree(this.root, this.state.popUp) : null
+			var allocCards = intersectionWith( this.props.cards, this.state.topLevelList.active, (a,b) => (a.id === b));
 			return (
 				<>
 					{Boolean(item) ?
@@ -363,7 +367,7 @@ export class PIPlanApp extends HierarchyApp {
 						: null}
 					<Paper>
 						<>
-							<Tooltip title="Configure Settings">
+							<Tooltip title="View Settings">
 								<IconButton sx={{ margin: "0px 10px 0px 10px" }} onClick={this.openDrawer}>
 									<Settings />
 								</IconButton>
@@ -373,8 +377,6 @@ export class PIPlanApp extends HierarchyApp {
 								openInNew={this.openAsActive}
 								width={this.state.drawerWidth}
 								open={this.state.configOpen}
-								items={this.state.topLevelList}
-								allItems={this.props.cards}
 								mode={this.state.mode}
 								modeChange={this.modeChange}
 								sort={this.state.sortType}
@@ -390,16 +392,16 @@ export class PIPlanApp extends HierarchyApp {
 
 							/>
 						</>
-						<Button size="small" variant={this.state.currentPanel === PIPlanApp.CONFIG_PANEL ? "contained" : "text"} name={PIPlanApp.CONFIG_PANEL} onClick={this.panelChange}>
+						<Button size="small" variant={this.state.currentPanel === PIPlanApp.CONFIG_PANEL ? "contained" : "text"} name={PIPlanApp.CONFIG_PANEL} onClick={this.viewChange}>
 							Configuration
 						</Button>
 
 						{(this.state.currentSeries && this.state.currentTimebox && !this.fetchActive) ?
 							<>
-								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.panelChange}>
+								<Button size="small" variant={this.state.currentPanel === PIPlanApp.PLAN_PANEL ? "contained" : "text"} name={PIPlanApp.PLAN_PANEL} onClick={this.viewChange}>
 									View
 								</Button>
-								<Button size="small" variant={this.state.currentPanel === PIPlanApp.ALLOC_PANEL ? "contained" : "text"} name={PIPlanApp.ALLOC_PANEL} onClick={this.panelChange}>
+								<Button size="small" variant={this.state.currentPanel === PIPlanApp.ALLOC_PANEL ? "contained" : "text"} name={PIPlanApp.ALLOC_PANEL} onClick={this.viewChange}>
 									Allocation
 								</Button>
 							</> :
@@ -455,6 +457,7 @@ export class PIPlanApp extends HierarchyApp {
 													<Grid key={idx + 1} item sx={{ margin: "2px" }}>
 														<PlanItem
 															card={card}
+															colourise={this.state.colourise}
 															showSelector
 															selected={true}
 															selectChange={this.cardSelectChange} />
@@ -480,6 +483,7 @@ export class PIPlanApp extends HierarchyApp {
 
 															<PlanItem
 																card={card}
+																colourise={this.state.colourise}
 																showSelector
 																selected={false}
 																selectChange={this.cardSelectChange} />
@@ -501,19 +505,19 @@ export class PIPlanApp extends HierarchyApp {
 					{
 						this.state.currentPanel === PIPlanApp.PLAN_PANEL ?
 							<div id={PIPlanApp.PLAN_PANEL} className="content">
-								{this.getPanelType()}
+								{this.getViewType()}
 							</div>
 							: null
 					}
 					{
-						this.state.currentPanel === PIPlanApp.PLAN_PANEL ?
+						(this.state.currentSeries && this.state.currentTimebox && (this.state.currentPanel === PIPlanApp.ALLOC_PANEL)) ?
 							<div id={PIPlanApp.ALLOC_PANEL} className="content">
 								<APAllocationView
-									target={PIPlanApp.ALLOC_PANEL}
-									context={this.state.context}
+									contexts={this.contextList}
 									cards={this.state.topLevelList.active}
 									depth={this.state.depth}
 									colour={this.state.colouring}
+									colourise={this.state.colourise}
 									mode={this.state.mode}
 									sort={this.state.sortType}
 									eb={this.state.showErrors}
@@ -607,7 +611,7 @@ export class PIPlanApp extends HierarchyApp {
 		return true;
 	}
 
-	getPanelType = () => {
+	getViewType = () => {
 		if (typeof document !== "undefined") {
 			var svgTarget = document.getElementById("svg_" + this.state.context.id)
 			if (Boolean(svgTarget)) svgTarget.replaceChildren()
@@ -633,6 +637,7 @@ export class PIPlanApp extends HierarchyApp {
 				colourise: this.state.colourise,
 				errorData: this.getD3ErrorData,
 			}
+
 
 			switch (this.state.mode) {
 				case 'tree': {
@@ -679,7 +684,7 @@ export class PIPlanApp extends HierarchyApp {
 		}
 	}
 
-	panelChange = (evt) => {
+	viewChange = (evt) => {
 		this.setState({ currentPanel: evt.target.name })
 	}
 }

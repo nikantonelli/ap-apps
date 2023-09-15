@@ -21,7 +21,9 @@ export function ConfigDrawer({
     group,
     groupChange,
     errors,
-    errorChange
+    errorChange,
+    field,
+    fieldChange
 }) {
     return (
         <Drawer
@@ -109,60 +111,81 @@ export function ConfigDrawer({
                                     </Select>
                                 </FormControl>
                             </Grid>
-                            <Grid item>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                    <InputLabel>Sort By</InputLabel>
-                                    <Select
-                                        value={sort}
-                                        onChange={sortChange}
-                                        label="Sort By"
-                                    >
-                                        <MenuItem value="none">None</MenuItem>
-                                        <MenuItem value="plannedStart">Planned Start</MenuItem>
-                                        <MenuItem value="plannedFinish">Planned End</MenuItem>
-                                        <MenuItem value="size">Size</MenuItem>
-                                        <MenuItem value="r_size">Size Rollup</MenuItem>
-                                        {mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
-                                        <MenuItem value="score">Score Total</MenuItem>
-                                        {mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
+                            {Boolean(sortChange) ?
+                                <Grid item>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>Sort By</InputLabel>
+                                        <Select
+                                            value={sort}
+                                            onChange={sortChange}
+                                            label="Sort By"
+                                        >
+                                            <MenuItem value="none">None</MenuItem>
+                                            <MenuItem value="plannedStart">Planned Start</MenuItem>
+                                            <MenuItem value="plannedFinish">Planned End</MenuItem>
+                                            <MenuItem value="size">Size</MenuItem>
+                                            <MenuItem value="r_size">Size Rollup</MenuItem>
+                                            {mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
+                                            <MenuItem value="score">Score Total</MenuItem>
+                                            {mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
 
-                                        <MenuItem value="id">ID#</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item >
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                    <InputLabel>Sort Direction</InputLabel>
-                                    <Select
-                                        value={sortDir}
-                                        onChange={sortDirChange}
-                                        label="Sort Direction"
-                                    >
-                                        <MenuItem value="ascending">Ascending</MenuItem>
-                                        <MenuItem value="descending">Descending</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid item>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                    <InputLabel>Colours</InputLabel>
-                                    <Select
-                                        value={colour}
-                                        onChange={colourChange}
-                                        label="Colours"
-                                    >
-                                        <MenuItem value="cool">Cool</MenuItem>
-                                        <MenuItem value="warm">Warm</MenuItem>
-                                        <MenuItem value="type">Card Type</MenuItem>
-                                        <MenuItem value="state">Card State</MenuItem>
-                                        <MenuItem value="l_user">Last Updater</MenuItem>
-                                        <MenuItem value="c_user">Creator</MenuItem>
-                                        <MenuItem value="a_user">First Assignee</MenuItem>
-                                        <MenuItem value="context">Context</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            {mode === VIEW_TYPES.TIMELINE ? (
+                                            <MenuItem value="id">ID</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                : null}
+                                {Boolean(fieldChange) ?
+                                    <Grid item>
+                                        <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                            <InputLabel>Field</InputLabel>
+                                            <Select
+                                                value={field}
+                                                onChange={fieldChange}
+                                                label="Field"
+                                            >
+                                                <MenuItem value="id">ID</MenuItem>
+                                                <MenuItem value="title">Title</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    : null}
+                            {(Boolean(sortDirChange) || Boolean(fieldChange)) ?
+                                <Grid item >
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>Sort Direction</InputLabel>
+                                        <Select
+                                            value={sortDir}
+                                            onChange={sortDirChange}
+                                            label="Sort Direction"
+                                        >
+                                            <MenuItem value="asc">Ascending</MenuItem>
+                                            <MenuItem value="desc">Descending</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                : null}
+                            {Boolean(colourChange) ?
+                                <Grid item>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>Colours</InputLabel>
+                                        <Select
+                                            value={colour}
+                                            onChange={colourChange}
+                                            label="Colours"
+                                        >
+                                            <MenuItem value="cool">Cool</MenuItem>
+                                            <MenuItem value="warm">Warm</MenuItem>
+                                            <MenuItem value="type">Card Type</MenuItem>
+                                            <MenuItem value="state">Card State</MenuItem>
+                                            <MenuItem value="l_user">Last Updater</MenuItem>
+                                            <MenuItem value="c_user">Creator</MenuItem>
+                                            <MenuItem value="a_user">First Assignee</MenuItem>
+                                            <MenuItem value="context">Context</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                : null}
+                            {(mode === VIEW_TYPES.TIMELINE) && Boolean(groupChange) ?
                                 <Grid item>
                                     <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
                                         <InputLabel>Group By</InputLabel>
@@ -177,20 +200,22 @@ export function ConfigDrawer({
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                            ) : null}
-                            <Grid item>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                    <InputLabel>Error Bars</InputLabel>
-                                    <Select
-                                        value={errors}
-                                        onChange={errorChange}
-                                        label="Errors"
-                                    >
-                                        <MenuItem value="on">On</MenuItem>
-                                        <MenuItem value="off">Off</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                                : null}
+                            {Boolean(errorChange) ?
+                                <Grid item>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>Error Bars</InputLabel>
+                                        <Select
+                                            value={errors}
+                                            onChange={errorChange}
+                                            label="Errors"
+                                        >
+                                            <MenuItem value="on">On</MenuItem>
+                                            <MenuItem value="off">Off</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                : null}
                         </Grid>
                     </Grid>
 

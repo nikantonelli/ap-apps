@@ -59,6 +59,12 @@ export class APBoard extends HierarchyApp {
 			var svgTarget = document.getElementById("svg_" + this.props.context.id)
 			if (Boolean(svgTarget)) svgTarget.replaceChildren()
 		}
+		//Add in that we already have these cards from the server
+		usedCards.forEach(() => {
+			this.countInc()
+			this.countDec()
+		})
+		
 		Promise.all(getRealChildren(this.props.host, usedCards, this.state.depth, this.countInc, this.countDec)).then((result) => {
 			result.forEach((card) => {
 				if (!card.appData) card.appData = {}
@@ -99,7 +105,7 @@ export class APBoard extends HierarchyApp {
 				}
 			})
 			.sort((a, b) => {
-				var dirFnc = me.state.sortDir === "ascending" ? ascending : descending
+				var dirFnc = me.state.sortDir === "asc" ? ascending : descending
 				switch (me.state.sortType) {
 					case 'title': {
 						return dirFnc(a.data.title, b.data.title)

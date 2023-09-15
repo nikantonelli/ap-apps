@@ -23,8 +23,14 @@ export function extractOpts (query, appProps){
 	if (query.dir) {
 		appProps.dir = query.dir;
 	}
+	if (query.field) {
+		appProps.field = query.field;
+	}
 	if (query.dedupe) {
 		appProps.dedupe = true
+	}
+	if (query.panel) {
+		appProps.panel = query.panel
 	}
     return appProps;
 }

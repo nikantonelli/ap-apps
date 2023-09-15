@@ -149,10 +149,14 @@ export class HierarchyApp extends AppRoot {
 
 	tempColouring = (d) => {
 		var mine = searchNodeTree(this.rootNode, d.data.id)
+		if (mine){
 		while (mine.parent && mine.parent.data.id != 'root') {
 			mine = mine.parent;
 		}
 		return this.colourFnc((mine ? mine.index : 1) + 1);
+	} else {
+		return "#ccc"
+	}
 	}
 
 	typeColouring = (d) => {
