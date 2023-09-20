@@ -15,21 +15,21 @@ Two variables are needed:
 2. "AGILEPLACE_KEY" - The API token that you generate from AgilePlace to give access. See the AgilePlace docs on how to do that
 (If you don't want to use an APIKEY, then provide AGILEPLACE_USER and AGILEPLACE_PWD)
 
-Another variable you can set is AGILEPLACE_CACHE_AGE_LIMIT. This sets the timeout for the LRU cache to a number of minutes. The defaults to 30min if you do not set it. As it is an LRU cache, this means the more you use an item to display it, the more likely it is to get out of sync with the AP host if you set it too high. There is no mechanism to invalidate the cache just yet. The only solution is to kill the app and then restart it. I will fix it, at some point, to keep in sync with AP and any local changes that are made. For the moment, this app works read-only and doesn't update AP....yet....
+Another variable you can set is AGILEPLACE_CACHE_AGE_LIMIT. This sets the timeout for the LRU cache to a number of minutes. The defaults to 30min if you do not set it. There is no mechanism to invalidate the cache just yet. The only solution is to kill the app and then restart it. I will fix it, at some point, to keep in sync with AP and any local changes that are made. For the moment, this app works read-only and doesn't update AP....yet....
 
-Once you have everything configured, you can run the 'npm run dev' command to get things going. It can be a little slow because this is the development environment version and will want to compile everything the first time out. The development environment is useful in that it attempts to notice any code changes you make and auto-reload the client (but, it doesn't always happen in a timely fashion!)
+Once you have everything configured, you can run an npm command to get things going. It can be a little slow if you run as the development environment version. The development environment is useful in that it attempts to notice any code changes you make and auto-reload the client (but, it doesn't always happen in a timely fashion!)
 
 If you just want to run the code, the build it (npm run build) and then start it up (npm start). If you want to run in development mode (e.g. you are going to do code changes) use 'npm run dev'
 
 Open a browser window to access "http://localhost:3000". Notice that it is http not https. We are only going locally, so security is not needed (and you would need to have a certificate configured!). Same goes for any machine on the local network.
 
-I have run this on another machine on the same network as the client, so you can provide this as a server to other people - but once again, it has no user authentication on the client, so all users will look like you when the server accesses AP
+I have run this on another machine on the same network as the client, so you can provide this as a server to other people - but once again, it has no user authentication on the client, so all users will look like you when the server accesses AP. I believe that the startup of nodejs can be made to limit to the loopback interface (127.0.0.1), so that it then becomes available to only those logged into the machine
 
-The browser accesses the locally running server which fetches data as required by accessing the AgilePlace instance. The local server does not give the browser access to AgilePlace, but you can still do that from your browser in another tab.
+The browser accesses the locally running server which fetches data as required by accessing the AgilePlace instance. The local server does not give the browser access to AgilePlace, but you can still do that from your browser in another tab. Some pages will show "Open in New Tab" icons that will redirect you behind the scenes.
 
 The 'home' page is rudimentary as I haven't got around to doing that yet.
 
-Each tile that gets shown has a number of icons on it. Click on one of them for a tree, partition map, or sunburst representation of the cards on that boards AND all their children (regardless of which board that they reside on). This should open another tab.
+Each tile that gets shown has a number of icons on it. Click on one of them for a tree (or partition map, sunburst or timeline representation) of the cards on that boards AND all their children (regardless of which board that they reside on). This should open another tab.
 
 There is a settings menu available through clicking on the gear on the new page.
 

@@ -86,6 +86,7 @@ export default class PlanItem extends React.Component {
 			// </Card>
 			<Grid
 				container
+				id={this.props.card.id}
 				spacing={1}
 				sx={{ margin: "2px 2px 0px 0px", width: this.width, backgroundColor: this.colourise({ data: this.props.card }) }}
 				onClick={this.props.onClick}

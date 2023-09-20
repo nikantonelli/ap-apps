@@ -6,7 +6,7 @@ class DataProvider {
 	CACHE_ITEM_COUNT = 2000;
 	CACHE_AGE_TIMER = 30 * 1000;	//Check every 30 sec
 	//CACHE_AGE_LIMIT = 1 * 60 * 1000;	//Limit of 1 min
-	CACHE_AGE_LIMIT = (process.env.AGILEPLACE_CACHE_AGE_LIMIT || 30 ) * 60 * 1000;	//Default of 30 mins
+	CACHE_AGE_LIMIT = ((process.env.AGILEPLACE_CACHE_AGE_LIMIT === undefined) ? 30 : process.env.AGILEPLACE_CACHE_AGE_LIMIT) * 60 * 1000;	//Default of 30 mins
 
 	constructor() {
 		//Choose your poison
@@ -49,23 +49,26 @@ class DataProvider {
 	}
 
 	addToCache(data, type) {
-		var cache = this.getCache(type)	//Creates new one if not present
-		var id = this.provider.getIdentifierField(data, type);
-		let newEntry = {
-			date: Date.now(),
-			value: data
+		if (!Boolean(this.CACHE_AGE_LIMIT)) {
+			var cache = this.getCache(type)	//Creates new one if not present
+			var id = this.provider.getIdentifierField(data, type);
+			let newEntry = {
+				date: Date.now(),
+				value: data
+			}
+			cache.put(id, newEntry);
 		}
-		cache.put(id, newEntry);
 	}
 
 	addToCacheWithId(id, data, type) {
-		
-		var cache = this.getCache(type)	//Creates new one if not present
-		let newEntry = {
-			date: Date.now(),
-			value: data
+		if (!Boolean(this.CACHE_AGE_LIMIT)) {
+			var cache = this.getCache(type)	//Creates new one if not present
+			let newEntry = {
+				date: Date.now(),
+				value: data
+			}
+			cache.put(id, newEntry);
 		}
-		cache.put(id, newEntry);
 	}
 
 	delFromCache(id, type) {

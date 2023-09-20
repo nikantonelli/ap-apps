@@ -1,6 +1,7 @@
 import { PlaylistRemove } from "@mui/icons-material";
 import { Box, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip } from "@mui/material";
 import React from "react";
+import UserAvatar from "./UserAvatar";
 
 export class AssignedUserTable extends React.Component {
 
@@ -37,7 +38,7 @@ export class AssignedUserTable extends React.Component {
                                     </Tooltip> :
                                     <TableCell />}
                                 <TableCell>
-                                    {Boolean(row.avatar) ? <img style={{ width: "25px", height: "25px" }} alt={"User Avatar"} src={row.avatar} /> : null}
+                                    {Boolean(row.avatar) ? <UserAvatar  host={this.props.host}  width= "25px" height = "25px" alt= "User Avatar" src={row.id} /> : null}
                                 </TableCell>
 
                             </TableRow>

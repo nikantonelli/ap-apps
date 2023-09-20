@@ -54,6 +54,12 @@ export class APAllocationView extends HierarchyApp {
         this.setup()
     }
 
+    thisClicked = (evt) => {
+        evt.shiftKey = false    //Do not allow shiftkey functionality here
+        evt.ctrlKey = false    //Do not allow ctrlKey functionality here
+        if (this.nodeClicked) this.nodeClicked(evt);
+    }
+
     componentDidMount() {
         //Get the sub-increments of the planning increment and work out the earliest and last date
         //and make sure they are in date order.... just in case....
@@ -124,7 +130,7 @@ export class APAllocationView extends HierarchyApp {
                                                 <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
                                                     <div>
                                                         <PlanItem
-                                                            onClick={this.nodeClicked}
+                                                            onClick={this.thisClicked}
                                                             width={this.cardWidth}
                                                             card={itm}
                                                             colourise={this.props.colourise} />
@@ -152,7 +158,7 @@ export class APAllocationView extends HierarchyApp {
                                                     <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
                                                         <div>
                                                             <PlanItem
-                                                                onClick={this.nodeClicked}
+                                                                onClick={this.thisClicked}
                                                                 width={this.cardWidth}
                                                                 card={itm}
                                                                 colourise={this.props.colourise} />
@@ -187,7 +193,7 @@ export class APAllocationView extends HierarchyApp {
                                                             <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
                                                                 <div>
                                                                     <PlanItem
-                                                                        onClick={this.nodeClicked}
+                                                                        onClick={this.thisClicked}
                                                                         width={this.cardWidth}
                                                                         card={itm}
                                                                         colourise={this.props.colourise} />

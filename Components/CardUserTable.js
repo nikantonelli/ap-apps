@@ -1,11 +1,12 @@
 import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import React from "react";
 import { shortDate } from "../Utils/Client/Helpers";
+import UserAvatar from "./UserAvatar";
 
 export class CardUserTable extends React.Component {
 
     sendEmail = (evt) => {
-        var doc = document.open("mailto:" + evt.currentTarget.id + '?subject=Assigned User',"", 'noopener=true')
+        var doc = document.open("mailto:" + evt.currentTarget.id + '?subject=Assigned User', "", 'noopener=true')
     }
     render = () => {
         var users = [];
@@ -28,22 +29,24 @@ export class CardUserTable extends React.Component {
                     </TableHead>
                     <TableBody>
                         {users.map((row, idx) => {
-                            return Boolean(row.user)?
-                            <TableRow
-                                key={idx}
-                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                            >
-                                <TableCell component="th" scope="row">
-                                    {row.type}
-                                </TableCell>
-                                <TableCell>{Boolean(row.date) ? shortDate(row.date) : null}</TableCell>
-                                <TableCell>{Boolean(row.user) ? row.user.fullName : null}</TableCell>
-                                {Boolean(row.user.emailAddress) ?
-                                    <TableCell sx={{email:row.user.emailAddress}} className="clickable" onClick={this.sendEmail}>{Boolean(row.user) ? row.user.emailAddress : null}</TableCell> :
-                                    <TableCell />}
-                                <TableCell>{Boolean(row.user) ? <img alt={"User Avatar"} src={row.user.avatar} /> : null}</TableCell>
-                            </TableRow>
-                            :null    
+                            return Boolean(row.user) ?
+                                <TableRow
+                                    key={idx}
+                                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                >
+                                    <TableCell component="th" scope="row">
+                                        {row.type}
+                                    </TableCell>
+                                    <TableCell>{Boolean(row.date) ? shortDate(row.date) : null}</TableCell>
+                                    <TableCell>{Boolean(row.user) ? row.user.fullName : null}</TableCell>
+                                    {Boolean(row.user.emailAddress) ?
+                                        <TableCell sx={{ email: row.user.emailAddress }} className="clickable" onClick={this.sendEmail}>{Boolean(row.user) ? row.user.emailAddress : null}</TableCell> :
+                                        <TableCell />}
+                                    <TableCell>
+                                        {Boolean(row.user) ? <UserAvatar host={this.props.host} width="25px" height="25px" alt="User Avatar" id={row.user.id} /> : null}
+                                    </TableCell>
+                                </TableRow>
+                                : null
                         })}
                     </TableBody>
                 </Table>

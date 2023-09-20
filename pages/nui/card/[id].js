@@ -28,6 +28,7 @@ export default class Item extends React.Component {
 					descendants={this.state.descendants}
 					parents={this.state.parents}
 					context={this.state.context}
+					host={this.props.host}
 				/>
 			)
 		} else {

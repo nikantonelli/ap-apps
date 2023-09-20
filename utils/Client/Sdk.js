@@ -230,11 +230,22 @@ export const getBoard = async (host, brdId) => {
 	}
 	return doRequest(params);
 }
+
 export const getBoardIcons = async (host, brdId) => {
 	var params = {
 		host: host,
 		mode: 'GET',
 		url: "/board/" + brdId + "/customIcon"
+	}
+	return doRequest(params);
+}
+
+
+export const getAvatar = async (host, userId) => {
+	var params = {
+		host: host,
+		mode: 'GET',
+		url: "/avatar/" + userId
 	}
 	return doRequest(params);
 }

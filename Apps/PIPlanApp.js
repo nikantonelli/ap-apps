@@ -524,6 +524,7 @@ export class PIPlanApp extends HierarchyApp {
 									sortDir={this.state.sortDir}
 									host={this.props.host}
 									timebox={this.state.currentTimebox}
+									onClick={this.nodeClicked}
 								/>
 							</div>
 							: null
@@ -537,7 +538,7 @@ export class PIPlanApp extends HierarchyApp {
 
 
 	nodeClicked = (ev) => {
-		var node = this.searchNodeTree(this.rootNode, ev.currentTarget.id)
+		var node = searchNodeTree(this.rootNode, ev.currentTarget.id)
 		this.svgNodeClicked(ev, node)
 	}
 

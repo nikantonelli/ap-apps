@@ -117,7 +117,7 @@ class AgilePlace {
 		var data = null;
 		if (res) {
 			if (params.raw) {
-				data = new Uint8Array( await res.arrayBuffer())
+				data = await res.blob()
 			}
 			else {
 				data = await res.json()

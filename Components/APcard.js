@@ -460,9 +460,9 @@ export class APCard extends React.Component {
 							</AccordionSummary>
 							<AccordionDetails>
 								<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Assigned Users</Typography></Paper>
-								<AssignedUserTable card={this.state.data} />
+								<AssignedUserTable host={this.props.host} card={this.state.data} />
 								<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Involved Users</Typography></Paper>
-								<CardUserTable card={this.state.data} />
+								<CardUserTable host={this.props.host} card={this.state.data} />
 							</AccordionDetails>
 						</Accordion>
 
