@@ -26,12 +26,15 @@ class AgilePlace {
 		} else {
 			params.baseUrl = "https://" + process.env.AGILEPLACE_HOST
 		}
-		var headers = { "Accept": "application/json" };
+
+		var headers = {"Content-type": "application/json"}	//For all the POSTs we do
+
 		if (params.type) {
-			headers["Content-type"] = params.type;
+			headers["Accept"] = params.type;
 		} else {
-			headers["Content-type"] = "application/json";
+			headers["Accept"] = "application/json";
 		}
+
 		if (process.env.AGILEPLACE_KEY) {
 			headers["Authorization"] = "Bearer " + process.env.AGILEPLACE_KEY;
 		}
@@ -117,7 +120,11 @@ class AgilePlace {
 		var data = null;
 		if (res) {
 			if (params.raw) {
-				data = await res.blob()
+				for await (const chunk of res.body) {
+					if (Boolean(data))
+						data += chunk;
+					else data = chunk;
+				}
 			}
 			else {
 				data = await res.json()

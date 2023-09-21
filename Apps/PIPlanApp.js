@@ -311,6 +311,7 @@ export class PIPlanApp extends HierarchyApp {
 		as += "&colour=" + this.state.colouring
 		as += "&depth=" + this.state.depth
 		as += "&eb=" + this.state.showErrors
+		as += "&panel=" + this.state.currentPanel
 
 		document.open("/nui/planning/" + this.state.context.id + as, "", "noopener=true")
 	}

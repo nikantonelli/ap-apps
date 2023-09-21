@@ -245,6 +245,9 @@ export const getAvatar = async (host, userId) => {
 	var params = {
 		host: host,
 		mode: 'GET',
+		raw: true,
+		type: "image/*",
+	
 		url: "/avatar/" + userId
 	}
 	return doRequest(params);
@@ -255,11 +258,15 @@ export const doRequest = async (params) => {
 	if (params.body) {
 		ps.body = params.body
 	}
+
+	var headers = new Headers();
+	if (params.mode === "POST") headers.append("Content-Type", "application/json");	//If we do a POST, we send json
+	ps.headers = headers
+
 	if (params.type) {
-		var headers = new Headers();
-		headers.append("Content-Type", params.type)
-		ps.headers = headers
+		headers.append("Accept", params.type)
 	}
+
 	//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
 	var req = new Request("http://" + params.host + "/api" + params.url, ps);
 	var res = await fetch(req).then(
@@ -270,7 +277,14 @@ export const doRequest = async (params) => {
 		}
 	)
 	var data = null;
-	if (res) data = await res.json()
+	if (res) {
+		if (params.raw) {
+			data = new Uint8Array(await res.arrayBuffer())
+		}
+		else {
+			data = await res.json()
+		}
+	}
 	return data
 }
 

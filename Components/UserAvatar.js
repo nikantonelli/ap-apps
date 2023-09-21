@@ -5,8 +5,7 @@ export default class UserAvatar extends React.Component {
     constructor(props) {
         super(props)
 
-        var state = {
-            imageData: null,
+        this.state = {
             imageUrl: null
         }
         this.setup()
@@ -23,15 +22,24 @@ export default class UserAvatar extends React.Component {
 
     componentDidMount() {
         var me = this;
-        getAvatar(this.props.host, this.props.id).then(
-            (result) =>
-                 me.setState({ imageUrl: result })
-        )
+        function _arrayBufferToBase64( buffer ) {
+            var binary = '';
+            var bytes = new Uint8Array( buffer );
+            var len = bytes.byteLength;
+            for (var i = 0; i < len; i++) {
+                binary += String.fromCharCode( bytes[ i ] );
+            }
+            return window.btoa( binary );
+        }
+        getAvatar(this.props.host, this.props.id).then((result) =>
+        {
+            me.setState({ imageUrl: "data:image/jpeg;base64," + _arrayBufferToBase64(result)})
+        })
     }
 
     render() {
-        if (Boolean(this.imageData)) {
-            return <img style={{ width: this.width, height: this.height }} alt={"User Avatar"} src={this.imageUrl} />
+        if (Boolean(this.state.imageUrl)) {
+            return <img style={{ width: this.width, height: this.height }} alt={"User Avatar"} src={this.state.imageUrl} />
         }
         return null;
     }
