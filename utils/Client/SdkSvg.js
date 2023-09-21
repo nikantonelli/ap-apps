@@ -178,10 +178,7 @@ export function svgNodeClicked(ev, target) {
         } else {
             me.focus = null;
             me.setState({
-                rootNode: hierarchy({
-                    id: 'root',
-                    children: [newRoot]
-                })
+                rootNode: hierarchy(this.root)
             })
             select(".parentLabel").datum(target).text(d =>
                 (d.data.id === "root" ? "" : d.data.id));
