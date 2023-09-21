@@ -136,7 +136,7 @@ export class APSunburstView extends HierarchyApp {
                 .style("font-size", (2.8 / (levels + 1)).toString() + "em")
                 .style("pointer-events", "none")
                 .attr("text-anchor", d => labelAnchor(d))
-                .text(d => getLabel(me, d));
+                .text(d => getLabel.call(me, d));
 
             const parent = g.append("circle")
                 .attr("class", "parentNode")
@@ -149,7 +149,7 @@ export class APSunburstView extends HierarchyApp {
                 .attr("class", "parentLabel")
                 .datum(this.props.root)
                 .attr("class", "nodeLabel")
-                .text(d => getLabel(me, d))	//Need 'this' for props
+                .text(d => getLabel.call(me, d))	//Need 'this' for props
                 .attr("text-anchor", "middle")
                 .style("pointer-events", "none")
                 .style("font-size", (2.8 / (levels + 1)).toString() + "em");

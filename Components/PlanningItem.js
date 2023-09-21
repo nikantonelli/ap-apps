@@ -19,7 +19,6 @@ export default class PlanItem extends React.Component {
 	}
 
 	setup = () => {
-		this.width = this.props.width || 200;
 		this.colourise = this.props.colourise || function () { return "#cccccc" }
 	}
 

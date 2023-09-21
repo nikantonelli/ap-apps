@@ -10,7 +10,7 @@ import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
 import { ReqsProgress } from "../Components/ReqsProgress";
 import { VIEW_TYPES, createTree, doRequest, getRealChildren, searchRootTree } from "../Utils/Client/Sdk";
-import { getSvgTitle, searchNodeTree } from "../Utils/Client/SdkSvg";
+import { compareSvgNode, getSvgTitle, searchNodeTree, svgNodeClicked } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 import { APPartitionView } from "./PartitionApp";
 import { APSunburstView } from "./SunburstApp";
@@ -182,44 +182,9 @@ export class PIPlanApp extends HierarchyApp {
 				}
 			})
 			.sort((a, b) => {
-				var dirFnc = me.state.sortDir === "asc" ? ascending : descending
-				switch (me.state.sortType) {
-					case 'title': {
-						return dirFnc(a.data.title, b.data.title)
-					}
-					case 'count': {
-						return dirFnc(a.value, b.value)
-					}
-
-					case 'score': {
-						return dirFnc(a.data.scoring.scoreTotal, b.data.scoring.scoreTotal)
-					}
-
-					case 'plannedStart': {
-						return dirFnc(new Date(a.data.plannedStart), new Date(b.data.plannedStart))
-					}
-					//Dates need to be backwards to be more useful: ascending means from now until later
-					case 'plannedFinish': {
-						return dirFnc(new Date(b.data.plannedFinish), new Date(a.data.plannedFinish))
-					}
-					case 'id': {
-						return dirFnc(Number(b.data.id), Number(a.data.id))
-					}
-					case 'context': {
-						return dirFnc(Number(a.data.board.id), Number(b.data.board.id))
-					}
-					case 'size': {
-						return dirFnc(a.data.size, b.data.size)
-					}
-					case 'r_size': {
-						return dirFnc(a.value, b.value)
-					}
-
-					default: {
-						return dirFnc(a.data.id, b.data.id)
-					}
-				}
+				return compareSvgNode(me.state.sortType,  me.state.sortDir, a, b) 
 			})
+
 		//Do some other stuff for stats on the hierarchy to show to user
 		rootNode.eachAfter((d) => {
 			//If we are the leaves, then check if our dates are outside the parent's
@@ -543,74 +508,8 @@ export class PIPlanApp extends HierarchyApp {
 		this.svgNodeClicked(ev, node)
 	}
 
-	svgNodeClicked = (ev, target) => {
-		var me = this;
-		ev.stopPropagation()
-		ev.preventDefault()
-		if (ev.ctrlKey) {
-			if (target.data.children && target.data.children.length) {
-				target.data.savedChildren = union(target.data.children, target.data.savedChildren)
-				target.data.children = [];
-			}
-			else if (target.data.savedChildren && target.data.savedChildren.length) {
-				target.data.children = target.data.savedChildren;
-				target.data.savedChildren = [];
-			}
-			this.setState((prev) => {
-				var rNode = hierarchy(this.root)
-				return { rootNode: rNode }
-			})
-		}
-		else if (ev.altKey) {
-			document.open("/nui/card/" + target.data.id, "", "noopener=true")
-		}
-		else if (ev.shiftKey) {
-
-			if (target.data.id != 'root') {
-				var newNode = searchNodeTree(me.rootNode, target.data.id)
-				var newRoot = searchRootTree(me.root, target.data.id);
-				var parent = searchRootTree(me.root, newNode.parent.data.id);
-				if (me.focus === target.data.id) {
-					if (parent && (parent.id !== 'root')) {
-						me.focus = parent.id;
-						me.setState({
-							rootNode: hierarchy(
-								parent
-							)
-						})
-					} else {
-						me.focus = null;
-						me.setState({
-							rootNode: hierarchy(me.root)
-						})
-					}
-				} else {
-					me.focus = newRoot.id;
-					me.setState({
-						rootNode: hierarchy(
-							newRoot
-						)
-					})
-				}
-			} else {
-				me.focus = null;
-				me.setState({
-					rootNode: hierarchy({
-						id: 'root',
-						children: [newRoot]
-					})
-				})
-				select(".parentLabel").datum(target).text(d =>
-					(d.data.id === "root" ? "" : d.data.id));
-				select(".parentTitle").datum(target).text(d => {
-					return d.data.title + " : " + d.data.size;
-				})
-				select(".parentNode").datum(target || me.rootNode);
-			}
-		} else {
-			this.setState({ popUp: target.data.id })
-		}
-		return true;
+	svgNodeClicked = (ev, node) => {
+		svgNodeClicked.call(this, ev, node)
 	}
 
 	getViewType = () => {

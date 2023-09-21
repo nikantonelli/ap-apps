@@ -97,7 +97,7 @@ export class APTreeView extends AppRoot {
             //drawn obliterates the text. We redraw below......
             nodes.append("text")
                 .attr("clip-path", function (d, idx) { return "url(#clip_" + idx + ")" })
-                .text(d => getLabel(this, d))
+                .text(d => getLabel.call(me, d))
                 .attr("height", rowHeight)
                 .attr("id", function (d) {
                     return "text_" + d.depth + '_' + d.data.id
@@ -115,7 +115,7 @@ export class APTreeView extends AppRoot {
                 var node = select(this);
                 node.append("text")
                     .attr("clip-path", function (d) { return "url(#clip_" + d.idx + ")" })
-                    .text(d => getLabel(this, d))
+                    .text(d => getLabel.call(me, d))
                     .attr("height", rowHeight - 12)
                     .attr("id", function (d) {
                         return "text_" + d.depth + '_' + d.data.id

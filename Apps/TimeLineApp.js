@@ -196,7 +196,7 @@ export class APTimeLineView extends HierarchyApp {
 										onMouseEnter={this.popoverOpen}
 										onMouseLeave={this.popoverClose}
 									>
-										{getLabel(me, node)}
+										{getLabel.call(this, node)}
 									</Typography>
 									<Popover
 										sx={{

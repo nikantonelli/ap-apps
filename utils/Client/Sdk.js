@@ -1,5 +1,6 @@
 import { findLastIndex, forEach, orderBy, pullAt, slice, unionBy, uniqBy } from "lodash";
 import { shortDate } from "./Helpers";
+import { ascending, descending } from "d3";
 
 export class VIEW_TYPES {
 	static SUNBURST = 'sunburst'
@@ -385,4 +386,44 @@ export const getTitle = (card, sortBy, colourBy) => {
         }
     }
     return (card.title + " (" + card.size + ")")
+}
+
+export const compareCard = (cmpType, cmpDir, a, b) => {
+    var dirFnc = cmpDir === "asc" ? ascending : descending
+    switch (cmpType) {
+        case 'title': {
+            return dirFnc(a.title, b.title)
+        }
+        case 'count': {
+            return dirFnc(a.value, b.value)
+        }
+
+        case 'score': {
+            return dirFnc(a.scoring.scoreTotal, b.scoring.scoreTotal)
+        }
+
+        case 'plannedStart': {
+            return dirFnc(new Date(a.plannedStart), new Date(b.plannedStart))
+        }
+        //Dates need to be backwards to be more useful: ascending means from now until later
+        case 'plannedFinish': {
+            return dirFnc(new Date(b.plannedFinish), new Date(a.plannedFinish))
+        }
+        case 'id': {
+            return dirFnc(Number(b.id), Number(a.id))
+        }
+        case 'context': {
+            return dirFnc(Number(a.board.id), Number(b.board.id))
+        }
+        case 'size': {
+            return dirFnc(a.size, b.size)
+        }
+        case 'r_size': {
+            return dirFnc(a.value, b.value)
+        }
+
+        default: {
+            return dirFnc(a.id, b.id)
+        }
+    }
 }

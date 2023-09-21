@@ -51,7 +51,6 @@ class DataProvider {
 	}
 
 	addToCache(data, type) {
-		if (!Boolean(this.CACHE_AGE_LIMIT)) {
 			var cache = this.getCache(type)	//Creates new one if not present
 			var id = this.provider.getIdentifierField(data, type);
 			let newEntry = {
@@ -59,18 +58,15 @@ class DataProvider {
 				value: data
 			}
 			cache.put(id, newEntry);
-		}
 	}
 
 	addToCacheWithId(id, data, type) {
-		if (!Boolean(this.CACHE_AGE_LIMIT)) {
 			var cache = this.getCache(type)	//Creates new one if not present
 			let newEntry = {
 				date: Date.now(),
 				value: data
 			}
 			cache.put(id, newEntry);
-		}
 	}
 
 	delFromCache(id, type) {

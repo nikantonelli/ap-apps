@@ -119,7 +119,7 @@ export class APPartitionView extends HierarchyApp {
                 .attr("fill-opacity", d => +partlabel(d));
 
             text.append("tspan")
-                .text(d => getLabel(me, d))
+                .text(d => getLabel.call(me, d))
 
 
             cell.append("title")

@@ -1,6 +1,6 @@
 import { Box, Paper, Tooltip, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
-import { filter, sortBy, unionBy } from "lodash";
+import { filter, groupBy, sortBy, unionBy } from "lodash";
 import React from "react";
 import { VIEW_TYPES, flattenChildren, getTitle } from "../Utils/Client/Sdk";
 import { HierarchyApp } from "./HierarchyApp";
@@ -16,7 +16,8 @@ export class APAllocationView extends HierarchyApp {
             popoverId: null,
             popoverEl: null,
             mode: VIEW_TYPES.ALLOCATION,
-            timeboxes: []
+            timeboxes: [],
+            update: 0
         }
         this.errorData = props.errorData || this.nullErrorData
         this.cards = this.props.cards || []
@@ -31,15 +32,6 @@ export class APAllocationView extends HierarchyApp {
         this.errorData = this.props.errorData || function () { return { msg: "", colour: "" } }
         //These two are used by the routines in Sdk.js and not here
         this.colouring = this.props.colouring || 'type'
-        this.sort = this.props.sort || 'none'
-    }
-
-    typeOrder = (items) => {
-        return sortBy(items, [function (c) { return c.data.type.title }])
-    }
-
-    contextOrder = (items) => {
-        return sortBy(items, [function (c) { return c.data.board.title }])
     }
 
     popoverOpen = (evt) => {
@@ -51,7 +43,10 @@ export class APAllocationView extends HierarchyApp {
     }
 
     componentDidUpdate = (prevProps, prevState) => {
-        this.setup()
+        if (prevProps != this.props) {
+            this.setup()
+            this.forceUpdate()  //Call render directly
+        }
     }
 
     thisClicked = (evt) => {
@@ -87,24 +82,6 @@ export class APAllocationView extends HierarchyApp {
 
         var items = [];
         flattenChildren(this.cards, items)
-
-        switch (this.props.grouping) {
-            case 'type': {
-                this.cards.forEach((element) => {
-                    items = unionBy(this.typeOrder(element), items, (item) => item.id)
-                });
-                break;
-            }
-            case 'context': {
-                this.cards.forEach((element) => {
-                    items = unionBy(this.contextOrder(element), items, (item) => item.id)
-                });
-                break;
-            }
-            default: {
-                break;
-            }
-        }
         return items;
     }
 
@@ -112,6 +89,7 @@ export class APAllocationView extends HierarchyApp {
 
         var items = this.calcData()
         var extraColumns = 2
+
         return (
             <>
                 <Grid container columns={this.state.timeboxes.length + extraColumns}>
@@ -124,21 +102,22 @@ export class APAllocationView extends HierarchyApp {
                                     </Paper>
                                 </Grid>
                                 <Box sx={{ margin: "3px" }}>
-                                    {this.props.cards.map((itm, idx) => {
-                                        return (
-                                            <Grid key={itm.id + idx}>
-                                                <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
-                                                    <div>
-                                                        <PlanItem
-                                                            onClick={this.thisClicked}
-                                                            width={this.cardWidth}
-                                                            card={itm}
-                                                            colourise={this.props.colourise} />
-                                                    </div>
-                                                </Tooltip>
-                                            </Grid>
-                                        )
-                                    })}
+                                    <Grid container>
+                                        {this.props.cards.map((itm, idx) => {
+                                            return (
+                                                <Grid key={itm.id + idx}>
+                                                    <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                        <div>
+                                                            <PlanItem
+                                                                onClick={this.thisClicked}
+                                                                card={itm}
+                                                                colourise={this.props.colourise} />
+                                                        </div>
+                                                    </Tooltip>
+                                                </Grid>
+                                            )
+                                        })}
+                                    </Grid>
                                 </Box>
                             </Grid>
                         </Grid>
@@ -151,26 +130,27 @@ export class APAllocationView extends HierarchyApp {
                                 </Grid>
 
                                 <Box sx={{ margin: "3px" }}>
-                                    {items.map((itm, idx) => {
-                                        if (!Boolean(itm.planningIncrements) || (itm.planningIncrements.length === 0)) {
-                                            return (
-                                                <Grid key={itm.id + idx}>
-                                                    <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
-                                                        <div>
-                                                            <PlanItem
-                                                                onClick={this.thisClicked}
-                                                                width={this.cardWidth}
-                                                                card={itm}
-                                                                colourise={this.props.colourise} />
-                                                        </div>
-                                                    </Tooltip>
-                                                </Grid>
-                                            )
-                                        }
-                                        else {
-                                            return null
-                                        }
-                                    })}
+                                    <Grid container>
+                                        {items.map((itm, idx) => {
+                                            if (!Boolean(itm.planningIncrements) || (itm.planningIncrements.length === 0)) {
+                                                return (
+                                                    <Grid key={itm.id + idx}>
+                                                        <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                            <div>
+                                                                <PlanItem
+                                                                    onClick={this.thisClicked}
+                                                                    card={itm}
+                                                                    colourise={this.props.colourise} />
+                                                            </div>
+                                                        </Tooltip>
+                                                    </Grid>
+                                                )
+                                            }
+                                            else {
+                                                return null
+                                            }
+                                        })}
+                                    </Grid>
                                 </Box>
                             </Grid>
                         </Grid>
@@ -185,27 +165,28 @@ export class APAllocationView extends HierarchyApp {
                                             </Paper>
                                         </Grid>
                                         <Box sx={{ margin: "3px" }}>
-                                            {items.map((itm, idx) => {
-                                                var inThis = filter(itm.planningIncrements, (incr) => (incr.id === timebox.id))
-                                                if (inThis && inThis.length) {
-                                                    return (
-                                                        <Grid key={itm.id + idx}>
-                                                            <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
-                                                                <div>
-                                                                    <PlanItem
-                                                                        onClick={this.thisClicked}
-                                                                        width={this.cardWidth}
-                                                                        card={itm}
-                                                                        colourise={this.props.colourise} />
-                                                                </div>
-                                                            </Tooltip>
-                                                        </Grid>
-                                                    )
-                                                }
-                                                else {
-                                                    return null
-                                                }
-                                            })}
+                                            <Grid container>
+                                                {items.map((itm, idx) => {
+                                                    var inThis = filter(itm.planningIncrements, (incr) => (incr.id === timebox.id))
+                                                    if (inThis && inThis.length) {
+                                                        return (
+                                                            <Grid key={itm.id + idx}>
+                                                                <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                                    <div>
+                                                                        <PlanItem
+                                                                            onClick={this.thisClicked}
+                                                                            card={itm}
+                                                                            colourise={this.props.colourise} />
+                                                                    </div>
+                                                                </Tooltip>
+                                                            </Grid>
+                                                        )
+                                                    }
+                                                    else {
+                                                        return null
+                                                    }
+                                                })}
+                                            </Grid>
                                         </Box>
                                     </Grid>
                                 </Grid>
