@@ -1,29 +1,28 @@
-import { Button, Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Paper, Stack, TextField, Tooltip } from "@mui/material";
-import BoardService from "../../Services/BoardService";
+import { Card, CardActions, CardHeader, Grid, IconButton, InputAdornment, Paper, Stack, TextField, Tooltip } from "@mui/material";
 
-import { AccountTree, Brightness7, CalendarMonth, Cancel, Domain, NextPlan, OpenInNew, Search, Settings } from "@mui/icons-material";
-import { useState } from 'react';
-import { findBoards } from "../../Utils/Client/Sdk";
+import { AccountTree, Cancel, NextPlan, Search, Settings } from "@mui/icons-material";
 import { orderBy } from "lodash";
+import { useState } from 'react';
 import { ConfigDrawer } from "../../Components/ConfigDrawer";
+import { findBoards } from "../../Utils/Client/Sdk";
 import { extractOpts } from "../../Utils/Server/Helpers";
 
-export default function Board({ host, grouping, mode, eb, colour, field, dir }) {
+export default function Board({ host, grouping, view, eb, colour, field, dir }) {
 
 	const [boards, setBoards] = useState([]);
 	const [filterText, setFilterText] = useState("");
 	const [pending, setPending] = useState(false);
 	const [sortField, setLSortField] = useState(field || "id")
-	const [lSortDir, setLSortDir] = useState(dir || "asc")
-	const [lMode, setLMode] = useState(mode || 'tree')
+	const [lSortDir, setLSortDir] = useState(dir || "ascending")
+	const [lView, setLView] = useState(view || 'tree')
 	const [lGrouping, setLGrouping] = useState(grouping || 'none')
-	const [lSortType, setLSortType] = useState('none')
+	const [lSortType, setLSortType] = useState('id')
 	const [lColouring, setLColouring] = useState(colour|| 'type')
 	const [lShowErrors, setLShowErrors] = useState(eb || 'off')
 	const [drawerOpen, setDrawerOpen] = useState(false)
 
 	function boardClicked(evt) {
-		document.open("/nui/context/" + evt.currentTarget.id + "?mode=" + lMode + "&dedupe=true", "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id + "?view=" + lView + "&dedupe=true", "", "noopener=true")
 	}
 
 	function planClicked(evt) {
@@ -90,9 +89,9 @@ export default function Board({ host, grouping, mode, eb, colour, field, dir }) 
 		setPending(false);
 		setLSortType(evt.target.value)
 	}
-	function modeChange(evt) {
+	function viewChange(evt) {
 		setPending(false);
-		setLMode(evt.target.value)
+		setLView(evt.target.value)
 	}
 
 	function fieldChange(evt) {
@@ -111,8 +110,8 @@ export default function Board({ host, grouping, mode, eb, colour, field, dir }) 
 					onClose={closeDrawer}
 					width={200}
 					open={drawerOpen}
-					mode={lMode}
-					modeChange={modeChange}
+					view={lView}
+					viewChange={viewChange}
 					field={sortField}
 					fieldChange={fieldChange}
 					sortDir={lSortDir}

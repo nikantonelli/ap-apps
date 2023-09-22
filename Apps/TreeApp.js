@@ -8,7 +8,7 @@ import { HierarchyApp } from "./HierarchyApp";
 export class APTreeView extends AppRoot {
     constructor(props) {
         super(props)
-        this.mode = VIEW_TYPES.TREE
+        this.view = VIEW_TYPES.TREE
         this.setup()
     }
 

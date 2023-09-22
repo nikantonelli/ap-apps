@@ -15,7 +15,7 @@ export class APAllocationView extends HierarchyApp {
             ...this.state,
             popoverId: null,
             popoverEl: null,
-            mode: VIEW_TYPES.ALLOCATION,
+            view: VIEW_TYPES.ALLOCATION,
             timeboxes: [],
             update: 0
         }

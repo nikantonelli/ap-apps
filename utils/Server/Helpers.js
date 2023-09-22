@@ -8,8 +8,8 @@ export function extractOpts (query, appProps){
 	if (query.active) {
 		appProps.active = query.active;
 	}
-	if (query.mode) {
-		appProps.mode = query.mode;
+	if (query.view) {
+		appProps.view = query.view;
 	}
 	if (query.colour) {
 		appProps.colour = query.colour;

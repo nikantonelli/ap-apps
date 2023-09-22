@@ -10,7 +10,7 @@ export class APPartitionView extends HierarchyApp {
     static ROW_HEIGHT = 30;
     constructor(props) {
         super(props)
-        this.mode = VIEW_TYPES.PARTITION
+        this.view = VIEW_TYPES.PARTITION
         this.setup()
     }
 

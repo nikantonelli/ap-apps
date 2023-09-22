@@ -4,7 +4,7 @@ import { searchRootTree } from "./Sdk"
 import { union } from "lodash"
 
 export function getLabel(d) {
-    switch (this.mode) {
+    switch (this.view) {
         case 'sunburst': {
             return d.data.id === "root" ? this.props.context.title : ((d.data.savedChildren && d.data.savedChildren.length) ? " **" : "") + d.data.id
         }
@@ -70,7 +70,7 @@ export const getSvgTitle = (d, sortBy, colourBy) => {
 }
 
 export const compareSvgNode = (cmpType, cmpDir, a, b) => {
-    var dirFnc = cmpDir === "asc" ? ascending : descending
+    var dirFnc = cmpDir === "ascending" ? ascending : descending
     switch (cmpType) {
         case 'size':
         case 'id':
@@ -121,7 +121,6 @@ export const searchNodeTree = (element, id) => {
 }
 
 export function svgNodeClicked(ev, target) {
-    var me = this;
     ev.stopPropagation()
     ev.preventDefault()
     if (ev.ctrlKey) {
@@ -144,13 +143,13 @@ export function svgNodeClicked(ev, target) {
     else if (ev.shiftKey) {
 
         if (target.data.id != 'root') {
-            var newNode = searchNodeTree(me.rootNode, target.data.id)
-            var newRoot = searchRootTree(me.root, target.data.id);
-            var parent = searchRootTree(me.root, newNode.parent.data.id);
-            if (me.focus === target.data.id) {
+            var newNode = searchNodeTree(this.rootNode, target.data.id)
+            var newRoot = searchRootTree(this.root, target.data.id);
+            var parent = searchRootTree(this.root, newNode.parent.data.id);
+            if (this.focus === target.data.id) {
                 if (parent && (parent.id !== 'root')) {
-                    me.focus = parent.id;
-                    me.setState({
+                    this.focus = parent.id;
+                    this.setState({
                         rootNode: hierarchy(
                             {
                                 id: 'root',
@@ -159,14 +158,14 @@ export function svgNodeClicked(ev, target) {
                         )
                     })
                 } else {
-                    me.focus = null;
-                    me.setState({
-                        rootNode: hierarchy(me.root)
+                    this.focus = null;
+                    this.setState({
+                        rootNode: hierarchy(this.root)
                     })
                 }
             } else {
-                me.focus = newRoot.id;
-                me.setState({
+                this.focus = newRoot.id;
+                this.setState({
                     rootNode: hierarchy(
                         {
                             id: 'root',
@@ -176,8 +175,8 @@ export function svgNodeClicked(ev, target) {
                 })
             }
         } else {
-            me.focus = null;
-            me.setState({
+            this.focus = null;
+            this.setState({
                 rootNode: hierarchy(this.root)
             })
             select(".parentLabel").datum(target).text(d =>
@@ -185,7 +184,7 @@ export function svgNodeClicked(ev, target) {
             select(".parentTitle").datum(target).text(d => {
                 return d.data.title + " : " + d.data.size;
             })
-            select(".parentNode").datum(target || me.rootNode);
+            select(".parentNode").datum(target || this.rootNode);
         }
     } else {
         this.setState({ popUp: target.data.id })

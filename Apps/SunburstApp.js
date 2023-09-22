@@ -7,7 +7,7 @@ import { HierarchyApp } from "./HierarchyApp";
 export class APSunburstView extends HierarchyApp {
     constructor(props) {
         super(props)
-        this.mode = VIEW_TYPES.SUNBURST
+        this.view = VIEW_TYPES.SUNBURST
         this.colouring = this.props.colouring
         this.sort = this.props.sort
     }

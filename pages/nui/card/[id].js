@@ -43,6 +43,8 @@ export async function getServerSideProps({ req, params, query }) {
 		globalThis.dataProvider = new DataProvider()
 	}
 	var card = globalThis.dataProvider.inCache(params.id, 'card');
+	var appProps = {host: req.headers.host}
+	extractOpts(query, appProps)
 
 	if (card === null) {
 		var cs = new CardService(req.headers.host);
@@ -50,8 +52,10 @@ export async function getServerSideProps({ req, params, query }) {
 	}
 	if (card) {
 		globalThis.dataProvider.addToCache(card, 'card')
-		return { props: { card: card, host: req.headers.host } }
+		appProps.card = card
+		return ({ props: {
+			...appProps
+		} })
 	}
-
-	return { props: { card: null, host: req.headers.host } }
+	else return ({ props: { } })
 }

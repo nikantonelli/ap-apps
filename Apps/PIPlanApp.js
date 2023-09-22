@@ -41,7 +41,7 @@ export class PIPlanApp extends HierarchyApp {
 			},
 			currentPanel: this.props.panel || PIPlanApp.CONFIG_PANEL,
 			drawerWidth: this.props.drawerWidth || 200,
-			mode: this.props.mode || VIEW_TYPES.TREE, 	//Default view type
+			view: this.props.view || VIEW_TYPES.TREE, 	//Default view type
 			sortType: this.props.sort || 'id',
 			sortDir: this.props.sortDir || 'asc'
 		}
@@ -271,7 +271,7 @@ export class PIPlanApp extends HierarchyApp {
 			if (this.state.currentTimebox) as += "&tmb=" + this.state.currentTimebox.id
 		}
 		as += "&sort=" + this.state.sortType
-		as += "&mode=" + this.state.mode
+		as += "&view=" + this.state.view
 		as += "&dir=" + this.state.sortDir
 		as += "&colour=" + this.state.colouring
 		as += "&depth=" + this.state.depth
@@ -343,8 +343,8 @@ export class PIPlanApp extends HierarchyApp {
 								openInNew={this.openAsActive}
 								width={this.state.drawerWidth}
 								open={this.state.configOpen}
-								mode={this.state.mode}
-								modeChange={this.modeChange}
+								view={this.state.view}
+								viewChange={this.viewChange}
 								sort={this.state.sortType}
 								sortChange={this.sortChange}
 								sortDir={this.state.sortDir}
@@ -484,7 +484,7 @@ export class PIPlanApp extends HierarchyApp {
 									depth={this.state.depth}
 									colouring={this.state.colouring}
 									colourise={this.state.colourise}
-									mode={this.state.mode}
+									view={this.state.view}
 									sort={this.state.sortType}
 									eb={this.state.showErrors}
 									sortDir={this.state.sortDir}
@@ -540,7 +540,7 @@ export class PIPlanApp extends HierarchyApp {
 			}
 
 
-			switch (this.state.mode) {
+			switch (this.state.view) {
 				case 'tree': {
 					return (
 						<>

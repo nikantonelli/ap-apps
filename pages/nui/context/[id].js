@@ -29,7 +29,7 @@ export async function getServerSideProps({ req, params, query }) {
 
 	if (!appProps.depth) {
 		//Limit the exponential explosion of fetches as you go down the tree
-		switch (appProps.mode) {
+		switch (appProps.view) {
 			case 'sunburst': {
 				appProps.depth = HierarchyApp.DEFAULT_SUNBURST_DEPTH //Rings are harder to fit in than the tree
 				break;

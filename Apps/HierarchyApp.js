@@ -25,12 +25,12 @@ export class HierarchyApp extends AppRoot {
 			...this.state,
 			popUp: null,
 			depth: stateDepth,
-			mode: this.props.mode || VIEW_TYPES.TREE,
+			view: this.props.view || VIEW_TYPES.TREE,
 			colouring: this.props.colour || 'type',
 			colourise: this.typeColouring,
 			grouping: this.props.group || 'level',
 			showErrors: this.props.eb || 'off',
-			sortType: this.props.sort || 'none',
+			sortType: this.props.sort || 'id',
 			sortDir: this.props.dir || 'ascending',
 
 			configOpen: false,
@@ -87,21 +87,21 @@ export class HierarchyApp extends AppRoot {
 	}
 
 
-	modeChange = (e) => {
-		var newMode = e.target.value;
+	viewChange = (e) => {
+		var newView = e.target.value;
 		this.setState((prev) => {
-			if (newMode === VIEW_TYPES.TIMELINE) {
-				return { mode: newMode, sortType: 'count' }
+			if (newView === VIEW_TYPES.TIMELINE) {
+				return { view: newView, sortType: 'count' }
 			}
-			if ((prev.sortType === "title") && (newMode === VIEW_TYPES.SUNBURST)) {
-				return { mode: newMode, sortType: 'count' }
+			if ((prev.sortType === "title") && (newView === VIEW_TYPES.SUNBURST)) {
+				return { view: newView, sortType: 'count' }
 			}
-			else if ((prev.sortType === "count") && (newMode === VIEW_TYPES.TREE)) {
-				return { mode: newMode, sortType: 'size' }
+			else if ((prev.sortType === "count") && (newView === VIEW_TYPES.TREE)) {
+				return { view: newView, sortType: 'size' }
 			}
-			return { mode: newMode }
+			return { view: newView }
 		});
-		if (this.props.modeChange) this.props.modeChange(newMode);
+		if (this.props.viewChange) this.props.viewChange(newView);
 	}
 
 	sortChange = (e) => {

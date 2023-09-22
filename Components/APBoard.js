@@ -1,5 +1,5 @@
 import { Box, Drawer, Grid, Stack, TextField } from "@mui/material";
-import { ascending, descending, hierarchy, select } from "d3";
+import { hierarchy } from "d3";
 import { filter, max, min, reject, union, unionWith } from "lodash";
 
 import { Settings } from "@mui/icons-material";
@@ -14,9 +14,9 @@ import { HierarchyApp } from "../Apps/HierarchyApp";
 import { APPartitionView } from "../Apps/PartitionApp";
 import { APSunburstView } from "../Apps/SunburstApp";
 import { APTreeView } from "../Apps/TreeApp";
+import { compareSvgNode, searchNodeTree, svgNodeClicked } from "../Utils/Client/SdkSvg";
 import { ConfigDrawer } from "./ConfigDrawer";
 import { ReqsProgress } from "./ReqsProgress";
-import { compareSvgNode, searchNodeTree, svgNodeClicked } from "../Utils/Client/SdkSvg";
 
 export class APBoard extends HierarchyApp {
 
@@ -245,15 +245,15 @@ export class APBoard extends HierarchyApp {
 
 					</Grid>
 
-					{this.state.mode === VIEW_TYPES.TIMELINE ?
+					{this.state.view === VIEW_TYPES.TIMELINE ?
 						<APTimeLineView {...appProps}
 						/> : null}
 
-					{this.state.mode === VIEW_TYPES.PARTITION ?
+					{this.state.view === VIEW_TYPES.PARTITION ?
 						<APPartitionView {...appProps} /> : null}
-					{this.state.mode === VIEW_TYPES.TREE ?
+					{this.state.view === VIEW_TYPES.TREE ?
 						<APTreeView {...appProps} /> : null}
-					{this.state.mode === VIEW_TYPES.SUNBURST ?
+					{this.state.view === VIEW_TYPES.SUNBURST ?
 						<APSunburstView {...appProps} /> : null}
 
 					<ConfigDrawer
@@ -264,8 +264,8 @@ export class APBoard extends HierarchyApp {
 						open={this.state.configOpen}
 						items={this.state.topLevelList}
 						allItems={this.root.children}
-						mode={this.state.mode}
-						modeChange={this.modeChange}
+						view={this.state.view}
+						viewChange={this.viewChange}
 						sort={this.state.sortType}
 						sortChange={this.sortChange}
 						sortDir={this.state.sortDir}
@@ -317,7 +317,7 @@ export class APBoard extends HierarchyApp {
 			as += "?"
 		}
 		as += "sort=" + this.state.sortType
-		as += "&mode=" + this.state.mode
+		as += "&view=" + this.state.view
 		as += "&dir=" + this.state.sortDir
 		as += "&colour=" + this.state.colouring
 		as += "&depth=" + this.state.depth

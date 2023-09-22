@@ -10,8 +10,8 @@ export function ConfigDrawer({
     open,
     allItems,
     items,
-    mode,
-    modeChange,
+    view,
+    viewChange,
     sort,
     sortChange,
     sortDir,
@@ -100,8 +100,8 @@ export function ConfigDrawer({
                                 <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
                                     <InputLabel>View</InputLabel>
                                     <Select
-                                        value={mode}
-                                        onChange={modeChange}
+                                        value={view}
+                                        onChange={viewChange}
                                         label="View"
                                     >
                                         <MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
@@ -120,14 +120,13 @@ export function ConfigDrawer({
                                             onChange={sortChange}
                                             label="Sort By"
                                         >
-                                            <MenuItem value="none">None</MenuItem>
                                             <MenuItem value="plannedStart">Planned Start</MenuItem>
                                             <MenuItem value="plannedFinish">Planned End</MenuItem>
                                             <MenuItem value="size">Size</MenuItem>
                                             <MenuItem value="r_size">Size Rollup</MenuItem>
-                                            {mode === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
+                                            {view === VIEW_TYPES.SUNBURST ? null : <MenuItem value="title">Title</MenuItem>}
                                             <MenuItem value="score">Score Total</MenuItem>
-                                            {mode === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
+                                            {view === VIEW_TYPES.TREE ? null : <MenuItem value="count">Card Count</MenuItem>}
 
                                             <MenuItem value="id">ID</MenuItem>
                                         </Select>
@@ -158,8 +157,8 @@ export function ConfigDrawer({
                                             onChange={sortDirChange}
                                             label="Sort Direction"
                                         >
-                                            <MenuItem value="asc">Ascending</MenuItem>
-                                            <MenuItem value="desc">Descending</MenuItem>
+                                            <MenuItem value="ascending">Ascending</MenuItem>
+                                            <MenuItem value="descending">Descending</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -185,7 +184,7 @@ export function ConfigDrawer({
                                     </FormControl>
                                 </Grid>
                                 : null}
-                            {(mode === VIEW_TYPES.TIMELINE) && Boolean(groupChange) ?
+                            {(view === VIEW_TYPES.TIMELINE) && Boolean(groupChange) ?
                                 <Grid item>
                                     <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
                                         <InputLabel>Group By</InputLabel>
