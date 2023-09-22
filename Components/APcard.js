@@ -303,10 +303,12 @@ export class APCard extends React.Component {
 										<Grid item sx={cardDescriptionFieldStyle} >
 											<Grid container>
 												<Grid item>
-													<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography></Paper>
+													<Paper elevation={0} sx={titlePaperStyle}>
+														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography>
+													</Paper>
 												</Grid>
 												<Grid item>
-													<IconButton onClick={this.openBoard}>
+													<IconButton xs={2} onClick={this.openBoard}>
 														<OpenInNew />
 													</IconButton>
 												</Grid>
@@ -316,6 +318,7 @@ export class APCard extends React.Component {
 													readOnly: true,
 												}}
 												variant="outlined"
+												className='card-description-field'
 												sx={{ width: "100%" }}
 												value={this.state.data.board.title}
 											/>
