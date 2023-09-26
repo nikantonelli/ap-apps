@@ -71,6 +71,7 @@ export class APdateRange extends React.Component {
 				<LocalizationProvider dateAdapter={AdapterDayjs}>
 					<DatePicker
 						{...startError}
+						readOnly={this.props.readOnly}
 						showDaysOutsideCurrentMonth
 						label="Start Date"
 						format="LL"
@@ -80,6 +81,7 @@ export class APdateRange extends React.Component {
 					<Paper sx={{ margin: "20px" }} elevation={0}> until </Paper>
 					<DatePicker
 						{...endError}
+						readOnly={this.props.readOnly}
 						showDaysOutsideCurrentMonth
 						label="End Date"
 						format="LL"

@@ -1,9 +1,10 @@
 import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
+import { find } from "lodash";
 import React from "react";
-import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 import { getCard, updateCard } from "../Utils/Client/Sdk";
+import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 import { APBlocked } from "./AP-Fields/blocked";
 import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";
@@ -13,7 +14,6 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
 import { ConnectionTable } from "./ConnectionTable";
-import { find } from "lodash";
 
 
 export class APCard extends React.Component {
@@ -25,9 +25,9 @@ export class APCard extends React.Component {
 	static PROGRESS_PANEL_NAME = "progressSection"
 	static FIELDNAMES = {
 		PLANSTART: 'plannedStart',
-		PLANEND:  'plannedFinish',
-		TITLE:    'title',
-		DESC:     'description'
+		PLANEND: 'plannedFinish',
+		TITLE: 'title',
+		DESC: 'description'
 	}
 
 	constructor(props) {
@@ -50,27 +50,47 @@ export class APCard extends React.Component {
 		this.state[APCard.PROGRESS_PANEL_NAME] = false;
 
 		this.outstandingChanges = [];	//All current 'changed' values of non-instant-update fields are held here
-		this.savedData = {...props.card};
+		this.savedData = { ...props.card };
+	}
+
+	updateDataClose = () => {
+		if (this.outstandingChanges.length) {
+			updateCard(this.props.host, this.props.card.id, JSON.stringify(this.getUpdates())).then((result) => {
+				if (result) {
+					window.opener = self
+					window.close()
+				}
+			})
+		} else {
+			window.opener = self
+			window.close()
+		}
+	}
+
+
+	getUpdates = () => {
+		var changes = []
+		this.outstandingChanges.forEach((change) => {
+			switch (change.field) {
+				case APCard.FIELDNAMES.DESC:
+				case APCard.FIELDNAMES.TITLE:
+				case APCard.FIELDNAMES.PLANEND:
+				case APCard.FIELDNAMES.PLANSTART: {
+					changes.push({ op: "replace", path: "/" + change.field, value: change.value })
+					break;
+				}
+				default:
+					break;
+			}
+		})
+		return changes
 	}
 
 	checkUpdates = () => {
 		if (this.outstandingChanges.length) {
-			var changes =[]
-			this.outstandingChanges.forEach((change) => {
-				switch(change.field) {
-					case APCard.FIELDNAMES.DESC:
-					case APCard.FIELDNAMES.TITLE:
-					case APCard.FIELDNAMES.PLANEND:
-					case APCard.FIELDNAMES.PLANSTART: {
-						changes.push({ op: "replace", path: "/" + change.field, value: change.value})
-						break;
-					}
-					default:
-						break;
-				}
-			})
-
-			this.updateCard(JSON.stringify(changes))
+			this.updateCard(JSON.stringify(this.getUpdates()))
+			this.savedData = { ...this.state.data }
+			this.outstandingChanges = [];
 		}
 	}
 
@@ -124,21 +144,28 @@ export class APCard extends React.Component {
 		this.setData(data);
 	}
 
+	dateFormatter = (date) => {
+		var retStr = date.toISOString()
+		 return retStr.substr(0,10);
+	}
+
 	plannedStartChanged = (newValue) => {
 		var data = { ...this.state.data };
-		data.plannedStart = newValue.toLocaleString();
+		var date = new Date(newValue)
+		data.plannedStart = this.dateFormatter(date)
 		var change = find(this.outstandingChanges, ['field', APCard.FIELDNAMES.PLANSTART])
 		if (change) change.value = data.plannedStart;
-		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANSTART, value: data.plannedStart})
+		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANSTART, value: data.plannedStart })
 		this.setData(data)
 	}
 
 	plannedFinishChanged = (newValue) => {
 		var data = { ...this.state.data };
-		data.plannedFinish = newValue.toLocaleString();
+		var date = new Date(newValue)
+		data.plannedFinish = this.dateFormatter(date)
 		var change = find(this.outstandingChanges, ['field', APCard.FIELDNAMES.PLANEND])
 		if (change) change.value = data.plannedFinish;
-		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANEND, value: data.plannedFinish})
+		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANEND, value: data.plannedFinish })
 		this.setData(data)
 	}
 
@@ -152,11 +179,11 @@ export class APCard extends React.Component {
 	}
 
 	cancelChanges = (e) => {
-		
+
 		this.dispatchDescClear = true;
 		this.setState((prev) => {
 			this.outstandingChanges = [];
-			return { isChanged: false, data: {...this.savedData} }
+			return { isChanged: false, data: { ...this.savedData } }
 		})
 		window.dispatchEvent(new Event('clear-editor-description'));
 	}
@@ -225,7 +252,7 @@ export class APCard extends React.Component {
 	updateCard = async (bodyStr) => {
 		if (!this.props.readOnly) {
 			var newCard = await updateCard(this.props.host, this.props.card.id, bodyStr)
-			this.setState({ data: newCard })
+			this.setState({ data: newCard, isChanged: false })
 		}
 	}
 
@@ -322,7 +349,7 @@ export class APCard extends React.Component {
 												<SaveAltOutlined />
 											</IconButton>
 										</Tooltip>
-										<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
+										<Tooltip title={this.state.isChanged ? "Save and Close" : "Close"}>
 											<IconButton
 												size='large'
 												className="options-button-icon"
@@ -518,6 +545,7 @@ export class APCard extends React.Component {
 									<Grid item sx={cardDescriptionFieldStyle} >
 										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Actual Dates</Typography></Paper>
 										<APdateRange
+											readOnly={true}
 											start={this.state.data.actualStart}
 											end={this.state.data.actualFinish}
 										/>
