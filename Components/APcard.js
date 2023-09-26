@@ -3,7 +3,7 @@ import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardC
 
 import React from "react";
 import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
-import { getCard } from "../Utils/Client/Sdk";
+import { getCard, updateCard } from "../Utils/Client/Sdk";
 import { APBlocked } from "./AP-Fields/blocked";
 import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";
@@ -13,6 +13,7 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
 import { ConnectionTable } from "./ConnectionTable";
+import { find } from "lodash";
 
 
 export class APCard extends React.Component {
@@ -22,6 +23,12 @@ export class APCard extends React.Component {
 	static DETAILS_PANEL_NAME = "detailsSection";
 	static SCHEDULE_PANEL_NAME = "scheduleSection"
 	static PROGRESS_PANEL_NAME = "progressSection"
+	static FIELDNAMES = {
+		PLANSTART: 'plannedStart',
+		PLANEND:  'plannedFinish',
+		TITLE:    'title',
+		DESC:     'description'
+	}
 
 	constructor(props) {
 		super(props);
@@ -29,13 +36,12 @@ export class APCard extends React.Component {
 		this.state = {
 			data: props.card || null,
 			description: props.card || props.card.description,
-			changed: false,
 			context: props.context || null,
 			contextIcons: null,
 			openAll: true,
-			blocked: props.card || props.card.blockedStatus.isBlocked,
 			loadSource: props.loadType || 'card',
-			parents: []
+			parents: [],
+			isChanged: false
 		}
 		this.state[APCard.CONNECTIONS_PANEL_NAME] = false;
 		this.state[APCard.PEOPLE_PANEL_NAME] = false;
@@ -43,33 +49,37 @@ export class APCard extends React.Component {
 		this.state[APCard.SCHEDULE_PANEL_NAME] = false;
 		this.state[APCard.PROGRESS_PANEL_NAME] = false;
 
-		this.savedData = props.card;
+		this.outstandingChanges = [];	//All current 'changed' values of non-instant-update fields are held here
+		this.savedData = {...props.card};
+	}
+
+	checkUpdates = () => {
+		if (this.outstandingChanges.length) {
+			var changes =[]
+			this.outstandingChanges.forEach((change) => {
+				switch(change.field) {
+					case APCard.FIELDNAMES.DESC:
+					case APCard.FIELDNAMES.TITLE:
+					case APCard.FIELDNAMES.PLANEND:
+					case APCard.FIELDNAMES.PLANSTART: {
+						changes.push({ op: "replace", path: "/" + change.field, value: change.value})
+						break;
+					}
+					default:
+						break;
+				}
+			})
+
+			this.updateCard(JSON.stringify(changes))
+		}
 	}
 
 	closeAction = (e) => {
 		if (this.props.onClose) this.props.onClose(e)
 	}
 
-	updateDescription = (e) => {
-		if (this.isChanged !== true) {
-			return;
-		}
-		var data = { ...this.state.data };
-		this.setChanged(data);
-	}
-
-	updateTitle = (e) => {
-		if (this.isChanged !== true) {
-			return;
-		}
-		var data = { ...this.state.data };
-		this.setChanged(data);
-	}
-
-	setChanged = (data) => {
-		this.setState({ data: data });
-		this.isChanged = true;
-
+	setData = (data) => {
+		this.setState({ isChanged: true, data: data });
 	}
 
 	componentDidMount() {
@@ -77,7 +87,7 @@ export class APCard extends React.Component {
 		var gc = this.props.card.parentCards.map((p) => getCard(this.props.host, p.cardId))
 		if (gc.length) {
 			Promise.all(gc).then((results) => {
-				me.setState({ parents : results})
+				me.setState({ parents: results })
 			})
 		}
 	}
@@ -96,7 +106,10 @@ export class APCard extends React.Component {
 			if (!this.dispatchDescClear) {
 				var data = { ...this.state.data }
 				data.description = editorValue
-				this.setChanged(data)
+				var change = find(this.outstandingChanges, ['field', 'description'])
+				if (change) change.value = data.description;
+				else this.outstandingChanges.push({ field: 'description', value: data.description })
+				this.setData(data)
 			}
 			this.dispatchDescClear = false
 		}
@@ -105,11 +118,32 @@ export class APCard extends React.Component {
 	titleChanged = (e) => {
 		var data = { ...this.state.data };
 		data.title = e.target.value.substr(0, 127);
-		this.setChanged(data);
+		var change = find(this.outstandingChanges, ['field', 'title'])
+		if (change) change.value = data.title;
+		else this.outstandingChanges.push({ field: 'title', value: data.title })
+		this.setData(data);
+	}
+
+	plannedStartChanged = (newValue) => {
+		var data = { ...this.state.data };
+		data.plannedStart = newValue.toLocaleString();
+		var change = find(this.outstandingChanges, ['field', APCard.FIELDNAMES.PLANSTART])
+		if (change) change.value = data.plannedStart;
+		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANSTART, value: data.plannedStart})
+		this.setData(data)
+	}
+
+	plannedFinishChanged = (newValue) => {
+		var data = { ...this.state.data };
+		data.plannedFinish = newValue.toLocaleString();
+		var change = find(this.outstandingChanges, ['field', APCard.FIELDNAMES.PLANEND])
+		if (change) change.value = data.plannedFinish;
+		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANEND, value: data.plannedFinish})
+		this.setData(data)
 	}
 
 	checkBeforeLeave = (e) => {
-		if (this.isChanged) {
+		if (this.state.isChanged) {
 			SdkUtils.showError({ message: "Save/Cancel changes before leaving page" });
 			e.preventDefault();
 			e.returnValue = ''
@@ -118,9 +152,12 @@ export class APCard extends React.Component {
 	}
 
 	cancelChanges = (e) => {
-		this.isChanged = false;
-		this.setState({ data: this.savedData })
+		
 		this.dispatchDescClear = true;
+		this.setState((prev) => {
+			this.outstandingChanges = [];
+			return { isChanged: false, data: {...this.savedData} }
+		})
 		window.dispatchEvent(new Event('clear-editor-description'));
 	}
 
@@ -136,9 +173,60 @@ export class APCard extends React.Component {
 		this.setState(ed);
 	}
 
-	toggleBlocked = (evt) => {
+	blockedUpdated = async (newValue) => {
+		this.updateCard(
+			JSON.stringify(
+				[
+					{
+						op: "add",
+						path: "/blockReason",
+						value: "Blocked by User"
+					},
+					{
+						op: "replace",
+						path: "/isBlocked",
+						value: newValue
+					}
+				]
+			)
+		)
 
-		if (!this.props.readOnly) this.setState((prev) => { return { blocked: !prev.blocked } })
+	}
+
+	sizeUpdated = async (value) => {
+		this.updateCard(
+			JSON.stringify(
+				[
+					{
+						op: "replace",
+						path: "/size",
+						value: value
+					}
+				]
+			)
+		)
+	}
+
+	priorityUpdated = async (value) => {
+		this.updateCard(
+			JSON.stringify(
+				[
+					{
+						op: "replace",
+						path: "/priority",
+						value: value
+					}
+				]
+			)
+		)
+
+	}
+
+	updateCard = async (bodyStr) => {
+		if (!this.props.readOnly) {
+			var newCard = await updateCard(this.props.host, this.props.card.id, bodyStr)
+			this.setState({ data: newCard })
+		}
 	}
 
 	changeSection = (evt) => {
@@ -229,7 +317,7 @@ export class APCard extends React.Component {
 												className="options-button-icon"
 												aria-label='save card'
 												onClick={this.checkUpdates}
-												color={this.isChanged ? 'error' : 'default'}
+												color={this.state.isChanged ? 'error' : 'default'}
 											>
 												<SaveAltOutlined />
 											</IconButton>
@@ -240,7 +328,7 @@ export class APCard extends React.Component {
 												className="options-button-icon"
 												aria-label='save if needed, and close'
 												onClick={this.updateDataClose}
-												color={this.isChanged ? 'error' : 'default'}
+												color={this.state.isChanged ? 'error' : 'default'}
 											>
 												<Logout />
 											</IconButton>
@@ -296,7 +384,6 @@ export class APCard extends React.Component {
 												variant="outlined"
 												className='card-description-field'
 												value={this.state.data.title}
-												onBlur={this.updateTitle}
 												onChange={this.titleChanged}
 											/>
 										</Grid>
@@ -336,17 +423,19 @@ export class APCard extends React.Component {
 												<Grid xs={2} item>
 													<APBlocked
 														status={this.state.data.blockedStatus}
-														toggleBlocked={this.toggleBlocked}
+														updated={this.blockedUpdated}
 													/>
 												</Grid>
 												<Grid xs={2} item>
 													<APSize
+														updated={this.sizeUpdated}
 														size={this.state.data.size}
 													/>
 												</Grid>
 												<Grid xs={2} item>
 													<APPriority
 														priority={this.state.data.priority}
+														updated={this.priorityUpdated}
 													/>
 												</Grid>
 												<Grid xs={2} item>
@@ -422,6 +511,8 @@ export class APCard extends React.Component {
 										<APdateRange
 											start={this.state.data.plannedStart}
 											end={this.state.data.plannedFinish}
+											startChange={this.plannedStartChanged}
+											endChange={this.plannedFinishChanged}
 										/>
 									</Grid>
 									<Grid item sx={cardDescriptionFieldStyle} >

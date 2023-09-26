@@ -17,7 +17,7 @@ export default async function handler(req, res) {
 	const queryStr = req.query['q'];
 	const offset = req.query['offset'];
 	
-	if (globalThis.dataProvider == null) {
+	if (!Boolean(globalThis.dataProvider)) {
 		globalThis.dataProvider = new DataProvider()
 	}
 

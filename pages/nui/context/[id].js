@@ -18,12 +18,12 @@ export default function Board(props) {
 }
 
 export async function getServerSideProps({ req, params, query }) {
-	if (globalThis.dataProvider == null) {
+	if (!Boolean(globalThis.dataProvider)) {
 		globalThis.dataProvider = new DataProvider()
 	}
 	var bs = new BoardService(req.headers.host);
 	var context = await bs.get(params.id)
-	var cards = await bs.getCards(params.id);
+	var cards = await bs.getCards(params.id); //Don't add these to the cache as they are the wrtong shape!
 	var appProps = { cards: cards, context: context, host: req.headers.host }
 	extractOpts(query, appProps)
 

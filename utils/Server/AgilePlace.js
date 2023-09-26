@@ -63,7 +63,7 @@ class AgilePlace {
 							break;
 						}
 						case 422: {
-							console.log(`${response.statusText}: ${response.text()}`)
+							console.log(await response.text())
 							break;
 						}
 						case 429: {

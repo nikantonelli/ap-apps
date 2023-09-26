@@ -32,6 +32,16 @@ export const getCard = (host, cardId) => {
 	return doRequest(params);
 }
 
+export const updateCard = (host, cardId, updates) => {
+	var params = {
+		host: host,
+		body: updates,
+		mode: "PATCH",
+		url: "/card/" + cardId,
+	}
+	return doRequest(params);
+}
+
 export const searchRootTree = (element, id) => {
 	if (element.id === id) {
 		return element;
@@ -254,6 +264,10 @@ export const getAvatar = async (host, userId) => {
 	return doRequest(params);
 }
 
+export const  notifyChange = (itemType, id) => {
+
+}
+
 export const doRequest = async (params) => {
 	var ps = { method: params.mode }
 	if (params.body) {
@@ -261,7 +275,7 @@ export const doRequest = async (params) => {
 	}
 
 	var headers = new Headers();
-	if (params.mode === "POST") headers.append("Content-Type", "application/json");	//If we do a POST, we send json
+	if (params.mode === "POST") headers.append("Content-type", "application/json");	//If we do a POST, we send json
 	ps.headers = headers
 
 	if (params.type) {

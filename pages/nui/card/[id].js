@@ -40,19 +40,19 @@ export default class Item extends React.Component {
 
 
 export async function getServerSideProps({ req, params, query }) {
-	if (globalThis.dataProvider == null) {
+	if (!Boolean(globalThis.dataProvider)) {
 		globalThis.dataProvider = new DataProvider()
 	}
+	
 	var card = globalThis.dataProvider.inCache(params.id, 'card');
 	var appProps = {host: req.headers.host}
 	extractOpts(query, appProps)
 
 	if (card === null) {
 		var cs = new CardService(req.headers.host);
-		card = await cs.get(params.id)
+		card = await cs.get(params.id)	//This adds it to the cache
 	}
 	if (card) {
-		globalThis.dataProvider.addToCache(card, 'card')
 		appProps.card = card
 		return ({ props: {
 			...appProps
