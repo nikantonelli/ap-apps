@@ -54,21 +54,6 @@ export class APCard extends React.Component {
 		this.savedData = { ...props.card };
 	}
 
-	updateDataClose = () => {
-		if (this.outstandingChanges.length) {
-			updateCard(this.props.host, this.props.card.id, JSON.stringify(this.getUpdates())).then((result) => {
-				if (result) {
-					window.opener = self
-					window.close()
-				}
-			})
-		} else {
-			window.opener = self
-			window.close()
-		}
-	}
-
-
 	getUpdates = () => {
 		var changes = []
 		this.outstandingChanges.forEach((change) => {
@@ -350,34 +335,12 @@ export class APCard extends React.Component {
 												<SaveAltOutlined />
 											</IconButton>
 										</Tooltip>
-										<Tooltip title={this.state.isChanged ? "Save and Close" : "Close"}>
-											<IconButton
-												size='large'
-												className="options-button-icon"
-												aria-label='save if needed, and close'
-												onClick={this.updateDataClose}
-												color={this.state.isChanged ? 'error' : 'default'}
-											>
-												<Logout />
-											</IconButton>
-										</Tooltip>
 										<Tooltip title="Cancel Changes">
 											<IconButton size='large' className="options-button-icon" aria-label='cancel changes' onClick={this.cancelChanges}>
 												<CancelPresentation />
 											</IconButton>
 										</Tooltip>
 
-										<Tooltip title="Send to Recycle Bin">
-											<IconButton size='large' className="options-button-icon" aria-label="send to recycle bin" onClick={this.deleteRecycle}>
-												<Delete />
-											</IconButton>
-										</Tooltip>
-
-										<Tooltip title="Delete Forever">
-											<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.deleteForever} >
-												<DeleteForever />
-											</IconButton>
-										</Tooltip>
 									</>
 									: <IconButton onClick={this.closeAction}>
 										<CancelOutlined></CancelOutlined>

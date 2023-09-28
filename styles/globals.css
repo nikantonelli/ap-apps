@@ -1354,7 +1354,7 @@ li:nth-child(even)>input+label:hover {
 }
 
 .react-autosuggest__input {
-	border:black solid 1px;
+	border:grey solid 1px;
 	border-radius: 5px;
 	padding: 3px;
 	font-size: 14px;
