@@ -18,7 +18,6 @@ export const titlePaperStyle = {
     marginBottom: "5px",
     backgroundColor: "#ddd",
 	width: "100%",
-	minWidth: "600px",
 }
 
 export const titleFieldStyle = {
@@ -27,5 +26,4 @@ export const titleFieldStyle = {
 	marginBottom: "0px",
 	marginLeft: "5px",
 	width: "100%",
-	minWidth: "600px",
 }

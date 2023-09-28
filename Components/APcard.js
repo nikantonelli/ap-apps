@@ -14,6 +14,7 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
 import { ConnectionTable } from "./ConnectionTable";
+import { APtags } from "./AP-Fields/tags";
 
 
 export class APCard extends React.Component {
@@ -146,7 +147,7 @@ export class APCard extends React.Component {
 
 	dateFormatter = (date) => {
 		var retStr = date.toISOString()
-		 return retStr.substr(0,10);
+		return retStr.substr(0, 10);
 	}
 
 	plannedStartChanged = (newValue) => {
@@ -285,12 +286,12 @@ export class APCard extends React.Component {
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
-
-		var typeTitle = (this.state.loadSource === 'card') ? this.state.data.type.title : this.state.data.cardType.name
-		var typeColour = (this.state.loadSource === 'card') ? this.state.data.type.cardColor : this.state.data.color
+		var card = this.state.data;
+		var typeTitle = (this.state.loadSource === 'card') ? card.type.title : card.cardType.name
+		var typeColour = (this.state.loadSource === 'card') ? card.type.cardColor : card.color
 		if (this.state.data != null) {
 			return (
-				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-" + this.state.data.id}>
+				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-" + card.id}>
 					<Grid style={{ backgroundColor: typeColour }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'left' }} >
@@ -304,7 +305,7 @@ export class APCard extends React.Component {
 										<List />
 									</IconButton>
 								</Tooltip>
-								{this.state.data.connectedCardStats ?
+								{card.connectedCardStats ?
 									<Tooltip title="Child Progress">
 										<IconButton id={APCard.PROGRESS_PANEL_NAME} size='large' className="options-button-icon" aria-label='progress panel' onClick={this.changeSection}>
 											<BarChart />
@@ -388,14 +389,14 @@ export class APCard extends React.Component {
 					<CardContent sx={{ backgroundColor: typeColour }}>
 						<Accordion expanded={this.state[APCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="details-content" id={APCard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state[APCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
+								<Typography variant={sectionHeaderType}>{this.state[APCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + card.id : card.title}</Typography>
 							</AccordionSummary>
 							<Grid container direction="column" >
 								<Grid item>
 									<Grid container direction="row">
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Grid container>
-												<Grid item>
+										<Grid item>
+											<Grid container sx={cardDescriptionFieldStyle} >
+												<Grid xs item>
 													<Paper elevation={0} sx={titlePaperStyle}>
 														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography>
 													</Paper>
@@ -407,16 +408,15 @@ export class APCard extends React.Component {
 												</Grid>
 											</Grid>
 											<TextField
-												sx={{ width: "100%" }}
+												 sx={cardDescriptionFieldStyle} 
 												variant="outlined"
-												className='card-description-field'
-												value={this.state.data.title}
+												value={card.title}
 												onChange={this.titleChanged}
 											/>
 										</Grid>
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Grid container>
-												<Grid item>
+										<Grid item>
+											<Grid container sx={cardDescriptionFieldStyle}>
+												<Grid xs item>
 													<Paper elevation={0} sx={titlePaperStyle}>
 														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography>
 													</Paper>
@@ -432,53 +432,73 @@ export class APCard extends React.Component {
 													readOnly: true,
 												}}
 												variant="outlined"
-												className='card-description-field'
-												sx={{ width: "100%" }}
-												value={this.state.data.board.title}
+												sx={cardDescriptionFieldStyle} 
+												value={card.board.title}
 											/>
 										</Grid>
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
-												{"Status: " + ((this.state.data.lane.cardStatus === "finished") ?
-													" Finished (" + this.state.data.actualFinish + ")" :
-													(this.state.data.lane.cardStatus === "notStarted") ?
-														" Not Started" :
-														" Started (" + this.state.data.actualStart + ")"
-												)}
-											</Typography></Paper>
-											<Grid container direction="row">
-												<Grid xs={2} item>
-													<APBlocked
-														status={this.state.data.blockedStatus}
-														updated={this.blockedUpdated}
-													/>
+										<Grid item >
+											<Grid container direction="column" sx={cardDescriptionFieldStyle}>
+												<Grid item>
+												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+													{"Status: " + (Boolean(card.actualFinish) ?
+														" Finished (" + card.actualFinish + ")" :
+														Boolean(card.actualStart) ?
+															" Started (" + card.actualStart + ")" :
+															" Not Started"
+													)}
+												</Typography></Paper>
 												</Grid>
-												<Grid xs={2} item>
-													<APSize
-														updated={this.sizeUpdated}
-														size={this.state.data.size}
-													/>
-												</Grid>
-												<Grid xs={2} item>
-													<APPriority
-														priority={this.state.data.priority}
-														updated={this.priorityUpdated}
-													/>
-												</Grid>
-												<Grid xs={2} item>
-													<Grid container sx={{ alignItems: 'center' }} direction="column">
-														{Boolean(this.state.data.customIcon) ? (
-															<>
-																<Grid item sx={{ margin: "0px" }}>
-																	<img style={{ width: "28px", height: "28px" }} alt={this.state.data.customIcon.name} src={this.cleanIconPath(this.state.data.customIcon.iconPath)} />
-																</Grid>
-																<Grid item>
-																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>
-																</Grid>
-															</>
-														) : null}
+												<Grid item>
+												<Grid container direction="row">
+													<Grid xs={2} item>
+														<APBlocked
+															status={card.blockedStatus}
+															updated={this.blockedUpdated}
+														/>
+													</Grid>
+													<Grid xs={2} item>
+														<APSize
+															updated={this.sizeUpdated}
+															size={card.size}
+														/>
+													</Grid>
+													<Grid xs={2} item>
+														<APPriority
+															priority={card.priority}
+															updated={this.priorityUpdated}
+														/>
+													</Grid>
+													<Grid xs={2} item>
+														<Grid container sx={{ alignItems: 'center' }} direction="column">
+															{Boolean(card.customIcon) ? (
+																<>
+																	<Grid item sx={{ margin: "0px" }}>
+																		<img style={{ width: "28px", height: "28px" }} alt={card.customIcon.name} src={this.cleanIconPath(card.customIcon.iconPath)} />
+																	</Grid>
+																	<Grid item>
+																		<Paper elevation={0}>{card.customIcon.title}</Paper>
+																	</Grid>
+																</>
+															) : null}
+														</Grid>
 													</Grid>
 												</Grid>
+												</Grid>
+											</Grid>
+										</Grid>
+										<Grid item sx={cardDescriptionFieldStyle} >
+											<Paper elevation={0} sx={titlePaperStyle}>
+												<Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+													Tags
+												</Typography></Paper>
+											<Grid container direction="row">
+												<Grid item>
+													<APtags
+														host={this.props.host}
+														card={card}
+													/>
+												</Grid>
+
 											</Grid>
 										</Grid>
 									</Grid>
@@ -486,7 +506,7 @@ export class APCard extends React.Component {
 
 								<Grid item sx={cardDescriptionFieldStyle}>
 									<APdescription
-										description={this.state.data.description}
+										description={card.description}
 										onChange={this.descriptionChanged}
 										headerType={fieldHeaderType}
 									/>
@@ -494,7 +514,7 @@ export class APCard extends React.Component {
 
 							</Grid>
 						</Accordion>
-						{this.state.data.connectedCardStats ?
+						{card.connectedCardStats ?
 							<Accordion expanded={this.state[APCard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 								<AccordionSummary aria-controls="progress-content" id={APCard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
 									<Typography variant={sectionHeaderType}>Child Progress</Typography>
@@ -506,9 +526,9 @@ export class APCard extends React.Component {
 												<Typography
 													variant={fieldHeaderType}
 													sx={titleFieldStyle}
-													color={(!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart)) ? "error" : "text.primary"}
+													color={(!Boolean(card.plannedFinish) || !Boolean(card.plannedStart)) ? "error" : "text.primary"}
 												>
-													{"Percent Complete " + ((!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart)) ? "(Incomplete Planned Dates)" : "")}
+													{"Percent Complete " + ((!Boolean(card.plannedFinish) || !Boolean(card.plannedStart)) ? "(Incomplete Planned Dates)" : "")}
 												</Typography>
 											</Paper>
 											<APChildStats
@@ -525,7 +545,7 @@ export class APCard extends React.Component {
 							: null}
 						<Accordion expanded={this.state[APCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="schedule-content" id={APCard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType} color={(Boolean(this.state.data.plannedStart) && Boolean(this.state.data.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
+								<Typography variant={sectionHeaderType} color={(Boolean(card.plannedStart) && Boolean(card.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
 								<Grid container direction="row">
@@ -536,8 +556,8 @@ export class APCard extends React.Component {
 											</Typography>
 										</Paper>
 										<APdateRange
-											start={this.state.data.plannedStart}
-											end={this.state.data.plannedFinish}
+											start={card.plannedStart}
+											end={card.plannedFinish}
 											startChange={this.plannedStartChanged}
 											endChange={this.plannedFinishChanged}
 										/>
@@ -546,11 +566,11 @@ export class APCard extends React.Component {
 										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Actual Dates</Typography></Paper>
 										<APdateRange
 											readOnly={true}
-											start={this.state.data.actualStart}
-											end={this.state.data.actualFinish}
+											start={card.actualStart}
+											end={card.actualFinish}
 										/>
 									</Grid>
-									<Grid itemsx={cardDescriptionFieldStyle} >
+									<Grid item sx={cardDescriptionFieldStyle} >
 										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Time Box</Typography></Paper>
 									</Grid>
 								</Grid>

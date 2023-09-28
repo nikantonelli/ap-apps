@@ -441,3 +441,37 @@ export const compareCard = (cmpType, cmpDir, a, b) => {
         }
     }
 }
+
+export const getBoardTags = ( host, boardId) => {
+	var params = {
+		host: host,
+		mode: "GET",
+		url: "/board/" + boardId + "/tag"
+	}
+	return doRequest(params);
+}
+
+export const removeCardTag = async (host, cardId, tagIdx) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "remove",
+				path: "/tags/" + tagIdx
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
+
+export const addCardTag = async (host, cardId, tagName) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "add",
+				path: "/tags/-",
+				value: tagName
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
