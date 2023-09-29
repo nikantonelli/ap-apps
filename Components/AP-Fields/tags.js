@@ -112,8 +112,9 @@ export class APtags extends React.Component {
 
         // Autosuggest will pass through all these props to the input.
         const inputProps = {
-            placeholder: 'Search current board tags',
+            placeholder: 'Type to add tags',
             value,
+            //visible: this.props.readOnly,
             onChange: this.tagsChange,
             onKeyDown: this.selectedTag
         };
@@ -123,21 +124,23 @@ export class APtags extends React.Component {
             <>
                 {this.getCardTags(this.state.card).map((tag) =>
                     <Chip key={tag.key + 1}
-                        onDelete={this.removeTag}
+                        onDelete={this.props.readOnly?null:this.removeTag}
                         deleteIcon={<Delete />}
                         label={tag.value}
                     />)}
-                <div style={{ padding: "5px" }}>
-                    <Autosuggest
-                        key={0}
-                        suggestions={suggestedTags}
-                        onSuggestionsFetchRequested={this.onTagFetchRequested}
-                        onSuggestionsClearRequested={this.onTagClearRequested}
-                        getSuggestionValue={this.getTagValue}
-                        renderSuggestion={this.renderSuggestion}
-                        inputProps={inputProps}
-                    />
-                </div>
+                {this.props.readOnly ? null :
+                    <div style={{ padding: "5px" }}>
+                        <Autosuggest
+                            key={0}
+                            suggestions={suggestedTags}
+                            onSuggestionsFetchRequested={this.onTagFetchRequested}
+                            onSuggestionsClearRequested={this.onTagClearRequested}
+                            getSuggestionValue={this.getTagValue}
+                            renderSuggestion={this.renderSuggestion}
+                            inputProps={inputProps}
+                        />
+                    </div>
+                }
             </>
         );
     }

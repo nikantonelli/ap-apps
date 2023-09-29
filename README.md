@@ -37,9 +37,9 @@ I am fond of a "no-clutter" approach, so a lot of things are accessible through 
 
 Clicking on things in the various layouts can get you:
 1. Hover over the coloured background of an item (not the text) to get a tooltip that will indicate stuff based on the configuration settings for 'sorting' and colouring'
-2. Click to see summary pop-up of the item (flies in from the left - escape, click outside or click on 'x' to close)
-3. Shift-Click to focus on that item in ceratin views. Shift-click again on it to go to parent of the item. In sunburst, the centre takes you back to the top items)
-4. Alt-Click to open item in new tab (similar to pop-up from #1)
+2. Click to see a READONLY summary pop-up of the item (flies in from the left - escape, click outside or click on 'x' to close)
+3. Alt-Click to focus on that item in ceratin views. Shift-click again on it to go to parent of the item. In sunburst, the centre takes you back to the top items)
+4. Shift-Click to open item in new tab (similar to pop-up from #1) for editing purposes
 5. Ctrl-Click to minimise that item (adds ** to end of name to indicate children are hidden)
 
 # The Config Menu

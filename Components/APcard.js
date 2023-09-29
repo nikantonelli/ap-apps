@@ -1,4 +1,4 @@
-import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { find } from "lodash";
@@ -10,11 +10,12 @@ import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";
 import { APPriority } from "./AP-Fields/priority";
 import { APSize } from "./AP-Fields/size";
+import { APtags } from "./AP-Fields/tags";
 import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
 import { ConnectionTable } from "./ConnectionTable";
-import { APtags } from "./AP-Fields/tags";
+import { APCustomIcon } from "./AP-Fields/customIcon";
 
 
 export class APCard extends React.Component {
@@ -371,7 +372,10 @@ export class APCard extends React.Component {
 												</Grid>
 											</Grid>
 											<TextField
-												 sx={cardDescriptionFieldStyle} 
+												sx={cardDescriptionFieldStyle}
+												InputProps={{
+													readOnly: this.props.readOnly,
+												}}
 												variant="outlined"
 												value={card.title}
 												onChange={this.titleChanged}
@@ -395,57 +399,57 @@ export class APCard extends React.Component {
 													readOnly: true,
 												}}
 												variant="outlined"
-												sx={cardDescriptionFieldStyle} 
+												sx={cardDescriptionFieldStyle}
 												value={card.board.title}
 											/>
 										</Grid>
 										<Grid item >
 											<Grid container direction="column" sx={cardDescriptionFieldStyle}>
 												<Grid item>
-												<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
-													{"Status: " + (Boolean(card.actualFinish) ?
-														" Finished (" + card.actualFinish + ")" :
-														Boolean(card.actualStart) ?
-															" Started (" + card.actualStart + ")" :
-															" Not Started"
-													)}
-												</Typography></Paper>
+													<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+														{"Status: " + (Boolean(card.actualFinish) ?
+															" Finished (" + card.actualFinish + ")" :
+															Boolean(card.actualStart) ?
+																" Started (" + card.actualStart + ")" :
+																" Not Started"
+														)}
+													</Typography></Paper>
 												</Grid>
 												<Grid item>
-												<Grid container direction="row">
-													<Grid xs={2} item>
-														<APBlocked
-															status={card.blockedStatus}
-															updated={this.blockedUpdated}
-														/>
-													</Grid>
-													<Grid xs={2} item>
-														<APSize
-															updated={this.sizeUpdated}
-															size={card.size}
-														/>
-													</Grid>
-													<Grid xs={2} item>
-														<APPriority
-															priority={card.priority}
-															updated={this.priorityUpdated}
-														/>
-													</Grid>
-													<Grid xs={2} item>
-														<Grid container sx={{ alignItems: 'center' }} direction="column">
-															{Boolean(card.customIcon) ? (
-																<>
-																	<Grid item sx={{ margin: "0px" }}>
-																		<img style={{ width: "28px", height: "28px" }} alt={card.customIcon.name} src={this.cleanIconPath(card.customIcon.iconPath)} />
-																	</Grid>
-																	<Grid item>
-																		<Paper elevation={0}>{card.customIcon.title}</Paper>
-																	</Grid>
-																</>
-															) : null}
+													<Grid container direction="row" alignItems={"flex-end"}>
+														<Grid xs={2} item>
+															<APBlocked
+																readOnly={this.props.readOnly}
+																status={card.blockedStatus}
+																updated={this.blockedUpdated}
+															/>
+														</Grid>
+														<Grid xs={2} item>
+															<APSize
+																readOnly={this.props.readOnly}
+																updated={this.sizeUpdated}
+																size={card.size}
+															/>
+														</Grid>
+														<Grid xs={2} item>
+															<APPriority
+																readOnly={this.props.readOnly}
+																priority={card.priority}
+																updated={this.priorityUpdated}
+															/>
+														</Grid>
+														<Grid xs={2} item>
+															<Grid container sx={{ alignItems: 'center' }} direction="column">
+																{Boolean(card.customIcon) ? (
+																	<APCustomIcon
+																		host={this.props.host}
+																		card={this.props.card}
+																		readOnly={this.props.readOnly}
+																	/>
+																) : null}
+															</Grid>
 														</Grid>
 													</Grid>
-												</Grid>
 												</Grid>
 											</Grid>
 										</Grid>
@@ -457,6 +461,7 @@ export class APCard extends React.Component {
 											<Grid container direction="row">
 												<Grid item>
 													<APtags
+														readOnly={this.props.readOnly}
 														host={this.props.host}
 														card={card}
 													/>
@@ -469,6 +474,7 @@ export class APCard extends React.Component {
 
 								<Grid item sx={cardDescriptionFieldStyle}>
 									<APdescription
+										readOnly={this.props.readOnly}
 										description={card.description}
 										onChange={this.descriptionChanged}
 										headerType={fieldHeaderType}

@@ -46,7 +46,7 @@ export class APPriority extends React.Component {
 					<MenuItem onClick={this.selectItem} value={3} >Low</MenuItem>
 				</Menu>
 
-				<Grid container sx={{ alignItems: 'center' }} direction="column" onClick={this.menuOpen}>
+				<Grid container sx={{ alignItems: 'center' }} direction="column" onClick={this.props.readOnly?null:this.menuOpen}>
 					<Grid item>
 						<Chip color={
 							this.props.priority === "critical" ? "error" :

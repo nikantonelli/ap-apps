@@ -68,7 +68,7 @@ export class APSize extends React.Component {
 					<MenuItem onClick={this.selectItem} value={13} >XL</MenuItem>
 				</Menu>
 
-				<Grid onClick={this.menuOpen} id="size-container" container sx={{ alignItems: 'center' }} direction="column">
+				<Grid onClick={this.props.readOnly?null:this.menuOpen} id="size-container" container sx={{ alignItems: 'center' }} direction="column">
 					<Grid item>
 						<Chip label={Boolean(this.props.size) ? this.props.size : " -- "} />
 					</Grid>

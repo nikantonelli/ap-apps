@@ -20,7 +20,7 @@ export class APBlocked extends React.Component {
 	}
 	render() {
 		return (
-			<Grid container sx={{ alignItems: 'center' }} direction="column" onClick={this.updated} >
+			<Grid container sx={{ alignItems: 'center' }} direction="column" onClick={this.props.readOnly?null:this.updated} >
 				<Grid item>
 					<Tooltip title={Boolean(this.props.status.reason) ? this.props.status.reason : (this.props.status.isBlocked ? "Blocked" : "Not Blocked")}>
 						{this.props.status.isBlocked ?

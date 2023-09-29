@@ -1,6 +1,7 @@
 import { findLastIndex, forEach, orderBy, pullAt, slice, unionBy, uniqBy } from "lodash";
 import { shortDate } from "./Helpers";
 import { ascending, descending } from "d3";
+import { imageConfigDefault } from "next/dist/shared/lib/image-config";
 
 export class VIEW_TYPES {
 	static SUNBURST = 'sunburst'
@@ -242,14 +243,6 @@ export const getBoard = async (host, brdId) => {
 	return doRequest(params);
 }
 
-export const getBoardIcons = async (host, brdId) => {
-	var params = {
-		host: host,
-		mode: 'GET',
-		url: "/board/" + brdId + "/customIcon"
-	}
-	return doRequest(params);
-}
 
 
 export const getAvatar = async (host, userId) => {
@@ -451,6 +444,21 @@ export const getBoardTags = ( host, boardId) => {
 	return doRequest(params);
 }
 
+export const cleanIconPath = (path) => {
+	var pos = path.search("/customicon")
+	var newPath = "/api" + path.substr(pos);
+	return newPath
+}
+
+export const getBoardIcons = async (host, brdId) => {
+	var params = {
+		host: host,
+		mode: 'GET',
+		url: "/board/" + brdId + "/customIcon"
+	}
+	return doRequest(params);
+}
+
 export const removeCardTag = async (host, cardId, tagIdx) => {
 	var updates = JSON.stringify(
 		[
@@ -470,6 +478,32 @@ export const addCardTag = async (host, cardId, tagName) => {
 				op: "add",
 				path: "/tags/-",
 				value: tagName
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
+
+
+export const setCardIcon = async (host, cardId, iconId) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "replace",
+				path: "/customIconId",
+				value: iconId
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
+export const removeCardIcon = async (host, cardId, iconId) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "remove",
+				path: "/customIconId",
+				value: iconId
 			}
 		]
 	)
