@@ -32,5 +32,8 @@ export function extractOpts (query, appProps){
 	if (query.panel) {
 		appProps.panel = query.panel
 	}
+	if (query.depth) {
+		appProps.depth = query.depth
+	}
     return appProps;
 }

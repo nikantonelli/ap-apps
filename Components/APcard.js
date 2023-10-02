@@ -6,6 +6,7 @@ import React from "react";
 import { getCard, updateCard } from "../Utils/Client/Sdk";
 import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
 import { APBlocked } from "./AP-Fields/blocked";
+import { APCustomIcon } from "./AP-Fields/customIcon";
 import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";
 import { APPriority } from "./AP-Fields/priority";
@@ -15,7 +16,6 @@ import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
 import { ConnectionTable } from "./ConnectionTable";
-import { APCustomIcon } from "./AP-Fields/customIcon";
 
 
 export class APCard extends React.Component {
@@ -262,7 +262,7 @@ export class APCard extends React.Component {
 	}
 
 	editCard = () => {
-        document.open("/nui/card/" + this.props.card.id, "", "noopener=true")
+		document.open("/nui/card/" + this.props.card.id, "", "noopener=true")
 	}
 
 	openCard = () => {
@@ -348,7 +348,7 @@ export class APCard extends React.Component {
 
 									</>
 									: <>
-									<IconButton size='large'  className="options-button-icon" onClick={this.editCard}>
+										<IconButton size='large' className="options-button-icon" onClick={this.editCard}>
 											<Edit></Edit>
 										</IconButton>
 										<IconButton onClick={this.closeAction}>
@@ -464,20 +464,23 @@ export class APCard extends React.Component {
 												</Grid>
 											</Grid>
 										</Grid>
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Paper elevation={0} sx={titlePaperStyle}>
-												<Typography variant={fieldHeaderType} sx={titleFieldStyle}>
-													Tags
-												</Typography></Paper>
-											<Grid container direction="row">
+										<Grid item  >
+											<Grid container direction="column" sx={cardDescriptionFieldStyle}>
 												<Grid item>
-													<APtags
-														readOnly={this.props.readOnly}
-														host={this.props.host}
-														card={card}
-													/>
+													<Paper elevation={0} sx={titlePaperStyle}>
+														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+															Tags
+														</Typography></Paper>
 												</Grid>
-
+												<Grid container direction="row">
+													<Grid item>
+														<APtags
+															readOnly={this.props.readOnly}
+															host={this.props.host}
+															card={card}
+														/>
+													</Grid>
+												</Grid>
 											</Grid>
 										</Grid>
 									</Grid>

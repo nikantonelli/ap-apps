@@ -1,7 +1,6 @@
-import { findLastIndex, forEach, orderBy, pullAt, slice, unionBy, uniqBy } from "lodash";
-import { shortDate } from "./Helpers";
 import { ascending, descending } from "d3";
-import { imageConfigDefault } from "next/dist/shared/lib/image-config";
+import { forEach, orderBy, union, unionBy, uniqBy } from "lodash";
+import { shortDate } from "./Helpers";
 
 export class VIEW_TYPES {
 	static SUNBURST = 'sunburst'
@@ -202,7 +201,7 @@ const addChildrentoTree = (item, cards) => {
 
 
 export const resetChildren = (node) => {
-	node.children = _.union(node.children || [], node.savedChildren || [])
+	node.children = union(node.children || [], node.savedChildren || [])
 	node.savedChildren = [];
 	node.children.forEach((child) => {
 		this.resetChildren(child)

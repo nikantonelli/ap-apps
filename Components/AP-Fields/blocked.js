@@ -1,6 +1,6 @@
 import { Cancel, CheckCircle } from "@mui/icons-material";
 import { Grid, Paper, Tooltip } from "@mui/material";
-import React from "react"
+import React from "react";
 
 /**
  * We rely on the parent to keep the 'state'
@@ -30,7 +30,7 @@ export class APBlocked extends React.Component {
 					</Tooltip>
 				</Grid>
 				<Grid item>
-					<Paper elevation={0}>{this.props.status.isBlocked ? "Blocked" : "Not Blocked"}</Paper>
+					<Paper elevation={0}>{this.props.status.isBlocked ? "Blocked" : "Unblocked"}</Paper>
 				</Grid>
 			</Grid>
 		)
