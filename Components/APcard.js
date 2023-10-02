@@ -17,7 +17,6 @@ import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
 import { ConnectionTable } from "./ConnectionTable";
 
-
 export class APCard extends React.Component {
 
 	static CONNECTIONS_PANEL_NAME = "connectionsSection";
@@ -273,6 +272,12 @@ export class APCard extends React.Component {
 		document.open("/api/redirect/board/" + this.props.card.board.id, "", "noopener=true")
 	}
 
+	scrollIntoView = (evt) => {
+		if (evt.target.clientHeight) {
+			evt.target.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" })
+		}
+	}
+
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
@@ -362,7 +367,7 @@ export class APCard extends React.Component {
 					</Grid>
 
 					<CardContent sx={{ backgroundColor: typeColour }}>
-						<Accordion expanded={this.state[APCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+						<Accordion expanded={this.state[APCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange} TransitionProps={{ onTransitionEnd: this.scrollIntoView }}>
 							<AccordionSummary aria-controls="details-content" id={APCard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>{this.state[APCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + card.id : card.title}</Typography>
 							</AccordionSummary>
@@ -498,7 +503,7 @@ export class APCard extends React.Component {
 							</Grid>
 						</Accordion>
 						{card.connectedCardStats ?
-							<Accordion expanded={this.state[APCard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+							<Accordion expanded={this.state[APCard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange} TransitionProps={{ onTransitionEnd: this.scrollIntoView }}>
 								<AccordionSummary aria-controls="progress-content" id={APCard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
 									<Typography variant={sectionHeaderType}>Child Progress</Typography>
 								</AccordionSummary>
@@ -526,7 +531,7 @@ export class APCard extends React.Component {
 								</AccordionDetails>
 							</Accordion>
 							: null}
-						<Accordion expanded={this.state[APCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+						<Accordion expanded={this.state[APCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange} TransitionProps={{ onTransitionEnd: this.scrollIntoView }}>
 							<AccordionSummary aria-controls="schedule-content" id={APCard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType} color={(Boolean(card.plannedStart) && Boolean(card.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
 							</AccordionSummary>
@@ -559,7 +564,7 @@ export class APCard extends React.Component {
 								</Grid>
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state[APCard.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange}>
+						<Accordion expanded={this.state[APCard.CONNECTIONS_PANEL_NAME]} onChange={this.handleAccordionChange} TransitionProps={{ onTransitionEnd: this.scrollIntoView }}>
 							<AccordionSummary aria-controls="connections-content" id={APCard.CONNECTIONS_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>Connections</Typography>
 
@@ -579,7 +584,7 @@ export class APCard extends React.Component {
 									/> : null}
 							</AccordionDetails>
 						</Accordion>
-						<Accordion expanded={this.state[APCard.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange}>
+						<Accordion expanded={this.state[APCard.PEOPLE_PANEL_NAME]} onChange={this.handleAccordionChange} TransitionProps={{ onTransitionEnd: this.scrollIntoView }}>
 							<AccordionSummary aria-controls="people-content" id={APCard.PEOPLE_PANEL_NAME} expandIcon={<ExpandMore />}>
 								<Typography variant={sectionHeaderType}>People</Typography>
 							</AccordionSummary>
