@@ -24,6 +24,10 @@ class DataProvider {
 
 	}
 
+	invalidateCaches = () => {
+		this.cacheMap = new Map();
+	}
+
 	checkCache(cache, type, now, limit) {
 		cache.map.forEach((value, key) => {
 			if (value.date < (now - limit)) {

@@ -43,7 +43,7 @@ export class APTreeView extends AppRoot {
             var svg = select(this.svg)
 
             var colWidth = (this.props.size[0] / (this.props.root.height || 1))
-            var colMargin = 100
+            var colMargin = Math.min(80, Math.max(30, (colWidth/4)))
             var rowHeight = 30
 
             var nTree = tree()
@@ -253,7 +253,7 @@ export class APTreeView extends AppRoot {
                 .attr("class", function (d) { return "local--link"; })
                 .attr("d", function (d) {
                     var startPointH = d.parent.y + pWidth + ((d.rowHeight - 4) / 2);
-                    var startApex = (d.y - (d.parent.y + pWidth)) / 2
+                    var startApex = (d.y - (d.parent.y + pWidth)) / 3
                     var startPointV = d.parent.x;
                     var endPointH = d.y - (d.rowHeight / 2);
                     var endPointV = d.x;

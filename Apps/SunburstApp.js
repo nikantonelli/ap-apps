@@ -1,6 +1,6 @@
 import { arc, partition, select } from "d3";
 import { min } from "lodash";
-import { VIEW_TYPES, createTree, flattenChildren, getRealChildren, removeDuplicates } from "../Utils/Client/Sdk";
+import { VIEW_TYPES } from "../Utils/Client/Sdk";
 import { getLabel, getSvgTitle } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 
@@ -67,7 +67,6 @@ export class APSunburstView extends HierarchyApp {
             const g = svg.append("g")
                 .attr("transform", `translate(${width / 2},${width / 2})`);
 
-            //var ringCount = _.min([(this.props.root.height - this.props.root.depth), 3]); //Max can be three rings including the root due to the text length
             var nArc = arc()
                 .startAngle(d => d.x0)
                 .endAngle(d => d.x1)

@@ -1,14 +1,17 @@
-import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Delete, DeleteForever, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, Logout, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Edit, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
+import { find } from "lodash";
 import React from "react";
+import { getCard, updateCard } from "../Utils/Client/Sdk";
 import { cardDescriptionFieldStyle, titleFieldStyle, titlePaperStyle } from "../styles/globals";
-import { getCard } from "../Utils/Client/Sdk";
 import { APBlocked } from "./AP-Fields/blocked";
+import { APCustomIcon } from "./AP-Fields/customIcon";
 import { APdateRange } from "./AP-Fields/dateRange";
 import { APdescription } from "./AP-Fields/description";
 import { APPriority } from "./AP-Fields/priority";
 import { APSize } from "./AP-Fields/size";
+import { APtags } from "./AP-Fields/tags";
 import { AssignedUserTable } from "./AssignedUserTable";
 import { CardUserTable } from "./CardUserTable";
 import { APChildStats } from "./ChildStats";
@@ -22,6 +25,12 @@ export class APCard extends React.Component {
 	static DETAILS_PANEL_NAME = "detailsSection";
 	static SCHEDULE_PANEL_NAME = "scheduleSection"
 	static PROGRESS_PANEL_NAME = "progressSection"
+	static FIELDNAMES = {
+		PLANSTART: 'plannedStart',
+		PLANEND: 'plannedFinish',
+		TITLE: 'title',
+		DESC: 'description'
+	}
 
 	constructor(props) {
 		super(props);
@@ -29,13 +38,12 @@ export class APCard extends React.Component {
 		this.state = {
 			data: props.card || null,
 			description: props.card || props.card.description,
-			changed: false,
 			context: props.context || null,
 			contextIcons: null,
 			openAll: true,
-			blocked: props.card || props.card.blockedStatus.isBlocked,
 			loadSource: props.loadType || 'card',
-			parents: []
+			parents: [],
+			isChanged: false
 		}
 		this.state[APCard.CONNECTIONS_PANEL_NAME] = false;
 		this.state[APCard.PEOPLE_PANEL_NAME] = false;
@@ -43,33 +51,42 @@ export class APCard extends React.Component {
 		this.state[APCard.SCHEDULE_PANEL_NAME] = false;
 		this.state[APCard.PROGRESS_PANEL_NAME] = false;
 
-		this.savedData = props.card;
+		this.outstandingChanges = [];	//All current 'changed' values of non-instant-update fields are held here
+		this.savedData = { ...props.card };
+	}
+
+	getUpdates = () => {
+		var changes = []
+		this.outstandingChanges.forEach((change) => {
+			switch (change.field) {
+				case APCard.FIELDNAMES.DESC:
+				case APCard.FIELDNAMES.TITLE:
+				case APCard.FIELDNAMES.PLANEND:
+				case APCard.FIELDNAMES.PLANSTART: {
+					changes.push({ op: "replace", path: "/" + change.field, value: change.value })
+					break;
+				}
+				default:
+					break;
+			}
+		})
+		return changes
+	}
+
+	checkUpdates = () => {
+		if (this.outstandingChanges.length) {
+			this.updateCard(JSON.stringify(this.getUpdates()))
+			this.savedData = { ...this.state.data }
+			this.outstandingChanges = [];
+		}
 	}
 
 	closeAction = (e) => {
 		if (this.props.onClose) this.props.onClose(e)
 	}
 
-	updateDescription = (e) => {
-		if (this.isChanged !== true) {
-			return;
-		}
-		var data = { ...this.state.data };
-		this.setChanged(data);
-	}
-
-	updateTitle = (e) => {
-		if (this.isChanged !== true) {
-			return;
-		}
-		var data = { ...this.state.data };
-		this.setChanged(data);
-	}
-
-	setChanged = (data) => {
-		this.setState({ data: data });
-		this.isChanged = true;
-
+	setData = (data) => {
+		this.setState({ isChanged: true, data: data });
 	}
 
 	componentDidMount() {
@@ -77,7 +94,7 @@ export class APCard extends React.Component {
 		var gc = this.props.card.parentCards.map((p) => getCard(this.props.host, p.cardId))
 		if (gc.length) {
 			Promise.all(gc).then((results) => {
-				me.setState({ parents : results})
+				me.setState({ parents: results })
 			})
 		}
 	}
@@ -96,7 +113,10 @@ export class APCard extends React.Component {
 			if (!this.dispatchDescClear) {
 				var data = { ...this.state.data }
 				data.description = editorValue
-				this.setChanged(data)
+				var change = find(this.outstandingChanges, ['field', 'description'])
+				if (change) change.value = data.description;
+				else this.outstandingChanges.push({ field: 'description', value: data.description })
+				this.setData(data)
 			}
 			this.dispatchDescClear = false
 		}
@@ -105,11 +125,39 @@ export class APCard extends React.Component {
 	titleChanged = (e) => {
 		var data = { ...this.state.data };
 		data.title = e.target.value.substr(0, 127);
-		this.setChanged(data);
+		var change = find(this.outstandingChanges, ['field', 'title'])
+		if (change) change.value = data.title;
+		else this.outstandingChanges.push({ field: 'title', value: data.title })
+		this.setData(data);
+	}
+
+	dateFormatter = (date) => {
+		var retStr = date.toISOString()
+		return retStr.substr(0, 10);
+	}
+
+	plannedStartChanged = (newValue) => {
+		var data = { ...this.state.data };
+		var date = new Date(newValue)
+		data.plannedStart = this.dateFormatter(date)
+		var change = find(this.outstandingChanges, ['field', APCard.FIELDNAMES.PLANSTART])
+		if (change) change.value = data.plannedStart;
+		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANSTART, value: data.plannedStart })
+		this.setData(data)
+	}
+
+	plannedFinishChanged = (newValue) => {
+		var data = { ...this.state.data };
+		var date = new Date(newValue)
+		data.plannedFinish = this.dateFormatter(date)
+		var change = find(this.outstandingChanges, ['field', APCard.FIELDNAMES.PLANEND])
+		if (change) change.value = data.plannedFinish;
+		else this.outstandingChanges.push({ field: APCard.FIELDNAMES.PLANEND, value: data.plannedFinish })
+		this.setData(data)
 	}
 
 	checkBeforeLeave = (e) => {
-		if (this.isChanged) {
+		if (this.state.isChanged) {
 			SdkUtils.showError({ message: "Save/Cancel changes before leaving page" });
 			e.preventDefault();
 			e.returnValue = ''
@@ -118,9 +166,12 @@ export class APCard extends React.Component {
 	}
 
 	cancelChanges = (e) => {
-		this.isChanged = false;
-		this.setState({ data: this.savedData })
+
 		this.dispatchDescClear = true;
+		this.setState((prev) => {
+			this.outstandingChanges = [];
+			return { isChanged: false, data: { ...this.savedData } }
+		})
 		window.dispatchEvent(new Event('clear-editor-description'));
 	}
 
@@ -136,9 +187,60 @@ export class APCard extends React.Component {
 		this.setState(ed);
 	}
 
-	toggleBlocked = (evt) => {
+	blockedUpdated = async (newValue) => {
+		this.updateCard(
+			JSON.stringify(
+				[
+					{
+						op: "add",
+						path: "/blockReason",
+						value: "Blocked by User"
+					},
+					{
+						op: "replace",
+						path: "/isBlocked",
+						value: newValue
+					}
+				]
+			)
+		)
 
-		if (!this.props.readOnly) this.setState((prev) => { return { blocked: !prev.blocked } })
+	}
+
+	sizeUpdated = async (value) => {
+		this.updateCard(
+			JSON.stringify(
+				[
+					{
+						op: "replace",
+						path: "/size",
+						value: value
+					}
+				]
+			)
+		)
+	}
+
+	priorityUpdated = async (value) => {
+		this.updateCard(
+			JSON.stringify(
+				[
+					{
+						op: "replace",
+						path: "/priority",
+						value: value
+					}
+				]
+			)
+		)
+
+	}
+
+	updateCard = async (bodyStr) => {
+		if (!this.props.readOnly) {
+			var newCard = await updateCard(this.props.host, this.props.card.id, bodyStr)
+			this.setState({ data: newCard, isChanged: false })
+		}
 	}
 
 	changeSection = (evt) => {
@@ -159,6 +261,10 @@ export class APCard extends React.Component {
 
 	}
 
+	editCard = () => {
+		document.open("/nui/card/" + this.props.card.id, "", "noopener=true")
+	}
+
 	openCard = () => {
 		document.open("/api/redirect/card/" + this.props.card.id, "", "noopener=true")
 	}
@@ -170,12 +276,12 @@ export class APCard extends React.Component {
 	render() {
 		var sectionHeaderType = "h5"
 		var fieldHeaderType = "h6"
-
-		var typeTitle = (this.state.loadSource === 'card') ? this.state.data.type.title : this.state.data.cardType.name
-		var typeColour = (this.state.loadSource === 'card') ? this.state.data.type.cardColor : this.state.data.color
+		var card = this.state.data;
+		var typeTitle = (this.state.loadSource === 'card') ? card.type.title : card.cardType.name
+		var typeColour = (this.state.loadSource === 'card') ? card.type.cardColor : card.color
 		if (this.state.data != null) {
 			return (
-				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-" + this.state.data.id}>
+				<Card className="card" sx={this.props.cardProps} variant='outlined' id={"card-" + card.id}>
 					<Grid style={{ backgroundColor: typeColour }} container direction="row">
 						<Grid item xs={6}>
 							<CardActions style={{ backgroundColor: typeColour, justifyContent: 'left' }} >
@@ -189,7 +295,7 @@ export class APCard extends React.Component {
 										<List />
 									</IconButton>
 								</Tooltip>
-								{this.state.data.connectedCardStats ?
+								{card.connectedCardStats ?
 									<Tooltip title="Child Progress">
 										<IconButton id={APCard.PROGRESS_PANEL_NAME} size='large' className="options-button-icon" aria-label='progress panel' onClick={this.changeSection}>
 											<BarChart />
@@ -229,20 +335,9 @@ export class APCard extends React.Component {
 												className="options-button-icon"
 												aria-label='save card'
 												onClick={this.checkUpdates}
-												color={this.isChanged ? 'error' : 'default'}
+												color={this.state.isChanged ? 'error' : 'default'}
 											>
 												<SaveAltOutlined />
-											</IconButton>
-										</Tooltip>
-										<Tooltip title={this.isChanged ? "Save and Close" : "Close"}>
-											<IconButton
-												size='large'
-												className="options-button-icon"
-												aria-label='save if needed, and close'
-												onClick={this.updateDataClose}
-												color={this.isChanged ? 'error' : 'default'}
-											>
-												<Logout />
 											</IconButton>
 										</Tooltip>
 										<Tooltip title="Cancel Changes">
@@ -251,21 +346,17 @@ export class APCard extends React.Component {
 											</IconButton>
 										</Tooltip>
 
-										<Tooltip title="Send to Recycle Bin">
-											<IconButton size='large' className="options-button-icon" aria-label="send to recycle bin" onClick={this.deleteRecycle}>
-												<Delete />
-											</IconButton>
-										</Tooltip>
-
-										<Tooltip title="Delete Forever">
-											<IconButton size='large' className="options-button-icon" aria-label="delete forever" onClick={this.deleteForever} >
-												<DeleteForever />
-											</IconButton>
-										</Tooltip>
 									</>
-									: <IconButton onClick={this.closeAction}>
-										<CancelOutlined></CancelOutlined>
-									</IconButton>}
+									: <>
+										<IconButton size='large' className="options-button-icon" onClick={this.editCard}>
+											<Edit></Edit>
+										</IconButton>
+										<IconButton onClick={this.closeAction}>
+											<CancelOutlined></CancelOutlined>
+										</IconButton>
+									</>
+								}
+
 							</CardActions>
 						</Grid>
 					</Grid>
@@ -273,14 +364,14 @@ export class APCard extends React.Component {
 					<CardContent sx={{ backgroundColor: typeColour }}>
 						<Accordion expanded={this.state[APCard.DETAILS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="details-content" id={APCard.DETAILS_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType}>{this.state[APCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + this.state.data.id : this.state.data.title}</Typography>
+								<Typography variant={sectionHeaderType}>{this.state[APCard.DETAILS_PANEL_NAME] ? typeTitle + ": " + card.id : card.title}</Typography>
 							</AccordionSummary>
 							<Grid container direction="column" >
 								<Grid item>
 									<Grid container direction="row">
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Grid container>
-												<Grid item>
+										<Grid item>
+											<Grid container sx={cardDescriptionFieldStyle} >
+												<Grid xs item>
 													<Paper elevation={0} sx={titlePaperStyle}>
 														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography>
 													</Paper>
@@ -292,17 +383,18 @@ export class APCard extends React.Component {
 												</Grid>
 											</Grid>
 											<TextField
-												sx={{ width: "100%" }}
+												sx={cardDescriptionFieldStyle}
+												InputProps={{
+													readOnly: this.props.readOnly,
+												}}
 												variant="outlined"
-												className='card-description-field'
-												value={this.state.data.title}
-												onBlur={this.updateTitle}
+												value={card.title}
 												onChange={this.titleChanged}
 											/>
 										</Grid>
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Grid container>
-												<Grid item>
+										<Grid item>
+											<Grid container sx={cardDescriptionFieldStyle}>
+												<Grid xs item>
 													<Paper elevation={0} sx={titlePaperStyle}>
 														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Context</Typography>
 													</Paper>
@@ -318,49 +410,75 @@ export class APCard extends React.Component {
 													readOnly: true,
 												}}
 												variant="outlined"
-												className='card-description-field'
-												sx={{ width: "100%" }}
-												value={this.state.data.board.title}
+												sx={cardDescriptionFieldStyle}
+												value={card.board.title}
 											/>
 										</Grid>
-										<Grid item sx={cardDescriptionFieldStyle} >
-											<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
-												{"Status: " + ((this.state.data.lane.cardStatus === "finished") ?
-													" Finished (" + this.state.data.actualFinish + ")" :
-													(this.state.data.lane.cardStatus === "notStarted") ?
-														" Not Started" :
-														" Started (" + this.state.data.actualStart + ")"
-												)}
-											</Typography></Paper>
-											<Grid container direction="row">
-												<Grid xs={2} item>
-													<APBlocked
-														status={this.state.data.blockedStatus}
-														toggleBlocked={this.toggleBlocked}
-													/>
+										<Grid item >
+											<Grid container direction="column" sx={cardDescriptionFieldStyle}>
+												<Grid item>
+													<Paper elevation={0} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+														{"Status: " + (Boolean(card.actualFinish) ?
+															" Finished (" + card.actualFinish + ")" :
+															Boolean(card.actualStart) ?
+																" Started (" + card.actualStart + ")" :
+																" Not Started"
+														)}
+													</Typography></Paper>
 												</Grid>
-												<Grid xs={2} item>
-													<APSize
-														size={this.state.data.size}
-													/>
+												<Grid item>
+													<Grid container direction="row" alignItems={"flex-end"}>
+														<Grid xs={2} item>
+															<APBlocked
+																readOnly={this.props.readOnly}
+																status={card.blockedStatus}
+																updated={this.blockedUpdated}
+															/>
+														</Grid>
+														<Grid xs={2} item>
+															<APSize
+																readOnly={this.props.readOnly}
+																updated={this.sizeUpdated}
+																size={card.size}
+															/>
+														</Grid>
+														<Grid xs={2} item>
+															<APPriority
+																readOnly={this.props.readOnly}
+																priority={card.priority}
+																updated={this.priorityUpdated}
+															/>
+														</Grid>
+														<Grid xs={2} item>
+															<Grid container sx={{ alignItems: 'center' }} direction="column">
+																{Boolean(card.customIcon) ? (
+																	<APCustomIcon
+																		host={this.props.host}
+																		card={this.props.card}
+																		readOnly={this.props.readOnly}
+																	/>
+																) : null}
+															</Grid>
+														</Grid>
+													</Grid>
 												</Grid>
-												<Grid xs={2} item>
-													<APPriority
-														priority={this.state.data.priority}
-													/>
+											</Grid>
+										</Grid>
+										<Grid item  >
+											<Grid container direction="column" sx={cardDescriptionFieldStyle}>
+												<Grid item>
+													<Paper elevation={0} sx={titlePaperStyle}>
+														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>
+															Tags
+														</Typography></Paper>
 												</Grid>
-												<Grid xs={2} item>
-													<Grid container sx={{ alignItems: 'center' }} direction="column">
-														{Boolean(this.state.data.customIcon) ? (
-															<>
-																<Grid item sx={{ margin: "0px" }}>
-																	<img style={{ width: "28px", height: "28px" }} alt={this.state.data.customIcon.name} src={this.cleanIconPath(this.state.data.customIcon.iconPath)} />
-																</Grid>
-																<Grid item>
-																	<Paper elevation={0}>{this.state.data.customIcon.title}</Paper>
-																</Grid>
-															</>
-														) : null}
+												<Grid container direction="row">
+													<Grid item>
+														<APtags
+															readOnly={this.props.readOnly}
+															host={this.props.host}
+															card={card}
+														/>
 													</Grid>
 												</Grid>
 											</Grid>
@@ -370,7 +488,8 @@ export class APCard extends React.Component {
 
 								<Grid item sx={cardDescriptionFieldStyle}>
 									<APdescription
-										description={this.state.data.description}
+										readOnly={this.props.readOnly}
+										description={card.description}
 										onChange={this.descriptionChanged}
 										headerType={fieldHeaderType}
 									/>
@@ -378,7 +497,7 @@ export class APCard extends React.Component {
 
 							</Grid>
 						</Accordion>
-						{this.state.data.connectedCardStats ?
+						{card.connectedCardStats ?
 							<Accordion expanded={this.state[APCard.PROGRESS_PANEL_NAME]} onChange={this.handleAccordionChange}>
 								<AccordionSummary aria-controls="progress-content" id={APCard.PROGRESS_PANEL_NAME} expandIcon={<ExpandMore />}>
 									<Typography variant={sectionHeaderType}>Child Progress</Typography>
@@ -390,9 +509,9 @@ export class APCard extends React.Component {
 												<Typography
 													variant={fieldHeaderType}
 													sx={titleFieldStyle}
-													color={(!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart)) ? "error" : "text.primary"}
+													color={(!Boolean(card.plannedFinish) || !Boolean(card.plannedStart)) ? "error" : "text.primary"}
 												>
-													{"Percent Complete " + ((!Boolean(this.state.data.plannedFinish) || !Boolean(this.state.data.plannedStart)) ? "(Incomplete Planned Dates)" : "")}
+													{"Percent Complete " + ((!Boolean(card.plannedFinish) || !Boolean(card.plannedStart)) ? "(Incomplete Planned Dates)" : "")}
 												</Typography>
 											</Paper>
 											<APChildStats
@@ -409,7 +528,7 @@ export class APCard extends React.Component {
 							: null}
 						<Accordion expanded={this.state[APCard.SCHEDULE_PANEL_NAME]} onChange={this.handleAccordionChange}>
 							<AccordionSummary aria-controls="schedule-content" id={APCard.SCHEDULE_PANEL_NAME} expandIcon={<ExpandMore />}>
-								<Typography variant={sectionHeaderType} color={(Boolean(this.state.data.plannedStart) && Boolean(this.state.data.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
+								<Typography variant={sectionHeaderType} color={(Boolean(card.plannedStart) && Boolean(card.plannedFinish)) ? "text.primary" : "error"}>Schedule</Typography>
 							</AccordionSummary>
 							<AccordionDetails>
 								<Grid container direction="row">
@@ -420,18 +539,21 @@ export class APCard extends React.Component {
 											</Typography>
 										</Paper>
 										<APdateRange
-											start={this.state.data.plannedStart}
-											end={this.state.data.plannedFinish}
+											start={card.plannedStart}
+											end={card.plannedFinish}
+											startChange={this.plannedStartChanged}
+											endChange={this.plannedFinishChanged}
 										/>
 									</Grid>
 									<Grid item sx={cardDescriptionFieldStyle} >
 										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Actual Dates</Typography></Paper>
 										<APdateRange
-											start={this.state.data.actualStart}
-											end={this.state.data.actualFinish}
+											readOnly={true}
+											start={card.actualStart}
+											end={card.actualFinish}
 										/>
 									</Grid>
-									<Grid itemsx={cardDescriptionFieldStyle} >
+									<Grid item sx={cardDescriptionFieldStyle} >
 										<Paper square elevation={2} sx={titlePaperStyle}><Typography variant={fieldHeaderType} sx={titleFieldStyle}>Time Box</Typography></Paper>
 									</Grid>
 								</Grid>

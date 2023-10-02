@@ -1,7 +1,7 @@
 import DataProvider from "../../../../../Utils/Server/DataProvider"
 
 export default async function handler(req, res) {
-	if (globalThis.dataProvider == null) {
+	if (!Boolean(globalThis.dataProvider)) {
 		globalThis.dataProvider = new DataProvider()
 	}
 

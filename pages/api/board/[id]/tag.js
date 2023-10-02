@@ -1,4 +1,4 @@
-import DataProvider  from "../../../Utils/Server/DataProvider"
+import DataProvider  from "../../../../Utils/Server/DataProvider"
 
 export default async function handler(req, res) {
 	const { id } = req.query;
@@ -8,9 +8,8 @@ export default async function handler(req, res) {
 	}
 
 	var params = {
-		url: "/card/list",
-		mode: 'POST',
-		body: JSON.stringify(req.body)
+		url: "/board/" + id + "/tag",
+		mode: 'GET'
 	}
 	try {
 	var result = await globalThis.dataProvider.xfr(params)

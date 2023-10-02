@@ -1,6 +1,6 @@
-import { findLastIndex, forEach, orderBy, pullAt, slice, unionBy, uniqBy } from "lodash";
-import { shortDate } from "./Helpers";
 import { ascending, descending } from "d3";
+import { forEach, orderBy, union, unionBy, uniqBy } from "lodash";
+import { shortDate } from "./Helpers";
 
 export class VIEW_TYPES {
 	static SUNBURST = 'sunburst'
@@ -27,6 +27,16 @@ export const getCard = (host, cardId) => {
 	var params = {
 		host: host,
 		mode: "GET",
+		url: "/card/" + cardId,
+	}
+	return doRequest(params);
+}
+
+export const updateCard = (host, cardId, updates) => {
+	var params = {
+		host: host,
+		body: updates,
+		mode: "PATCH",
 		url: "/card/" + cardId,
 	}
 	return doRequest(params);
@@ -191,7 +201,7 @@ const addChildrentoTree = (item, cards) => {
 
 
 export const resetChildren = (node) => {
-	node.children = _.union(node.children || [], node.savedChildren || [])
+	node.children = union(node.children || [], node.savedChildren || [])
 	node.savedChildren = [];
 	node.children.forEach((child) => {
 		this.resetChildren(child)
@@ -232,14 +242,6 @@ export const getBoard = async (host, brdId) => {
 	return doRequest(params);
 }
 
-export const getBoardIcons = async (host, brdId) => {
-	var params = {
-		host: host,
-		mode: 'GET',
-		url: "/board/" + brdId + "/customIcon"
-	}
-	return doRequest(params);
-}
 
 
 export const getAvatar = async (host, userId) => {
@@ -247,11 +249,16 @@ export const getAvatar = async (host, userId) => {
 		host: host,
 		mode: 'GET',
 		raw: true,
-		type: "image/*",
+		type: "*/*",
 	
 		url: "/avatar/" + userId
 	}
-	return doRequest(params);
+	var result = doRequest(params);
+	return result;
+}
+
+export const  notifyChange = (itemType, id) => {
+
 }
 
 export const doRequest = async (params) => {
@@ -261,7 +268,7 @@ export const doRequest = async (params) => {
 	}
 
 	var headers = new Headers();
-	if (params.mode === "POST") headers.append("Content-Type", "application/json");	//If we do a POST, we send json
+	if (params.mode === "POST") headers.append("Content-type", "application/json");	//If we do a POST, we send json
 	ps.headers = headers
 
 	if (params.type) {
@@ -426,4 +433,79 @@ export const compareCard = (cmpType, cmpDir, a, b) => {
             return dirFnc(a.id, b.id)
         }
     }
+}
+
+export const getBoardTags = ( host, boardId) => {
+	var params = {
+		host: host,
+		mode: "GET",
+		url: "/board/" + boardId + "/tag"
+	}
+	return doRequest(params);
+}
+
+export const cleanIconPath = (path) => {
+	var pos = path.search("/customicon")
+	var newPath = "/api" + path.substr(pos);
+	return newPath
+}
+
+export const getBoardIcons = async (host, brdId) => {
+	var params = {
+		host: host,
+		mode: 'GET',
+		url: "/board/" + brdId + "/customIcon"
+	}
+	return doRequest(params);
+}
+
+export const removeCardTag = async (host, cardId, tagIdx) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "remove",
+				path: "/tags/" + tagIdx
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
+
+export const addCardTag = async (host, cardId, tagName) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "add",
+				path: "/tags/-",
+				value: tagName
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
+
+
+export const setCardIcon = async (host, cardId, iconId) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "replace",
+				path: "/customIconId",
+				value: iconId
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
+}
+export const removeCardIcon = async (host, cardId, iconId) => {
+	var updates = JSON.stringify(
+		[
+			{
+				op: "remove",
+				path: "/customIconId",
+				value: iconId
+			}
+		]
+	)
+	return updateCard(host, cardId, updates)
 }

@@ -1,7 +1,6 @@
-## WARNING: This is my hack zone. Beware! And don't rely on it being in a working state!
-## NOTE: this repo is a 'viewer' on things in AgilePlace - no AP means no use. You can't update AP from here......yet.....
+# Viewer for AgilePlace (works on mobile devices as well as browser)
 
-# Getting Started
+## Getting Started
 
 You need to install a couple  of packages. If you don't know how to, or can't work it out, then this repo is not for you.
 
@@ -37,39 +36,39 @@ I am fond of a "no-clutter" approach, so a lot of things are accessible through 
 
 Clicking on things in the various layouts can get you:
 1. Hover over the coloured background of an item (not the text) to get a tooltip that will indicate stuff based on the configuration settings for 'sorting' and colouring'
-2. Click to see summary pop-up of the item (flies in from the left - escape, click outside or click on 'x' to close)
-3. Shift-Click to focus on that item in ceratin views. Shift-click again on it to go to parent of the item. In sunburst, the centre takes you back to the top items)
-4. Alt-Click to open item in new tab (similar to pop-up from #1)
+2. Click to see a READONLY summary pop-up of the item (flies in from the left - escape, click outside or click on 'x' to close)
+3. Alt-Click to focus on that item in ceratin views. Shift-click again on it to go to parent of the item. In sunburst, the centre takes you back to the top items)
+4. Shift-Click to open item in new tab (similar to pop-up from #1) for editing purposes
 5. Ctrl-Click to minimise that item (adds ** to end of name to indicate children are hidden)
 
-# The Config Menu
+## The Config Menu
 
 Clicking on the gear icon in the top left hand corner will give you a small selection on menu items related to the organisation of the various views. The menu is fairly generic, so there might be some options that don't make sense for the particular view and actually do nothing. It would take far more coding to make this work better.... For example, the 'View' selection only applies to pages that would display the hierarchy of items and not to the 'Configuration' page in the PI Planning App.
 
-## Filter
+### Filter
 Some of the views enable a filter panel in the config menu. This filter will give you a list of the top level items (from the board) to select from. THis will then filter the view based on just those items selected
 
-## View
+### View
 The options are for Tree, Sunburst, Partition, or Timeline. The first three are D3 representations of the hierarchy of cards starting with items from the board you are on. These views will fetch the whole tree of things down 3 levels (default): WHICH CAN TAKE A LONG TIME if you aren't very well organised with your boards. To prevent this, you can add the URL parameter of "?depth=2" (or "&depth=2 if you have other parameters). A depth of -1 will override the safety and fetch EVERYTHING.
 
-## Sorting
+### Sorting
 By default the sorting is done 'ascending' on the ID. This means newer items come further down the screen. Other possible things to sort on are: Title, Planned Start and End dates, Size of each item, the sum of the sizes of children, and the Score.
 
-## Sort Direction
+### Sort Direction
 A bit obvious, but 'ascending' or 'descending'
 
-## Colours
+### Colours
 A quick visual to see collections of items based on item data such as: state (Not Started, Started, Finished), Context (Board ID), Card Type, Last Modified By User, or Created By User. 
 
 Or, there are a couple of colour bands: cool, warm. This type of colour can help identify where an item has multiple parents - indicated when there is a child item with a colour different from its parent.
 
-## Error Bars
+### Error Bars
 A splodge of red will show somewhere on an item to indicate it fails some basic tests, e.g. dates aren't set correctly for it, or its parents. Hover over the red bit to get a text message
 
-## Grouping
+### Grouping
 Some of the views will be able to group by some parameter - this is a work-in-progress currently
 
-## URL Parameters
+### URL Parameters
 
 The URL will accept most of the ones that the Config Menu can set and some others. Any incorrect values are ignored and the default used. Any not present will use the default. 
 
@@ -85,7 +84,7 @@ When you have got a view that you like, the Config Menu has a "Open In New Tab" 
 8. dedupe=false|true
 9. group=level|context|type
 
-# PI Plan Page
+## PI Plan Page
 
 The PI Plan page will only work correctly  if you have some Planning Series and Planning Increments defined on the board you are accessing. It attempts to read the list of Planning Series for the baord and then give you selectors for the series and the increments associated with that series. The intention is that you have a Planning Series called something like "PI Planning" and the timeboxes (increments) within this series are called things like 2023Q1, 2023Q2, 2023Q3, etc. etc.
 

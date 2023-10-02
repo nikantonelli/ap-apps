@@ -1,14 +1,13 @@
-import { interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal, hierarchy } from "d3";
-import { findIndex, max } from "lodash";
-import React from "react";
+import { hierarchy, interpolateCool, interpolateRainbow, interpolateWarm, quantize, scaleOrdinal } from "d3";
+import { findIndex } from "lodash";
 import { VIEW_TYPES } from "../Utils/Client/Sdk";
-import { AppRoot } from "./App";
 import { searchNodeTree } from "../Utils/Client/SdkSvg";
+import { AppRoot } from "./App";
 
 export class HierarchyApp extends AppRoot {
 
-	static DEFAULT_TREE_DEPTH = 3;
-	static DEFAULT_SUNBURST_DEPTH = 3;	//Three rings of children plus the root
+	static DEFAULT_TREE_DEPTH = 2;
+	static DEFAULT_SUNBURST_DEPTH = 2;	//Two rings of children plus the root
 	static OPACITY_HIGH = 1.0;
 	static OPACITY_MEDIUM = 0.7;
 	static OPACITY_LOW = 0.3;

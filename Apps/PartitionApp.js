@@ -1,6 +1,5 @@
 import { partition, select } from "d3";
 import { min } from "lodash";
-import APBoard from "../Components/APBoard";
 import { VIEW_TYPES, visitTree } from "../Utils/Client/Sdk";
 import { getLabel, getSvgTitle } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
@@ -88,7 +87,7 @@ export class APPartitionView extends HierarchyApp {
             cell.join("g")
                 .append("path")
                 .attr("d", d => {
-                    var height = _.min([d.x1 - d.x0, d.y1 - d.y0, 15])
+                    var height = min([d.x1 - d.x0, d.y1 - d.y0, 15])
                     var ax = d.y1 - d.y0;  //a == far corner
                     var ay = d.x1 - d.x0;
                     var bx = ax;			//b is up from a

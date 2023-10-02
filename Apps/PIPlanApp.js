@@ -1,7 +1,7 @@
 import { Settings } from "@mui/icons-material";
 import { Box, Button, Drawer, Grid, IconButton, Paper, Tooltip, Typography } from "@mui/material";
-import { ascending, descending, hierarchy } from "d3";
-import { filter, find, forEach, intersectionWith, max, min, orderBy, union, unionWith } from "lodash";
+import { hierarchy } from "d3";
+import { filter, find, forEach, intersectionWith, max, min, orderBy, remove, union, unionWith } from "lodash";
 import React from "react";
 import { APAllocationView } from "../Apps/AllocationApp";
 import { APtimebox } from "../Components/AP-Fields/timebox";
@@ -10,7 +10,7 @@ import { ConfigDrawer } from "../Components/ConfigDrawer";
 import PlanItem from "../Components/PlanningItem";
 import { ReqsProgress } from "../Components/ReqsProgress";
 import { VIEW_TYPES, createTree, doRequest, getRealChildren, searchRootTree } from "../Utils/Client/Sdk";
-import { compareSvgNode, getSvgTitle, searchNodeTree, svgNodeClicked } from "../Utils/Client/SdkSvg";
+import { compareSvgNode, searchNodeTree, svgNodeClicked } from "../Utils/Client/SdkSvg";
 import { HierarchyApp } from "./HierarchyApp";
 import { APPartitionView } from "./PartitionApp";
 import { APSunburstView } from "./SunburstApp";
@@ -286,13 +286,13 @@ export class PIPlanApp extends HierarchyApp {
 			var topLevelList = {}
 			if (newState === false) {
 				topLevelList = {
-					passive: _.union(prevState.topLevelList.passive, _.remove(prevState.topLevelList.active, { id: id })),
+					passive: union(prevState.topLevelList.passive, remove(prevState.topLevelList.active, { id: id })),
 					active: prevState.topLevelList.active
 				}
 			}
 			else {
 				topLevelList = {
-					active: _.union(prevState.topLevelList.active, _.remove(prevState.topLevelList.passive, { id: id })),
+					active: union(prevState.topLevelList.active, remove(prevState.topLevelList.passive, { id: id })),
 					passive: prevState.topLevelList.passive
 				}
 			}

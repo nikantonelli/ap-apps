@@ -81,6 +81,7 @@ const UpdateText = ({ className, onChange, initialValue }) => {
 
 	}, [state, editor, initialValue, onChange, className])
 }
+
 export const Editor = ({ onChange, type, value, readOnly }) => {
 
 	const { historyState } = useSharedHistoryContext();

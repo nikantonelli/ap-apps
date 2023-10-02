@@ -1,7 +1,7 @@
 import { ascending, descending, hierarchy, select } from "d3"
+import { union } from "lodash"
 import { shortDate } from "./Helpers"
 import { searchRootTree } from "./Sdk"
-import { union } from "lodash"
 
 export function getLabel(d) {
     switch (this.view) {
@@ -137,10 +137,10 @@ export function svgNodeClicked(ev, target) {
             return { rootNode: rNode }
         })
     }
-    else if (ev.altKey) {
+    else if (ev.shiftKey) {
         document.open("/nui/card/" + target.data.id, "", "noopener=true")
     }
-    else if (ev.shiftKey) {
+    else if (ev.altKey) {
 
         if (target.data.id != 'root') {
             var newNode = searchNodeTree(this.rootNode, target.data.id)

@@ -2,7 +2,7 @@ import DataProvider from "../../../Utils/Server/DataProvider"
 
 export default async function handler(req, res) {
 
-	if (globalThis.dataProvider == null) {
+	if (!Boolean(globalThis.dataProvider)) {
 		globalThis.dataProvider = new DataProvider()
 	}
 
@@ -16,9 +16,12 @@ export default async function handler(req, res) {
 	var result = globalThis.dataProvider.inCache(params.url, 'png')
 	if (result === null) {
 		result = await globalThis.dataProvider.xfr(params)
+		if (result) {
+			globalThis.dataProvider.addToCacheWithId(params.url, result, 'png')
+		}
 	}
 	if (result) {
-		globalThis.dataProvider.addToCacheWithId(params.url, result, 'png')
+
 		res.writeHead(200, { 'Content-Type': "image/png" })
 		res.end(result)
 	}

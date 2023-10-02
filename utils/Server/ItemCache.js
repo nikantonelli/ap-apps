@@ -38,7 +38,7 @@ class ItemCache {
 
 	get(id) {
 		if (this.map.has(id)) {
-			console.log(`got ${this.type}: ${id}`);
+			console.log(`found ${this.type}: ${id}`);
 			// remove elem from current position
 			let c = this.map.get(id);
 			c.prev.next = c.next;
@@ -58,6 +58,7 @@ class ItemCache {
 	put(id, item) {
 		if (this.get(id) !== null) {
 			// if key does exist, update last element with new value
+			console.log(`updating ${this.type}: ${id}`);
 			this.tail.prev.value = item;
 			this.tail.prev.date = Date.now()
 		} else {
