@@ -1,4 +1,4 @@
-import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
+import { BarChart, CalendarToday, CancelOutlined, CancelPresentation, Edit, ExpandMore, KeyboardDoubleArrowDown, KeyboardDoubleArrowUp, List, OpenInNew, People, SaveAltOutlined, SettingsEthernet } from "@mui/icons-material";
 import { Accordion, AccordionDetails, AccordionSummary, Card, CardActions, CardContent, Grid, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 
 import { find } from "lodash";
@@ -261,6 +261,10 @@ export class APCard extends React.Component {
 
 	}
 
+	editCard = () => {
+        document.open("/nui/card/" + this.props.card.id, "", "noopener=true")
+	}
+
 	openCard = () => {
 		document.open("/api/redirect/card/" + this.props.card.id, "", "noopener=true")
 	}
@@ -343,9 +347,16 @@ export class APCard extends React.Component {
 										</Tooltip>
 
 									</>
-									: <IconButton onClick={this.closeAction}>
-										<CancelOutlined></CancelOutlined>
-									</IconButton>}
+									: <>
+									<IconButton size='large'  className="options-button-icon" onClick={this.editCard}>
+											<Edit></Edit>
+										</IconButton>
+										<IconButton onClick={this.closeAction}>
+											<CancelOutlined></CancelOutlined>
+										</IconButton>
+									</>
+								}
+
 							</CardActions>
 						</Grid>
 					</Grid>
