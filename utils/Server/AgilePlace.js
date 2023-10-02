@@ -110,6 +110,10 @@ class AgilePlace {
 								)
 								return res2;
 							}
+						default: {
+							console.log(`${response.statusText} for URL: ${response.url}`)
+							break;
+						}
 					}
 					return null;
 				}

@@ -59,7 +59,7 @@ export class APCustomIcon extends React.Component {
     render() {
         return (
             <>
-                <Button onClick={this.toggleChooser}>
+                <Button onClick={this.props.readOnly?null:this.toggleChooser}>
                     <img style={{ width: "100", height: "100" }} src={cleanIconPath(this.state.card.customIcon.iconPath)} alt={this.state.card.customIcon.title} loading="lazy"></img>
                 </Button>
                 <Paper elevation={0}>{this.state.card.customIcon.title}</Paper>

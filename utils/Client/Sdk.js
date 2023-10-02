@@ -250,11 +250,12 @@ export const getAvatar = async (host, userId) => {
 		host: host,
 		mode: 'GET',
 		raw: true,
-		type: "image/*",
+		type: "*/*",
 	
 		url: "/avatar/" + userId
 	}
-	return doRequest(params);
+	var result = doRequest(params);
+	return result;
 }
 
 export const  notifyChange = (itemType, id) => {
