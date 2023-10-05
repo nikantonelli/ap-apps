@@ -1,4 +1,4 @@
-import { HighlightOff, OpenInNew } from "@mui/icons-material";
+import { HighlightOff, Home, OpenInNew } from "@mui/icons-material";
 import { Autocomplete, Box, Button, Drawer, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Tooltip } from "@mui/material";
 import { VIEW_TYPES } from "../Utils/Client/Sdk";
 
@@ -23,8 +23,20 @@ export function ConfigDrawer({
     errors,
     errorChange,
     field,
-    fieldChange
+    fieldChange,
+    home,
+    icons
 }) {
+    function goHome() {
+        document.open(home || "/nui", "", "noopener=true");
+    }
+
+    const iconArray = icons || [];
+
+    function userIcon(evt) {
+        document.open(evt.currentTarget.value, "", "noopener=true")
+    }
+
     return (
         <Drawer
 
@@ -43,15 +55,30 @@ export function ConfigDrawer({
                         <Grid container direction="row">
                             {openInNew ?
                                 <Grid xs item>
-                                    <Button
+                                    <Button size="large"
                                         aria-label="Open As New Tab"
                                         onClick={openInNew}
                                         endIcon={<OpenInNew />}
-                                    >
-                                        New Tab
-                                    </Button>
+                                    />
                                 </Grid>
-                                : <Grid xs item />}
+                                : null}
+                            {iconArray.map((item) => {
+                                return (
+                                    <Button size="large"
+                                        key={item.toString()}
+                                        value={item.url}
+                                        onClick={userIcon}
+                                        endIcon={item.icon}
+                                    />
+                                )
+                            })}
+                            <Grid xs item>
+                                <Button
+                                    size="large"
+                                    onClick={goHome}
+                                    endIcon={<Home />}
+                                />
+                            </Grid>
                             <Grid xs={2} item>
                                 <Grid sx={{ justifyContent: 'flex-end' }} container>
 
@@ -96,21 +123,23 @@ export function ConfigDrawer({
                     </Grid>
                     <Grid item>
                         <Grid container>
-                            <Grid item>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                    <InputLabel>View</InputLabel>
-                                    <Select
-                                        value={view}
-                                        onChange={viewChange}
-                                        label="View"
-                                    >
-                                        <MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
-                                        <MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>
-                                        <MenuItem value={VIEW_TYPES.PARTITION}>Partition</MenuItem>
-                                        <MenuItem value={VIEW_TYPES.TIMELINE}>Timeline</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
+                            {Boolean(view) ?
+                                <Grid item>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>View</InputLabel>
+                                        <Select
+                                            value={view}
+                                            onChange={viewChange}
+                                            label="View"
+                                        >
+                                            <MenuItem value={VIEW_TYPES.TREE}>Tree</MenuItem>
+                                            <MenuItem value={VIEW_TYPES.SUNBURST}>Sunburst</MenuItem>
+                                            <MenuItem value={VIEW_TYPES.PARTITION}>Partition</MenuItem>
+                                            <MenuItem value={VIEW_TYPES.TIMELINE}>Timeline</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                : null}
                             {Boolean(sortChange) ?
                                 <Grid item>
                                     <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
@@ -133,21 +162,21 @@ export function ConfigDrawer({
                                     </FormControl>
                                 </Grid>
                                 : null}
-                                {Boolean(fieldChange) ?
-                                    <Grid item>
-                                        <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
-                                            <InputLabel>Field</InputLabel>
-                                            <Select
-                                                value={field}
-                                                onChange={fieldChange}
-                                                label="Field"
-                                            >
-                                                <MenuItem value="id">ID</MenuItem>
-                                                <MenuItem value="title">Title</MenuItem>
-                                            </Select>
-                                        </FormControl>
-                                    </Grid>
-                                    : null}
+                            {Boolean(fieldChange) ?
+                                <Grid item>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">
+                                        <InputLabel>Field</InputLabel>
+                                        <Select
+                                            value={field}
+                                            onChange={fieldChange}
+                                            label="Field"
+                                        >
+                                            <MenuItem value="id">ID</MenuItem>
+                                            <MenuItem value="title">Title</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                : null}
                             {(Boolean(sortDirChange) || Boolean(fieldChange)) ?
                                 <Grid item >
                                     <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }} size="small">

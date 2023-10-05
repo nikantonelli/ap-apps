@@ -48,7 +48,7 @@ export class APtags extends React.Component {
         return tag.key
     }
     getSuggestions = (value) => {
-        var tags = filter(this.state.boardTags, (tag) => tag.key.includes(value))
+        var tags = filter(this.state.boardTags, (tag) => tag.key.toLowerCase().includes(value.toLowerCase()))
         return tags
     }
 

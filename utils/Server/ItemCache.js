@@ -1,6 +1,7 @@
 /**
  * Cache is for stuff fetched from AP by the local server
  * and not for the browser client
+ * Implements LRU for when capacity is reached
  */
 class ItemCache {
 	constructor(type, size, period) {

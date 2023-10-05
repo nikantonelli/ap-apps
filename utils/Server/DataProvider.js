@@ -7,8 +7,8 @@ class DataProvider {
 	CACHE_AGE_TIMER = 30 * 1000;	//Check every 30 sec
 	//CACHE_AGE_LIMIT = 1 * 60 * 1000;	//Limit of 1 min
 	CACHE_AGE_LIMIT = (
-		((process.env.AGILEPLACE_CACHE_AGE_LIMIT === undefined) || (process.env.AGILEPLACE_CACHE_AGE_LIMIT === null)) ?
-		30 : process.env.AGILEPLACE_CACHE_AGE_LIMIT) * 60 * 1000;	//Default of 30 mins
+		((process.env.NUI_CACHE_AGE_LIMIT === undefined) || (process.env.NUI_CACHE_AGE_LIMIT === null)) ?
+		30 : process.env.NUI_CACHE_AGE_LIMIT) * 60 * 1000;	//Default of 30 mins
 
 	constructor() {
 		//Choose your poison

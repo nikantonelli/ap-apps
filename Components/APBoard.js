@@ -200,7 +200,7 @@ export class APBoard extends HierarchyApp {
 			}
 
 			return (<>
-				<Stack id="portalContainer" sx={{ width: '100%' }}>
+				<Stack sx={{ width: '100%' }}>
 					{Boolean(item) ?
 						<Drawer
 							onClose={this.closePopUp}

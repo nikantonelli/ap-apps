@@ -297,6 +297,27 @@ h6 {
 	text-align: right;
 }
 
+.sprint-column {
+	width:"100%";
+	max-width: "200px";
+	min-width: "100px"
+}
+
+.sprint-column-header { 
+	margin: "3px";
+	text-align: "center" 
+}
+
+.sprint-container {
+	width:"300px"
+}
+
+.sprint-item-container {
+	width:"100%";
+	max-width: "200px";
+	min-width: "100px"
+}
+
 .description-editor-container,
 .editor-container {
 	border-radius: 2px;

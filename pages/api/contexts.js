@@ -1,8 +1,8 @@
 /**
  * Translate from our API to the AgilePlace one
  * Incoming:
- * 		http://nacl.leankit.com/api/board
- * or 	http://nacl.leankit.com/api/board?fld=title&q=MyCard
+ * 		http://nacl.leankit.com/api/contexts
+ * or 	http://nacl.leankit.com/api/contexts?fld=title&q=MyCard
  * 
  * where 	fld = fieldname to search on
  * 			q = text string to look for

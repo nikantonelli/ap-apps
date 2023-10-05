@@ -1,4 +1,4 @@
-import { Box, Paper, Tooltip, Typography } from "@mui/material";
+import { Box, Paper, Tooltip, Typography, styled } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import { filter, groupBy, sortBy, unionBy } from "lodash";
 import React from "react";
@@ -90,24 +90,88 @@ export class APAllocationView extends HierarchyApp {
         var items = this.calcData()
         var extraColumns = 2
 
+        const Item = styled(Paper)(() => ({
+            textAlign: 'center',
+            elevation: 4,
+            margin: "3px"
+        }))
+
         return (
-            <>
-                <Grid container columns={this.state.timeboxes.length + extraColumns}>
-                    <>
-                        <Grid xs id="allocated">
-                            <Grid container>
-                                <Grid sx={{ width: "100%" }} >
-                                    <Paper square elevation={4} sx={{ margin: "3px", textAlign: "center" }}>
-                                        <Typography sx={{ width: "100%" }} variant="body2">Plan Items</Typography>
-                                    </Paper>
-                                </Grid>
-                                <Box sx={{ margin: "3px" }}>
-                                    <Grid container>
-                                        {this.props.cards.map((itm, idx) => {
+
+            <Grid container columns={this.state.timeboxes.length + extraColumns}>
+                <Grid xs id="allocated">
+                    <Grid container direction="column" >
+                        <Item>
+                            Plan Items
+                        </Item>
+                        <Grid container>
+                            {this.props.cards.map((itm, idx) => {
+                                return (
+                                    <Grid key={itm.id + idx}>
+                                        <PlanItem
+                                            onClick={this.thisClicked}
+                                            card={itm}
+                                            colourise={this.props.colourise} />
+                                    </Grid>
+                                )
+                            })}
+                        </Grid>
+                    </Grid>
+                </Grid>
+                <Grid xs id="unallocated">
+                    <Grid container direction="column" >
+                        <Item>
+                            Unallocated
+                        </Item>
+                        <Grid container className="sprint-container">
+                            {items.map((itm, idx) => {
+                                if (!Boolean(itm.planningIncrements) || (itm.planningIncrements.length === 0)) {
+                                    return (
+                                        <Grid id={"pi_" + itm.id} key={itm.id}>
+                                            <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                <div >
+                                                    <PlanItem
+                                                        onClick={this.thisClicked}
+                                                        card={itm}
+                                                        colourise={this.props.colourise} />
+                                                </div>
+                                            </Tooltip>
+                                        </Grid>
+                                    )
+                                }
+                                else {
+                                    return null
+                                }
+                            })}
+                        </Grid>
+                    </Grid>
+                </Grid>
+                {this.state.timeboxes.map((timebox, idx) => {
+                    return (
+                        <Grid key={timebox.id} xs>
+                            <Item>
+                                {timebox.label}
+                            </Item>
+                        </Grid>
+                    )
+                })}
+
+                {/* <Grid xs id="unallocated">
+                        <Grid container sx={{ alignContents: "center" }}>
+                            <Grid className="sprint-column">
+                                <Paper square elevation={4} sx={{ margin: "3px", textAlign: "center" }}>
+                                    <Typography sx={{ width: "100%" }} variant="body2">Unallocated</Typography>
+                                </Paper>
+                            </Grid>
+
+                            <Box className="sprint-column">
+                                <Grid container className="sprint-container">
+                                    {items.map((itm, idx) => {
+                                        if (!Boolean(itm.planningIncrements) || (itm.planningIncrements.length === 0)) {
                                             return (
-                                                <Grid key={itm.id + idx}>
+                                                <Grid id={"pi_" + itm.id} key={itm.id}>
                                                     <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
-                                                        <div>
+                                                        <div >
                                                             <PlanItem
                                                                 onClick={this.thisClicked}
                                                                 card={itm}
@@ -116,89 +180,55 @@ export class APAllocationView extends HierarchyApp {
                                                     </Tooltip>
                                                 </Grid>
                                             )
-                                        })}
-                                    </Grid>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                        <Grid xs id="unallocated">
-                            <Grid container sx={{ alignContents: "center" }}>
-                                <Grid sx={{ width: "100%" }}>
-                                    <Paper square elevation={4} sx={{ margin: "3px", textAlign: "center" }}>
-                                        <Typography sx={{ width: "100%" }} variant="body2">Unallocated</Typography>
-                                    </Paper>
+                                        }
+                                        else {
+                                            return null
+                                        }
+                                    })}
                                 </Grid>
-
-                                <Box sx={{ margin: "3px" }}>
-                                    <Grid container>
-                                        {items.map((itm, idx) => {
-                                            if (!Boolean(itm.planningIncrements) || (itm.planningIncrements.length === 0)) {
-                                                return (
-                                                    <Grid key={itm.id + idx}>
-                                                        <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
-                                                            <div>
-                                                                <PlanItem
-                                                                    onClick={this.thisClicked}
-                                                                    card={itm}
-                                                                    colourise={this.props.colourise} />
-                                                            </div>
-                                                        </Tooltip>
-                                                    </Grid>
-                                                )
-                                            }
-                                            else {
-                                                return null
-                                            }
-                                        })}
-                                    </Grid>
-                                </Box>
-                            </Grid>
+                            </Box>
                         </Grid>
-                        {this.state.timeboxes.map((timebox, idx) => {
-                            //if (items.length === 21) debugger;
-                            return (
-                                <Grid xs key={idx} >
-                                    <Grid container>
-                                        <Grid sx={{ width: "100%" }}>
-                                            <Paper square elevation={4} sx={{ margin: "3px", textAlign: "center" }}>
-                                                <Typography variant="body2">{timebox.label}</Typography>
-                                            </Paper>
+                    </Grid>
+                    {this.state.timeboxes.map((timebox, idx) => {
+                        //if (items.length === 21) debugger;
+                        return (
+                            <Grid xs key={idx} >
+                                <Grid container className="sprint-column">
+                                    <Grid>
+                                        <Paper square elevation={4} sx={{ margin: "3px", textAlign: "center" }}>
+                                            <Typography variant="body2">{timebox.label}</Typography>
+                                        </Paper>
+                                    </Grid>
+                                    <Box className="sprint-column">
+                                        <Grid container>
+                                            {items.map((itm, idx) => {
+                                                var inThis = filter(itm.planningIncrements, (incr) => (incr.id === timebox.id))
+                                                if (inThis && inThis.length) {
+                                                    return (
+                                                        <Grid key={itm.id + idx}>
+                                                            <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
+                                                                <div>
+                                                                    <PlanItem
+                                                                        onClick={this.thisClicked}
+                                                                        card={itm}
+                                                                        colourise={this.props.colourise} />
+                                                                </div>
+                                                            </Tooltip>
+                                                        </Grid>
+                                                    )
+                                                }
+                                                else {
+                                                    return null
+                                                }
+                                            })}
                                         </Grid>
-                                        <Box sx={{ margin: "3px" }}>
-                                            <Grid container>
-                                                {items.map((itm, idx) => {
-                                                    var inThis = filter(itm.planningIncrements, (incr) => (incr.id === timebox.id))
-                                                    if (inThis && inThis.length) {
-                                                        return (
-                                                            <Grid key={itm.id + idx}>
-                                                                <Tooltip title={getTitle(itm, this.props.sort, this.props.colouring)}>
-                                                                    <div>
-                                                                        <PlanItem
-                                                                            onClick={this.thisClicked}
-                                                                            card={itm}
-                                                                            colourise={this.props.colourise} />
-                                                                    </div>
-                                                                </Tooltip>
-                                                            </Grid>
-                                                        )
-                                                    }
-                                                    else {
-                                                        return null
-                                                    }
-                                                })}
-                                            </Grid>
-                                        </Box>
-                                    </Grid>
+                                    </Box>
                                 </Grid>
-                            )
-                        })}
-                    </>
-                </Grid>
-                <Grid container colums={this.state.timeboxes.length + extraColumns}>
-                    <>
-                    </>
-                </Grid>
-            </>
+                            </Grid>
+                        )
+                    })}*/}
+            </Grid>
+
         )
 
     }

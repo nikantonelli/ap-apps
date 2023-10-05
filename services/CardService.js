@@ -54,7 +54,7 @@ class CardService {
 	}
 
 	async getData(params) {
-
+		console.log("cs: ", this.baseUrl + params.url, { method: params.mode })
 		if (globalThis.dataProvider) {
 			return await globalThis.dataProvider.xfr(params);
 		}

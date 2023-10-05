@@ -10,6 +10,7 @@ export default async function handler(req, res) {
 	var params = {
 		raw: true,
 		type: "image/jpeg",
+		encoding: "gzip,deflate,br",
 		url: "/avatar/show/" + id + "/?s=25",
 		mode: 'GET'
 	}

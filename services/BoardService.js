@@ -33,7 +33,7 @@ class BoardService {
 		if (globalThis.dataProvider) {
 			board = globalThis.dataProvider.inCache(id, 'board')
 		}
-		if (!board) {
+		if (board === null) {
 			board = await this.getData(params);
 			if (board) globalThis.dataProvider.addToCacheWithId(id, board, 'board')
 		}
@@ -56,7 +56,7 @@ class BoardService {
 		if (globalThis.dataProvider) {
 			cards = globalThis.dataProvider.inCache(id, 'cards')
 		}
-		if (!cards) {
+		if (cards === null) {
 			var result = await this.getData(params)
 			if (result) {
 				var newCards = [];

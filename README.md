@@ -2,7 +2,7 @@
 
 ## Getting Started
 
-You need to install a couple  of packages. If you don't know how to, or can't work it out, then this repo is not for you.
+You need to install a couple  of packages. If you don't know how to, and can't work it out, then this repo is not for you.
 
 1. npm
 2. nodejs
@@ -11,18 +11,18 @@ Download the complete repo to a new folder on your system.
 
 In the root directory, run the 'npm install' command in a shell/cmd
 
-The AgilePlace host needs to be identified and stored in the environment variables so that the NextJs system can find it.
+The AgilePlace host needs to be identified and stored in the environment variables so that the system can find it.
 As I am using a Windows PC, I put the two required variables into my users setup. This means that if it is me logged in, then I can set it to use my credentials
 It is possible to put the variables into the system environment, but then ANY user that logs into the PC will make use of the same credentials - which may be an issue for auditing purposes
 
-I have run this on another machine on the same network as the client, so you can provide this as a server to other people - but once again, it has no user authentication on the client, so all users will look like you when the server accesses AP. I believe that the startup of nodejs can be made to limit to the loopback interface (127.0.0.1), so that it then becomes available to only those logged into the machine
+I have run this on another machine on the same network as the client, so you can provide this as a server to other people - but once again, it has no user authentication on the client, so all users will look like you when the server accesses AP. I believe that the startup of nodejs can be made to limit to the loopback interface (127.0.0.1), so that it then becomes available to only those logged into the machine and then potentially you can use SSO.
 
 Two variables are needed:
-1. "AGILEPLACE_HOST" - The URL of the AgilePlace instance you are using, e.g. "https://nacl.leankit.com"
-2. "AGILEPLACE_KEY" - The API token that you generate from AgilePlace to give access. See the AgilePlace docs on how to do that
-(If you don't want to use an APIKEY, then provide AGILEPLACE_USER and AGILEPLACE_PWD)
+1. "NUI_HOST" - The URL of the AgilePlace instance you are using, e.g. "https://nacl.leankit.com"
+2. "NUI_API_KEY" - The API token that you generate from AgilePlace to give access. See the AgilePlace docs on how to do that
+(If you don't want to use an APIKEY, then provide NUI_USER_NAME and NUI_USER_PWD)
 
-Another variable you can set is AGILEPLACE_CACHE_AGE_LIMIT. This sets the timeout for the cache to a number of minutes. The default is 30min if you do not set it. There is no mechanism to invalidate the cache just yet. The only solution is to kill the app and then restart it. I will fix it, at some point, to keep in sync with AP and any local changes that are made. For the moment, this app works read-only and doesn't update AP....yet....
+Another variable you can set is NUI_CACHE_AGE_LIMIT. This sets the timeout for the cache to a number of minutes. The default is 30min if you do not set it. There is no mechanism to invalidate the cache just yet. The only solution is to kill the app and then restart it. I will fix it, at some point, to keep in sync with AP and any local changes that are made. For the moment, this app works read-only and doesn't update AP....yet....
 
 Once you have everything configured, you can run an npm command to get things going. It can be a little slow if you run as the development environment version. The development environment is useful in that it attempts to notice any code changes you make and auto-reload the client (but, it doesn't always happen in a timely fashion!)
 

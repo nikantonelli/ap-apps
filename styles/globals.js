@@ -11,7 +11,7 @@ export const optionsButtonIconStyle = {
 
 export const cardDescriptionFieldStyle = {
     minWidth: "500px",
-    marginLeft: "5px",
+    margin: "5px",
 }
 
 export const titlePaperStyle = {

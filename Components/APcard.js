@@ -269,7 +269,7 @@ export class APCard extends React.Component {
 	}
 
 	openBoard = () => {
-		document.open("/api/redirect/board/" + this.props.card.board.id, "", "noopener=true")
+		document.open("/api/redirect/context/" + this.props.card.board.id, "", "noopener=true")
 	}
 
 	scrollIntoView = (evt) => {
@@ -378,7 +378,8 @@ export class APCard extends React.Component {
 											<Grid container sx={cardDescriptionFieldStyle} >
 												<Grid xs item>
 													<Paper elevation={0} sx={titlePaperStyle}>
-														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>Title</Typography>
+														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>{"Title" + 
+															((card.customId && card.customId.value && card.customId.value.length)? ": "+ card.customId.value:"")}</Typography>
 													</Paper>
 												</Grid>
 												<Grid item>

@@ -210,7 +210,7 @@ export const resetChildren = (node) => {
 
 export const findBoards = async (host, options) => {
 	var params = {
-		url: "/board",
+		url: "/contexts",
 		mode: "GET",
 		host: host
 	}
@@ -237,7 +237,7 @@ export const getBoard = async (host, brdId) => {
 	var params = {
 		host: host,
 		mode: 'GET',
-		url: "/board/" + brdId
+		url: "/context/" + brdId
 	}
 	return doRequest(params);
 }
@@ -250,7 +250,7 @@ export const getAvatar = async (host, userId) => {
 		mode: 'GET',
 		raw: true,
 		type: "*/*",
-	
+		encoding: "gzip,deflate,br",
 		url: "/avatar/" + userId
 	}
 	var result = doRequest(params);
@@ -273,6 +273,9 @@ export const doRequest = async (params) => {
 
 	if (params.type) {
 		headers.append("Accept", params.type)
+	}	
+	if (params.encoding) {
+		headers.append("Accept-Encoding", params.encoding)
 	}
 
 	//The NextJs bit requires the 'http:<host>' parameter to be present. THe browser copes without it.
@@ -439,7 +442,7 @@ export const getBoardTags = ( host, boardId) => {
 	var params = {
 		host: host,
 		mode: "GET",
-		url: "/board/" + boardId + "/tag"
+		url: "/context/" + boardId + "/tag"
 	}
 	return doRequest(params);
 }
@@ -454,7 +457,7 @@ export const getBoardIcons = async (host, brdId) => {
 	var params = {
 		host: host,
 		mode: 'GET',
-		url: "/board/" + brdId + "/customIcon"
+		url: "/context/" + brdId + "/customIcon"
 	}
 	return doRequest(params);
 }

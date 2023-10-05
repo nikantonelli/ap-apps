@@ -36,7 +36,7 @@ export class ConnectionTable extends React.Component {
 
 
 	openBoard = (evt) => {
-		document.open("/nui/board/" + evt.currentTarget.id, "", "noopener=true")
+		document.open("/nui/context/" + evt.currentTarget.id, "", "noopener=true")
 	}
 
 	openCard = (evt) => {
