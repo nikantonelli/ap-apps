@@ -4,6 +4,7 @@ import DataProvider from "../../../Utils/Server/DataProvider";
 
 import { APCard } from "../../../Components/APCard";
 import { extractOpts } from "../../../Utils/Server/Helpers";
+import { getCard, getCardChildren } from "../../../Utils/Client/Sdk";
 
 export default class Item extends React.Component {
 
@@ -11,14 +12,38 @@ export default class Item extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			parents: [],
+			parents: this.props.parents,	//Just in case they get passed in
 			context: null,
-			descendants: []
+			descendants: this.props.descendants
 		}
 	}
 
-	render() {
+	componentDidMount() {
+		var me = this;
+		if (!Boolean(this.state.parents)) {
+			var gc = this.props.card.parentCards.map((p) => getCard(this.props.host, p.cardId))
+			if (gc.length) {
+				Promise.all(gc).then((results) => {
+					me.setState({ parents: results })
+				})
+			}
+		}
+		if (!Boolean(this.state.descendants)) {
+			getCardChildren(this.props.host, this.props.card).then((result) => {
+				var newCards = [];
+				if (result) {
+					result.cards.map(async (card) => {
+						var newCard = await getCard(this.props.host, card.id)
+						if (newCard) newCards.push(newCard)
+					})
+				}
+				me.setState({ descendants: newCards})
+			})
+		}
 
+	}
+
+	render() {
 		if (this.props.card != null) {
 			return (
 				<APCard
@@ -38,14 +63,13 @@ export default class Item extends React.Component {
 	}
 }
 
-
 export async function getServerSideProps({ req, params, query }) {
 	if (!Boolean(globalThis.dataProvider)) {
 		globalThis.dataProvider = new DataProvider()
 	}
-	
+
 	var card = globalThis.dataProvider.inCache(params.id, 'card');
-	var appProps = {host: req.headers.host}
+	var appProps = { host: req.headers.host }
 	extractOpts(query, appProps)
 
 	if (card === null) {
@@ -54,9 +78,11 @@ export async function getServerSideProps({ req, params, query }) {
 	}
 	if (card) {
 		appProps.card = card
-		return ({ props: {
-			...appProps
-		} })
+		return ({
+			props: {
+				...appProps
+			}
+		})
 	}
-	else return ({ props: { } })
+	else return ({ props: {} })
 }

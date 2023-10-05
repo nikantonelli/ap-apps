@@ -38,7 +38,7 @@ export class AssignedUserTable extends React.Component {
                                     </Tooltip> :
                                     <TableCell />}
                                 <TableCell>
-                                    {Boolean(row.avatar) ? <UserAvatar  host={this.props.host}  width= "25px" height = "25px" alt= "User Avatar" src={row.id} /> : null}
+                                    {Boolean(row.avatar) ? <UserAvatar  host={this.props.host}  width= "25px" height = "25px" alt= "User Avatar" id={row.id} /> : null}
                                 </TableCell>
 
                             </TableRow>

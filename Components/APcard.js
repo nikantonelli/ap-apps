@@ -41,7 +41,8 @@ export class APCard extends React.Component {
 			contextIcons: null,
 			openAll: true,
 			loadSource: props.loadType || 'card',
-			parents: [],
+			parents: this.props.parents,
+			descendants: this.props.descendants,
 			isChanged: false
 		}
 		this.state[APCard.CONNECTIONS_PANEL_NAME] = false;
@@ -90,11 +91,13 @@ export class APCard extends React.Component {
 
 	componentDidMount() {
 		var me = this;
-		var gc = this.props.card.parentCards.map((p) => getCard(this.props.host, p.cardId))
-		if (gc.length) {
-			Promise.all(gc).then((results) => {
-				me.setState({ parents: results })
-			})
+		if (!Boolean(this.props.parents)) {
+			var gc = this.props.card.parentCards.map((p) => getCard(this.props.host, p.cardId))
+			if (gc.length) {
+				Promise.all(gc).then((results) => {
+					me.setState({ parents: results })
+				})
+			}
 		}
 	}
 
@@ -378,8 +381,8 @@ export class APCard extends React.Component {
 											<Grid container sx={cardDescriptionFieldStyle} >
 												<Grid xs item>
 													<Paper elevation={0} sx={titlePaperStyle}>
-														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>{"Title" + 
-															((card.customId && card.customId.value && card.customId.value.length)? ": "+ card.customId.value:"")}</Typography>
+														<Typography variant={fieldHeaderType} sx={titleFieldStyle}>{"Title" +
+															((card.customId && card.customId.value && card.customId.value.length) ? ": " + card.customId.value : "")}</Typography>
 													</Paper>
 												</Grid>
 												<Grid item>
