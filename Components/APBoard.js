@@ -211,8 +211,7 @@ export class APBoard extends HierarchyApp {
 						>
 							<Box>
 								<APCard
-									descendants={item.children}
-									parents={[]}
+									descendants={item.children} /* Parents will be found be APCard itself*/
 									cardProps={{ maxWidth: 700, flexGrow: 1 }}
 									host={this.props.host}
 									card={item}

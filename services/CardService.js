@@ -3,8 +3,8 @@ class CardService {
 	 * 
 	 * @param {object to access AgilePlace} apiAccess 
 	 */
-	constructor(apiAccess) {
-		this.cache = null;
+	constructor(host) {
+		this.baseUrl = "http://" + host + "/api";
 	}
 
 	async find(options) {

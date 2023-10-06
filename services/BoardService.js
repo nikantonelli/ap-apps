@@ -5,7 +5,6 @@ class BoardService {
 
 	constructor(host) {
 		this.baseUrl = "http://" + host + "/api";
-		this.cache = null;
 	}
 
 	async find(options) {

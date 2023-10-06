@@ -1,5 +1,5 @@
 import { ascending, descending, hierarchy, select } from "d3"
-import { union } from "lodash"
+import { filter, union } from "lodash"
 import { shortDate } from "./Helpers"
 import { searchRootTree } from "./Sdk"
 
@@ -124,13 +124,26 @@ export function svgNodeClicked(ev, target) {
     ev.stopPropagation()
     ev.preventDefault()
     if (ev.ctrlKey) {
+        var participants = [target]
+        if (ev.shiftKey) {
+            var parent = target;
+            while (parent.data.id !== "root") parent = parent.parent //Find the root
+            participants = filter(parent.descendants(), function (d) {   //Find all those at the same depth
+                return d.depth === target.depth
+            })
+        }
+
         if (target.data.children && target.data.children.length) {
-            target.data.savedChildren = union(target.data.children, target.data.savedChildren)
-            target.data.children = [];
+            participants.forEach((pt) => {
+                pt.data.savedChildren = union(pt.data.children, pt.data.savedChildren)
+                pt.data.children = [];
+            })
         }
         else if (target.data.savedChildren && target.data.savedChildren.length) {
-            target.data.children = target.data.savedChildren;
-            target.data.savedChildren = [];
+            participants.forEach((pt) => {
+                pt.data.children = pt.data.savedChildren;
+                pt.data.savedChildren = [];
+            })
         }
         this.setState((prev) => {
             var rNode = hierarchy(this.root)
