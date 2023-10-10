@@ -1,7 +1,6 @@
 import { HierarchyApp } from "../../../Apps/HierarchyApp";
 import { APBoard } from "../../../Components/APBoard";
 import BoardService from "../../../Services/BoardService";
-import DataProvider from "../../../Utils/Server/DataProvider";
 import { extractOpts } from "../../../Utils/Server/Helpers";
 
 export default function Board(props) {
@@ -18,9 +17,7 @@ export default function Board(props) {
 }
 
 export async function getServerSideProps({ req, params, query }) {
-	if (!Boolean(globalThis.dataProvider)) {
-		globalThis.dataProvider = new DataProvider()
-	}
+
 	var bs = new BoardService(req.headers.host);
 	var context = await bs.get(params.id)
 	var cards = await bs.getCards(params.id); //Don't add these to the cache as they are the wrtong shape!

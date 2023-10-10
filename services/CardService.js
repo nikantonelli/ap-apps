@@ -1,9 +1,11 @@
 class CardService {
-	/**
-	 * 
-	 * @param {object to access AgilePlace} apiAccess 
-	 */
-	
+
+	constructor() {
+		if (!Boolean(globalThis.dataProvider)) {
+			globalThis.dataProvider = new DataProvider()
+		}
+	}
+
 	async find(options) {
 		var params = {
 			url: "/card/",
@@ -20,12 +22,11 @@ class CardService {
 			mode: "GET"
 		}
 		var card = null;
-		if (globalThis.dataProvider) {
-			card = globalThis.dataProvider.inCache(id, 'card')
-		}
-		if (!card)	{
+		card = globalThis.dataProvider.inCache(id, 'card')
+
+		if (!card) {
 			card = await this.getData(params);
-			if (card) globalThis.dataProvider.addToCacheWithId(id, card,'card')
+			if (card) globalThis.dataProvider.addToCacheWithId(id, card, 'card')
 		}
 		return card;
 	}
@@ -52,10 +53,7 @@ class CardService {
 
 	async getData(params) {
 		console.log("cs: ", params.url, { method: params.mode })
-		if (globalThis.dataProvider) {
-			return await globalThis.dataProvider.xfr(params);
-		}
-		return null;
+		return await globalThis.dataProvider.xfr(params);
 	}
 }
 export default CardService;

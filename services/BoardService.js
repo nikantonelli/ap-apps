@@ -3,6 +3,12 @@ import CardService from "./CardService";
 
 class BoardService {
 
+	constructor() {
+		if (!Boolean(globalThis.dataProvider)) {
+			globalThis.dataProvider = new DataProvider()
+		}
+	}
+
 	async find(options) {
 		var params = {
 			url: "/board",
@@ -48,9 +54,8 @@ class BoardService {
 		}
 		var cards = null;
 		var cs = new CardService();
-		if (globalThis.dataProvider) {
-			cards = globalThis.dataProvider.inCache(id, 'cards')
-		}
+		cards = globalThis.dataProvider.inCache(id, 'cards')
+
 		if (cards === null) {
 			var result = await this.getData(params)
 			if (result) {
@@ -72,9 +77,6 @@ class BoardService {
 
 	async getData(params) {
 		console.log("bs: ", params.url, { method: params.mode })
-		if (!globalThis.dataProvider) {
-			globalThis.dataProvider = new DataProvider();
-		}
 		return await globalThis.dataProvider.xfr(params);
 
 	}
