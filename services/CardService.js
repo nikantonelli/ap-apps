@@ -3,10 +3,7 @@ class CardService {
 	 * 
 	 * @param {object to access AgilePlace} apiAccess 
 	 */
-	constructor(host) {
-		this.baseUrl = "http://" + host + "/api";
-	}
-
+	
 	async find(options) {
 		var params = {
 			url: "/card/",
@@ -54,7 +51,7 @@ class CardService {
 	}
 
 	async getData(params) {
-		console.log("cs: ", this.baseUrl + params.url, { method: params.mode })
+		console.log("cs: ", params.url, { method: params.mode })
 		if (globalThis.dataProvider) {
 			return await globalThis.dataProvider.xfr(params);
 		}

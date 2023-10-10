@@ -3,11 +3,6 @@ import CardService from "./CardService";
 
 class UserService {
 
-	constructor(host) {
-		this.baseUrl = "http://" + host + "/io";
-		this.cache = null;
-	}
-
 	async getMe(options) {
 		var params = {
 			url: "/user/me",
@@ -70,7 +65,7 @@ class UserService {
 	}
 
 	async getData(params) {
-		console.log("us: ", this.baseUrl + params.url, { method: params.mode })
+		console.log("us: ", params.url, { method: params.mode })
 		if (!globalThis.dataProvider) {
 			globalThis.dataProvider = new DataProvider();
 		}

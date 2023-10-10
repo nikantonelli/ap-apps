@@ -3,10 +3,6 @@ import CardService from "./CardService";
 
 class BoardService {
 
-	constructor(host) {
-		this.baseUrl = "http://" + host + "/api";
-	}
-
 	async find(options) {
 		var params = {
 			url: "/board",
@@ -75,7 +71,7 @@ class BoardService {
 	}
 
 	async getData(params) {
-		console.log("bs: ", this.baseUrl + params.url, { method: params.mode })
+		console.log("bs: ", params.url, { method: params.mode })
 		if (!globalThis.dataProvider) {
 			globalThis.dataProvider = new DataProvider();
 		}
